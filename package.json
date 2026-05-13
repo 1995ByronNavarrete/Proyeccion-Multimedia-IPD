@@ -11,9 +11,11 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
-    "typecheck": "npm run typecheck:node && npm run typecheck:web"
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "release": "npm run typecheck && electron-vite build && electron-builder --win --publish always"
   },
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "framer-motion": "^12.6.0",
     "lucide-react": "^0.487.0",
     "play-dl": "^1.9.7",
@@ -45,13 +47,20 @@
     "directories": {
       "output": "release"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "1995ByronNavarrete",
+      "repo": "Proyeccion-Multimedia-IPD",
+      "releaseType": "release"
+    },
     "win": {
       "target": "nsis",
       "icon": "resources/icon.png"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     }
   }
 }

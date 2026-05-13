@@ -1,6 +1,7 @@
-import { app, BrowserWindow, screen, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, screen, ipcMain } from 'electron'
 import { join } from 'path'
 import { existsSync, mkdirSync, watch } from 'fs'
+import { autoUpdater } from 'electron-updater'
 import { initDatabase } from './database'
 import { registerIpcHandlers } from './ipc-handlers'
 import { registerVideoHandlers, setOpenProjector } from './video-handlers'
@@ -171,6 +172,49 @@ app.whenReady().then(async () => {
   } catch {
     // watcher not critical
   }
+
+  // Auto-updater configuration
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('update:available', info)
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    mainWindow?.webContents.send('update:not-available')
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    mainWindow?.webContents.send('update:download-progress', progress)
+  })
+
+  autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('update:downloaded')
+  })
+
+  autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('update:error', err.message)
+  })
+
+  ipcMain.handle('update:check', () => {
+    autoUpdater.checkForUpdates()
+  })
+
+  ipcMain.handle('update:download', () => {
+    autoUpdater.downloadUpdate()
+  })
+
+  ipcMain.handle('update:install', () => {
+    autoUpdater.quitAndInstall()
+  })
+
+  // Check for updates after a short delay (don't block startup)
+  setTimeout(() => {
+    try {
+      autoUpdater.checkForUpdates()
+    } catch {}
+  }, 5000)
 
   createMainWindow()
 })

@@ -10,6 +10,7 @@ import ReproductorPanel from '../components/ReproductorPanel'
 import ProgramacionPanel from '../components/ProgramacionPanel'
 import VideoControls from '../components/VideoControls'
 import MixerAudio from '../components/mixer/MixerAudio'
+import UpdateNotifier from '../components/UpdateNotifier'
 
 export interface ProjectedContent {
   type: 'verse' | 'black' | 'media' | 'none'
@@ -86,6 +87,7 @@ export default function DashboardView() {
           </div>
         </div>
       </div>
+      <UpdateNotifier />
     </div>
   )
 }

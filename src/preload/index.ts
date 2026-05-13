@@ -61,8 +61,13 @@ const api = {
     getConfig: () => ipcRenderer.invoke('app:getConfig'),
     saveConfig: (config: Record<string, unknown>) => ipcRenderer.invoke('app:saveConfig', config)
   },
+  update: {
+    check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
+    install: () => ipcRenderer.invoke('update:install')
+  },
   on: (channel: string, callback: (...args: unknown[]) => void) => {
-    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'video:progress', 'medialocal:changed', 'bible:downloadProgress']
+    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'video:progress', 'medialocal:changed', 'bible:downloadProgress', 'update:available', 'update:not-available', 'update:download-progress', 'update:downloaded', 'update:error']
     if (validChannels.includes(channel)) {
       const handler = (_event: unknown, ...args: unknown[]) => callback(...args)
       ipcRenderer.on(channel, handler)

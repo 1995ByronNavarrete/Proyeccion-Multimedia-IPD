@@ -41,7 +41,7 @@ interface SourceTrans {
   source: string
 }
 
-interface DownloadProgress {
+interface BibleDownloadProgress {
   completed: number
   total: number
   bookName: string
@@ -135,6 +135,24 @@ interface Window {
       getConfig: () => Promise<IpcResponse<Record<string, unknown>>>
       saveConfig: (config: Record<string, unknown>) => Promise<IpcResponse<null>>
     }
+    update: {
+      check: () => Promise<void>
+      download: () => Promise<void>
+      install: () => Promise<void>
+    }
     on: (channel: string, callback: (...args: unknown[]) => void) => () => void
   }
+}
+
+interface UpdateInfo {
+  version: string
+  releaseDate?: string
+  releaseNotes?: string
+}
+
+interface UpdateDownloadProgress {
+  percent: number
+  bytesPerSecond: number
+  total: number
+  transferred: number
 }
