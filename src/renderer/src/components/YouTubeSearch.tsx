@@ -62,8 +62,20 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   }
 
   const handlePlayBg = async (item: YTResult) => {
-    const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1`
-    onPlayBg?.(embedUrl, item.title)
+    setBgLoading(true)
+    try {
+      const streamRes = await window.api.ytdl.getStreamUrl(item.id)
+      if (streamRes.success && streamRes.data?.url) {
+        onPlayBg?.(streamRes.data.url, streamRes.data.title || item.title)
+      } else {
+        const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1`
+        onPlayBg?.(embedUrl, item.title)
+      }
+    } catch {
+      const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1`
+      onPlayBg?.(embedUrl, item.title)
+    }
+    setBgLoading(false)
   }
 
   return (
