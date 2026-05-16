@@ -23,18 +23,48 @@ export function appDocsPath(): string {
 }
 
 export function getBundledResourcesPath(): string | null {
-  const resourcePath = join(process.resourcesPath, 'DesktopAppIPD')
-  if (existsSync(resourcePath)) return resourcePath
-  const devPath = join(__dirname, '..', '..', 'resources', 'DesktopAppIPD')
-  if (existsSync(devPath)) return devPath
+  try {
+    if (process.resourcesPath) {
+      const resourcePath = join(process.resourcesPath, 'DesktopAppIPD')
+      if (existsSync(resourcePath)) return resourcePath
+    }
+  } catch {}
+  try {
+    const devPath = join(__dirname, '..', '..', 'resources', 'DesktopAppIPD')
+    if (existsSync(devPath)) return devPath
+  } catch {}
   return null
 }
 
 export function getBundledDbPath(): string | null {
-  const prodPath = join(process.resourcesPath, 'bible-data.db')
-  if (existsSync(prodPath)) return prodPath
-  const devPath = join(__dirname, '..', '..', 'resources', 'bible-data.db')
-  if (existsSync(devPath)) return devPath
+  try {
+    if (process.resourcesPath) {
+      const prodPath = join(process.resourcesPath, 'bible-data.db')
+      if (existsSync(prodPath)) return prodPath
+    }
+  } catch {}
+  try {
+    const devPath = join(__dirname, '..', '..', 'resources', 'bible-data.db')
+    if (existsSync(devPath)) return devPath
+  } catch {}
+  try {
+    const altPath = join(__dirname, '..', 'resources', 'bible-data.db')
+    if (existsSync(altPath)) return altPath
+  } catch {}
+  return null
+}
+
+export function getBundledDataDbPath(): string | null {
+  try {
+    if (process.resourcesPath) {
+      const p = join(process.resourcesPath, 'bundled-data.db')
+      if (existsSync(p)) return p
+    }
+  } catch {}
+  try {
+    const p = join(__dirname, '..', '..', 'resources', 'bundled-data.db')
+    if (existsSync(p)) return p
+  } catch {}
   return null
 }
 

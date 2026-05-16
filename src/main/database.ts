@@ -2,7 +2,7 @@ import initSqlJs, { Database as SqlJsDatabase, SqlValue } from 'sql.js'
 import { app } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { getBundledDbPath } from './shared'
+import { getBundledDbPath, getBundledDataDbPath } from './shared'
 
 let db: SqlJsDatabase | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
@@ -179,54 +179,77 @@ export async function seedBibleIfEmpty(): Promise<void> {
     return
   }
 
-  const dbPath = getBundledDbPath()
-  if (!dbPath) return
+  // Intento 1: seed desde bible-data.db
+  let dbPath: string | null = null
+  try { dbPath = getBundledDbPath() } catch {}
+  if (dbPath) {
+    try {
+      const SQL = await initSqlJs()
+      const bundledBuf = readFileSync(dbPath)
+      const bundledDb = new SQL.Database(bundledBuf)
 
-  try {
-    const SQL = await initSqlJs()
-    const bundledBuf = readFileSync(dbPath)
-    const bundledDb = new SQL.Database(bundledBuf)
+      const trans = bundledDb.exec('SELECT nombre, abreviatura, idioma, activa FROM traducciones')
+      if (trans.length && trans[0].values.length) {
+        for (const t of trans[0].values) {
+          execute('INSERT INTO traducciones (nombre, abreviatura, idioma, activa) VALUES (?, ?, ?, ?)',
+            [t[0] as string, t[1] as string, t[2] as string, t[3] as number])
+          const transRow = queryOne('SELECT last_insert_rowid() as id')
+          const transId = transRow?.id as number
 
-    const trans = bundledDb.exec('SELECT nombre, abreviatura, idioma, activa FROM traducciones')
-    if (!trans.length || !trans[0].values.length) { bundledDb.close(); return }
+          const books = bundledDb.exec(`SELECT nombre, orden, testamento FROM libros WHERE traduccion_id = ? ORDER BY orden`, [1])
+          if (!books.length || !books[0].values.length) continue
 
-    for (const t of trans[0].values) {
-      execute('INSERT INTO traducciones (nombre, abreviatura, idioma, activa) VALUES (?, ?, ?, ?)',
-        [t[0] as string, t[1] as string, t[2] as string, t[3] as number])
-      const transRow = queryOne('SELECT last_insert_rowid() as id')
-      const transId = transRow?.id as number
+          for (const b of books[0].values) {
+            execute('INSERT INTO libros (traduccion_id, nombre, orden, testamento) VALUES (?, ?, ?, ?)',
+              [transId, b[0] as string, b[1] as number, b[2] as string])
+            const bookRow = queryOne('SELECT last_insert_rowid() as id')
+            const bookId = bookRow?.id as number
 
-      const books = bundledDb.exec(`SELECT nombre, orden, testamento FROM libros WHERE traduccion_id = ? ORDER BY orden`, [1])
-      if (!books.length || !books[0].values.length) continue
+            const verses = bundledDb.exec(
+              `SELECT v.capitulo, v.versiculo, v.texto FROM versiculos v JOIN libros l ON v.libro_id = l.id WHERE l.traduccion_id = ? AND l.nombre = ? ORDER BY v.capitulo, v.versiculo`,
+              [1, b[0] as string]
+            )
+            if (!verses.length || !verses[0].values.length) continue
 
-      for (const b of books[0].values) {
-        execute('INSERT INTO libros (traduccion_id, nombre, orden, testamento) VALUES (?, ?, ?, ?)',
-          [transId, b[0] as string, b[1] as number, b[2] as string])
-        const bookRow = queryOne('SELECT last_insert_rowid() as id')
-        const bookId = bookRow?.id as number
-
-        const verses = bundledDb.exec(
-          `SELECT v.capitulo, v.versiculo, v.texto FROM versiculos v JOIN libros l ON v.libro_id = l.id WHERE l.traduccion_id = ? AND l.nombre = ? ORDER BY v.capitulo, v.versiculo`,
-          [1, b[0] as string]
-        )
-        if (!verses.length || !verses[0].values.length) continue
-
-        const BATCH = 200
-        let batch: SqlValue[][] = []
-        for (const v of verses[0].values) {
-          batch.push([bookId, v[0] as number, v[1] as number, v[2] as string])
-          if (batch.length >= BATCH) {
+            const BATCH = 200
+            let batch: SqlValue[][] = []
+            for (const v of verses[0].values) {
+              batch.push([bookId, v[0] as number, v[1] as number, v[2] as string])
+              if (batch.length >= BATCH) {
+                for (const row of batch) execute('INSERT INTO versiculos (libro_id, capitulo, versiculo, texto) VALUES (?, ?, ?, ?)', row)
+                batch = []
+              }
+            }
             for (const row of batch) execute('INSERT INTO versiculos (libro_id, capitulo, versiculo, texto) VALUES (?, ?, ?, ?)', row)
-            batch = []
           }
         }
-        for (const row of batch) execute('INSERT INTO versiculos (libro_id, capitulo, versiculo, texto) VALUES (?, ?, ?, ?)', row)
+        bundledDb.close()
+        flushDatabase()
+        return
       }
+      bundledDb.close()
+    } catch (err) {
+      console.error('[seed] Error seeding Bible from bible-data.db:', err)
     }
-    bundledDb.close()
-    flushDatabase()
+  }
+
+  // Intento 2: copiar bundled-data.db completo (más confiable)
+  try {
+    const bundledDbPath = getBundledDataDbPath()
+    if (bundledDbPath) {
+      const dbPath2 = getDbPath()
+      const buf = readFileSync(bundledDbPath)
+      writeFileSync(dbPath2, Buffer.from(buf))
+      db = null
+      const SQL = await initSqlJs()
+      const existing = readFileSync(dbPath2)
+      db = new SQL.Database(existing)
+      db.run('PRAGMA foreign_keys = ON')
+      registerCustomFunctions()
+      console.log('[seed] Database replaced with bundled-data.db')
+    }
   } catch (err) {
-    console.error('[seed] Error seeding Bible:', err)
+    console.error('[seed] Error copying bundled-data.db:', err)
   }
 }
 

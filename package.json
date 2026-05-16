@@ -1,6 +1,6 @@
 {
   "name": "desktopappipd",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "Sistema de proyección multimedia profesional para iglesias",
   "author": "Byron Antonio Navarrete Cañada",
   "main": "./out/main/index.js",
@@ -74,6 +74,10 @@
       {
         "from": "resources/bible-data.db",
         "to": "bible-data.db"
+      },
+      {
+        "from": "resources/bundled-data.db",
+        "to": "bundled-data.db"
       }
     ]
   }
