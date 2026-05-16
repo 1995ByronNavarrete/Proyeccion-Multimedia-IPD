@@ -1,10 +1,41 @@
 import { ipcMain, BrowserWindow } from 'electron'
+import { execFile } from 'child_process'
+import { join } from 'path'
+import { promisify } from 'util'
+const execFileAsync = promisify(execFile)
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ytSearch = require('yt-search')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const play = require('play-dl')
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const youtubedl = require('youtube-dl-exec')
+
+function findYtDlpPath(): string {
+  const paths = [
+    join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe'),
+    join(__dirname, '..', '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe'),
+    join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe'),
+    join(process.resourcesPath, 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe')
+  ]
+  for (const p of paths) {
+    try { if (require('fs').existsSync(p)) return p } catch {}
+  }
+  return 'yt-dlp'
+}
+
+async function ytDlpGetUrl(videoId: string, format: string): Promise<string | null> {
+  try {
+    const binaryPath = findYtDlpPath()
+    const { stdout } = await execFileAsync(binaryPath, [
+      '--no-warnings',
+      '--get-url',
+      '-f', format,
+      `https://www.youtube.com/watch?v=${videoId}`
+    ], { timeout: 30000 })
+    const url = stdout?.toString().trim()
+    return url?.startsWith('http') ? url : null
+  } catch {
+    return null
+  }
+}
 
 let openProjector: (() => void) | null = null
 let onVideoPlay: ((url: string, title: string, duration: number) => void) | null = null
@@ -70,79 +101,13 @@ export function registerVideoHandlers(): void {
       console.error('[ytdl] play-dl error:', e?.message || e)
     }
 
-    // ── INTENTO 1: youtube-dl-exec (yt-dlp) dumpSingleJson ──
-    for (const fmt of ['best[height<=1080]', 'best[ext=mp4]', 'worst[ext=mp4]', 'best[height<=720]']) {
-      try {
-        const output = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
-          dumpSingleJson: true,
-          noWarnings: true,
-          noCallHome: true,
-          format: fmt
-        })
-        if (output?.url) {
-          return { success: true, data: { url: output.url, title, duration } }
-        }
-        const allFormats = output?.formats || []
-        const best = allFormats
-          .filter((f: any) => f.url && f.vcodec !== 'none' && f.acodec !== 'none')
-          .sort((a: any, b: any) => {
-            const aScore = (a.ext === 'mp4' ? 1000 : 0) + (a.height || 0)
-            const bScore = (b.ext === 'mp4' ? 1000 : 0) + (b.height || 0)
-            return bScore - aScore
-          })
-        if (best.length > 0) {
-          return { success: true, data: { url: best[0].url, title, duration } }
-        }
-      } catch (e: any) {
-        console.error(`[ytdl] yt-dlp (${fmt}) error:`, e?.message || e)
-      }
-    }
-
-    // ── INTENTO 2: youtube-dl-exec con --get-url ──
-    try {
-      const url = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
-        getUrl: true,
-        noWarnings: true,
-        noCallHome: true,
-        format: 'best[ext=mp4]/worst[ext=mp4]/best'
-      })
-      if (url && typeof url === 'string' && url.startsWith('http')) {
+    // ── INTENTO: yt-dlp directo (child_process) con múltiples formatos ──
+    const formats = ['best[ext=mp4]', 'best[height<=1080]', 'worst[ext=mp4]', 'best[height<=720]']
+    for (const fmt of formats) {
+      const url = await ytDlpGetUrl(videoId, fmt)
+      if (url) {
         return { success: true, data: { url, title, duration } }
       }
-    } catch (e: any) {
-      console.error('[ytdl] yt-dlp get-url error:', e?.message || e)
-    }
-
-    // ── INTENTO 3: play-dl stream directo ──
-    try {
-      const stream = await play.stream(`https://www.youtube.com/watch?v=${videoId}`, { quality: 0 })
-      if (stream?.url) {
-        if (!title) {
-          try { const info = await play.video_basic_info(`https://www.youtube.com/watch?v=${videoId}`); title = info.video_details?.title || ''; duration = info.video_details?.durationInSec || 0 } catch {}
-        }
-        return { success: true, data: { url: stream.url, title, duration } }
-      }
-    } catch (e: any) {
-      console.error('[ytdl] play-dl stream error:', e?.message || e)
-    }
-
-    // ── INTENTO 4: play-dl video_info + stream_from_info ──
-    try {
-      const ytInfo = await play.video_info(`https://www.youtube.com/watch?v=${videoId}`)
-      if (ytInfo?.formats?.length) {
-        for (let i = 0; i < Math.min(ytInfo.formats.length, 5); i++) {
-          try {
-            const s = await play.stream_from_info(ytInfo, i)
-            if (s?.url) {
-              if (!title) title = ytInfo.video_details?.title || ''
-              if (!duration) duration = ytInfo.video_details?.durationInSec || 0
-              return { success: true, data: { url: s.url, title, duration } }
-            }
-          } catch {}
-        }
-      }
-    } catch (e: any) {
-      console.error('[ytdl] play-dl info error:', e?.message || e)
     }
 
     // ── ÚLTIMO RECURSO: YouTube IFrame embed ──
