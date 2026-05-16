@@ -7,12 +7,14 @@ import { initDatabase, seedBibleIfEmpty } from './database'
 
 
 import { registerIpcHandlers } from './ipc-handlers'
-import { registerVideoHandlers, setOpenProjector } from './video-handlers'
+import { registerVideoHandlers, setOpenProjector, setOnVideoPlay } from './video-handlers'
 import { registerBackupHandlers } from './backup-handler'
+import { appDocsPath } from './shared'
 let mainWindow: BrowserWindow | null = null
 const projectorWindows: Map<number, BrowserWindow> = new Map()
 let devServerPort: number | null = null
 let lastOverlay: unknown = null
+let lastVideoPayload: { url: string; title: string; duration: number } | null = null
 
 // ── Servidor HTTP local para producción ──
 const MIME: Record<string, string> = {
@@ -152,6 +154,7 @@ function createProjectorWindow(displayId: number): void {
   win.webContents.on('did-finish-load', () => {
     win.webContents.setZoomLevel(0)
     if (lastOverlay) win.webContents.send('projector:overlay', lastOverlay)
+    if (lastVideoPayload) win.webContents.send('projector:playVideo', lastVideoPayload)
   })
   projectorWindows.set(displayId, win)
 
@@ -264,6 +267,18 @@ function registerMainIpcHandlers(): void {
     }
   })
 
+  ipcMain.handle('capture:projectorByDisplay', async (_event, displayId: number) => {
+    try {
+      const win = projectorWindows.get(displayId)
+      if (!win || win.isDestroyed()) return { success: false, error: 'Ventana de proyector no encontrada' }
+      const image = await win.webContents.capturePage()
+      const pngBuffer = image.toPNG()
+      return { success: true, data: { base64: pngBuffer.toString('base64'), displayId } }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
   ipcMain.handle('projector:sendContent', (_event, content: unknown) => {
     for (const [, win] of projectorWindows) {
       if (!win.isDestroyed()) win.webContents.send('projector:content', content)
@@ -294,10 +309,12 @@ app.whenReady().then(async () => {
   registerVideoHandlers()
   registerBackupHandlers()
   setOpenProjector(() => autoOpenProjectors())
+  setOnVideoPlay((url: string, title: string, duration: number) => {
+    lastVideoPayload = { url, title, duration }
+  })
 
-  // Create default media folders in Documents
-  const docsPath = app.getPath('documents')
-  const appFolder = join(docsPath, 'DesktopAppIPD')
+  // Create default media folders
+  const appFolder = appDocsPath()
   const musicFolder = join(appFolder, 'Música')
   const videosFolder = join(appFolder, 'Videos')
   const fondosFolder = join(appFolder, 'Fondos')
@@ -333,9 +350,6 @@ app.whenReady().then(async () => {
   } catch {
     // watcher not critical
   }
-
-  // ── Token GitHub (para auto-updater) ──
-  process.env.GH_TOKEN = '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'
 
   // Auto-updater configuration
   autoUpdater.autoDownload = false

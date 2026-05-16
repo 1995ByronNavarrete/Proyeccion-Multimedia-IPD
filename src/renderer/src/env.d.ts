@@ -155,7 +155,8 @@ interface Window {
       convertDocumentToHtml: (filePath: string) => Promise<IpcResponse<{ html: string; css: string } | null>>
     }
     capture: {
-      projector: () => Promise<{ success: boolean; data?: { base64: string }; error?: string }>
+      projector: () => Promise<{ success: boolean; data?: { base64: string }; error?: string }>,
+      projectorByDisplay: (displayId: number) => Promise<{ success: boolean; data?: { base64: string; displayId: number }; error?: string }>
     }
     anuncios: {
       getAll: () => Promise<IpcResponse<{ id: number; texto: string; animacion: string; fecha_creacion: string }[]>>

@@ -53,8 +53,7 @@
       "provider": "github",
       "owner": "1995ByronNavarrete",
       "repo": "Proyeccion-Multimedia-IPD",
-      "releaseType": "release",
-      "private": true
+      "releaseType": "release"
     },
     "win": {
       "target": "nsis",
@@ -66,6 +65,16 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "${productName}-Setup-${version}.${ext}"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "resources/DesktopAppIPD",
+        "to": "DesktopAppIPD"
+      },
+      {
+        "from": "resources/bible-data.db",
+        "to": "bible-data.db"
+      }
+    ]
   }
 }

@@ -12,6 +12,7 @@ import EffectsPanel from '../components/EffectsPanel'
 import SermonInfo from '../components/SermonInfo'
 import VideoControls from '../components/VideoControls'
 import AudioControl from '../components/mixer/AudioControl'
+import UpdateNotifier from '../components/UpdateNotifier'
 export interface ProjectedContent {
   type: 'verse' | 'black' | 'media' | 'document' | 'none'
   text?: string
@@ -262,6 +263,7 @@ export default function DashboardView() {
           </div>
         </div>
       </div>
+      <UpdateNotifier />
     </div>
   )
 }

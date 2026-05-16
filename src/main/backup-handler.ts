@@ -1,11 +1,7 @@
 import { dialog, app, ipcMain } from 'electron'
 import { writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { queryAll, execute, flushDatabase } from './database'
-
-function getDbPath(): string {
-  return join(app.getPath('userData'), 'desktopappipd.db')
-}
+import { queryAll, execute, flushDatabase, getDbPath } from './database'
 
 export function registerBackupHandlers(): void {
   ipcMain.handle('backup:create', async () => {

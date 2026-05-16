@@ -3,10 +3,7 @@ import { Image as ImageIcon, Trash2, Check, Megaphone, Plus, Play, X, Settings, 
 import { ANIM_GROUPS } from '../constants'
 import AnimSelectorModal from './shared/AnimSelectorModal'
 import ImageEditor from './shared/ImageEditor'
-
-function fileUrl(p: string): string {
-  return p.startsWith('file://') ? p : `file:///${p.replace(/\\/g, '/')}`
-}
+import { fileUrl } from '../utils'
 
 interface BackgroundImage {
   id: string

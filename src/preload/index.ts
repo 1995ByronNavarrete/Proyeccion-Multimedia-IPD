@@ -60,7 +60,8 @@ const api = {
     getStreamUrl: (videoId: string) => ipcRenderer.invoke('ytdl:getStreamUrl', videoId)
   },
   capture: {
-    projector: () => ipcRenderer.invoke('capture:projector')
+    projector: () => ipcRenderer.invoke('capture:projector'),
+    projectorByDisplay: (displayId: number) => ipcRenderer.invoke('capture:projectorByDisplay', displayId)
   },
   anuncios: {
     getAll: () => ipcRenderer.invoke('anuncios:getAll'),

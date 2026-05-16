@@ -1,0 +1,156 @@
+export const DOC_CSS = `* { margin: 0; padding: 0; box-sizing: border-box; }
+.doc-content {
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  color: #111;
+  line-height: 1.5;
+  padding: 5% 0;
+  width: 80%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.doc-content p {
+  margin-bottom: 1.4em;
+  font-size: clamp(1.6rem, 2.5vw, 3rem);
+  text-align: left;
+  letter-spacing: 0.01em;
+  font-weight: 400;
+  color: #1a1a1a;
+}
+.doc-content h1, .doc-content h2, .doc-content h3, .doc-content h4 {
+  font-weight: 700;
+  margin-top: 2em;
+  margin-bottom: 0.8em;
+  line-height: 1.15;
+  color: #000;
+}
+.doc-content h1 { font-size: clamp(2.4rem, 4vw, 4.5rem); text-align: center; letter-spacing: -0.02em; }
+.doc-content h2 { font-size: clamp(1.8rem, 3vw, 3.2rem); }
+.doc-content h3 { font-size: clamp(1.5rem, 2.4vw, 2.6rem); }
+.doc-content img {
+  display: block;
+  max-width: 85%;
+  height: auto;
+  margin: 2.5em auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.12);
+}
+.doc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2em 0;
+  font-size: clamp(1.2rem, 1.8vw, 2.2rem);
+}
+.doc-content td, .doc-content th {
+  border: 1px solid #d0d0d0;
+  padding: 0.8em 1.2em;
+  text-align: left;
+}
+.doc-content th { background: #f0f0f0; font-weight: 600; }
+.doc-content ul, .doc-content ol {
+  margin: 1em 0 1.5em 2.5em;
+  font-size: clamp(1.6rem, 2.5vw, 3.2rem);
+  line-height: 1.6;
+}
+.doc-content li { margin-bottom: 0.4em; }
+.doc-content pre {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: clamp(1rem, 1.5vw, 1.8rem);
+  background: #f5f5f5;
+  padding: 1.5em;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1.5em 0;
+  white-space: pre-wrap;
+  border: 1px solid #e8e8e8;
+}
+.doc-content blockquote {
+  border-left: 4px solid #2563eb;
+  padding: 1.2em 2em;
+  margin: 1.8em 0;
+  background: #f8faff;
+  font-style: italic;
+  color: #2a2a2a;
+  font-size: clamp(1.4rem, 2.2vw, 2.8rem);
+  border-radius: 0 8px 8px 0;
+}
+.doc-content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #ccc, transparent);
+  margin: 3em 0;
+}
+.pdf-toc {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2.5em 3em;
+  margin-bottom: 3em;
+}
+.pdf-toc h2 {
+  text-align: center;
+  font-size: clamp(1.6rem, 2.5vw, 3rem);
+  color: #1e40af;
+  letter-spacing: 0.02em;
+  margin-top: 0;
+  margin-bottom: 1.5em;
+  font-weight: 600;
+}
+.pdf-toc ol { list-style: none; margin: 0; padding: 0; }
+.pdf-toc li {
+  border-bottom: 1px solid #e8ecf0;
+  padding: 0.7em 0;
+  margin: 0;
+}
+.pdf-toc li:last-child { border-bottom: none; }
+.pdf-toc a {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  text-decoration: none;
+  color: #1a1a1a;
+  padding: 0.4em 0.6em;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.pdf-toc a:hover { background: #eef2ff; }
+.pdf-toc .page-num {
+  font-weight: 700;
+  font-size: clamp(1.1rem, 1.6vw, 2rem);
+  color: #2563eb;
+  min-width: 2.5em;
+  text-align: center;
+  background: #eef2ff;
+  border-radius: 8px;
+  padding: 0.2em 0.5em;
+}
+.pdf-toc .page-title {
+  font-size: clamp(1.1rem, 1.6vw, 2rem);
+  color: #333;
+}
+.pdf-pages { margin-top: 1.5em; }
+.pdf-page {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 16px;
+  padding: 3em 3.5em;
+  margin-bottom: 2.5em;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  position: relative;
+}
+.pdf-page .page-header {
+  position: absolute;
+  top: 1.5em;
+  right: 2em;
+  font-weight: 600;
+  font-size: clamp(0.9rem, 1.2vw, 1.5rem);
+  color: #2563eb;
+  background: #eef2ff;
+  padding: 0.3em 0.9em;
+  border-radius: 20px;
+}
+.pdf-page p {
+  font-size: clamp(1.4rem, 2.2vw, 2.8rem);
+  line-height: 1.6;
+  margin-bottom: 0.8em;
+}
+.pdf-page p:last-child { margin-bottom: 0; }`

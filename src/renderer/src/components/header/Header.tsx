@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Radio, Minus, Square, X, Settings, Image, Trash2, Download, Upload, Keyboard, Info, Github, User, Lightbulb, Sparkles, RefreshCw } from 'lucide-react'
 import ThemeToggle from '../theme/ThemeToggle'
-
-function fileUrl(p: string): string {
-  return p.startsWith('file://') ? p : `file:///${p.replace(/\\/g, '/')}`
-}
-
-const NAV_ITEMS: string[] = []
+import { fileUrl } from '../../utils'
 
 export default function Header() {
   const [isLive, setIsLive] = useState(true)
@@ -132,14 +127,7 @@ export default function Header() {
             <p className="text-[10px] text-[#6b7280] -mt-0.5">{subName}</p>
           </div>
         </div>
-        <nav className="flex items-center gap-3 no-drag">
-          {NAV_ITEMS.map((item, i) => (
-            <div key={item} className="flex items-center gap-3">
-              <button className="text-[11px] text-gray-400 text-theme-muted hover:text-white text-theme transition-colors whitespace-nowrap">{item}</button>
-              {i < NAV_ITEMS.length - 1 && <span className="w-1 h-1 rounded-full bg-[#6c5ce7]" />}
-            </div>
-          ))}
-        </nav>
+
       </div>
 
       {/* Right */}

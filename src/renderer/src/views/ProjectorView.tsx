@@ -1,11 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Monitor, FileText } from 'lucide-react'
 import AnuncioOverlay from '../components/AnuncioOverlay'
-
-
-function fileUrl(p: string): string {
-  return p.startsWith('file://') ? p : `file:///${p.replace(/\\/g, '/')}`
-}
+import { fileUrl } from '../utils'
 
 const YT_CMD = (fn: string) => JSON.stringify({ event: 'command', func: fn, args: [] })
 
@@ -66,18 +62,6 @@ export default function ProjectorView() {
     const id = setInterval(update, 30000)
     return () => clearInterval(id)
   }, [])
-
-  const downloadVerse = async () => {
-    if (!verseText) return
-    const res = await window.api.capture.projector()
-    if (!res.success || !res.data) return
-    const link = document.createElement('a')
-    link.href = `data:image/png;base64,${res.data.base64}`
-    link.download = `verso-${(verseRef || 'imagen').replace(/[:\s]/g, '-')}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
 
   const stopYtTimer = useCallback(() => {
     if (ytTimer.current) { clearInterval(ytTimer.current); ytTimer.current = undefined }

@@ -18,6 +18,17 @@ export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
   const [currentTrack, setCurrentTrack] = useState<string | null>(null)
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
   const [currentTime, setCurrentTime] = useState(0)
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+        if (audioRef.current.parentNode) audioRef.current.parentNode.removeChild(audioRef.current)
+        audioRef.current = null
+      }
+    }
+  }, [])
   const [duration, setDuration] = useState(0)
   const [showList, setShowList] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)

@@ -7,9 +7,14 @@ const play = require('play-dl')
 const youtubedl = require('youtube-dl-exec')
 
 let openProjector: (() => void) | null = null
+let onVideoPlay: ((url: string, title: string, duration: number) => void) | null = null
 
 export function setOpenProjector(fn: () => void): void {
   openProjector = fn
+}
+
+export function setOnVideoPlay(fn: (url: string, title: string, duration: number) => void): void {
+  onVideoPlay = fn
 }
 
 const WINS = () => BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
@@ -112,8 +117,7 @@ export function registerVideoHandlers(): void {
         }
       }
 
-      // Small delay to ensure projector window is ready
-      await new Promise((r) => setTimeout(r, 300))
+      if (onVideoPlay) onVideoPlay(url, title || 'Video', duration || 0)
 
       ALL('projector:playVideo', { url, title: title || 'Video', duration: duration || 0 })
 

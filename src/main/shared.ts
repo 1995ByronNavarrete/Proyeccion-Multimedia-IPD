@@ -1,0 +1,55 @@
+import { app } from 'electron'
+import { join } from 'path'
+import { existsSync, mkdirSync } from 'fs'
+
+export interface IpcResponse<T = void> {
+  success: boolean
+  data?: T
+  error?: string
+}
+
+export function ok<T>(data: T): IpcResponse<T> {
+  return { success: true, data }
+}
+
+export function fail(error: string): IpcResponse {
+  return { success: false, error }
+}
+
+export function appDocsPath(): string {
+  const resourcePath = join(process.resourcesPath, 'DesktopAppIPD')
+  if (existsSync(resourcePath)) return resourcePath
+  const devPath = join(__dirname, '..', '..', 'resources', 'DesktopAppIPD')
+  if (existsSync(devPath)) return devPath
+  const userPath = join(app.getPath('userData'), 'DesktopAppIPD')
+  if (!existsSync(userPath)) mkdirSync(userPath, { recursive: true })
+  return userPath
+}
+
+export function getDbPath(): string {
+  return join(app.getPath('userData'), 'desktopappipd.db')
+}
+
+export const IMAGE_MIME: Record<string, string> = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml'
+}
+
+export function getMime(ext: string): string {
+  return IMAGE_MIME[ext.toLowerCase()] || 'image/png'
+}
+
+export const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'])
+
+export const AUDIO_EXTS = new Set(['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.opus', '.wma'])
+export const VIDEO_EXTS = new Set(['.mp4', '.avi', '.mkv', '.mov', '.webm', '.m4v', '.wmv', '.flv'])
+export const DOCUMENT_EXTS = new Set(['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.rtf', '.odt', '.odp', '.ods', '.csv'])
+
+export function getMediaType(ext: string): 'audio' | 'video' | 'document' | null {
+  const lower = ext.toLowerCase()
+  if (AUDIO_EXTS.has(lower)) return 'audio'
+  if (VIDEO_EXTS.has(lower)) return 'video'
+  if (DOCUMENT_EXTS.has(lower)) return 'document'
+  return null
+}

@@ -2,12 +2,10 @@ import { HashRouter, Routes, Route } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout'
 import DashboardView from './views/DashboardView'
 import ProjectorView from './views/ProjectorView'
-import UpdateNotifier from './components/UpdateNotifier'
 
 function App() {
   return (
     <HashRouter>
-      <UpdateNotifier />
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<DashboardView />} />
