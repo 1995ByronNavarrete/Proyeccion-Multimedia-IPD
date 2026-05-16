@@ -2,6 +2,7 @@ import initSqlJs, { Database as SqlJsDatabase, SqlValue } from 'sql.js'
 import { app } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { getBundledDbPath } from './shared'
 
 let db: SqlJsDatabase | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
@@ -178,9 +179,7 @@ export async function seedBibleIfEmpty(): Promise<void> {
     return
   }
 
-  const bundledPath = join(process.resourcesPath, 'bible-data.db')
-  const devPath = join(__dirname, '..', '..', 'resources', 'bible-data.db')
-  const dbPath = existsSync(bundledPath) ? bundledPath : (existsSync(devPath) ? devPath : null)
+  const dbPath = getBundledDbPath()
   if (!dbPath) return
 
   try {

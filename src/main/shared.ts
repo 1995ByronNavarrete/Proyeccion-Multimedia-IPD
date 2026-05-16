@@ -17,13 +17,25 @@ export function fail(error: string): IpcResponse {
 }
 
 export function appDocsPath(): string {
+  const userPath = join(app.getPath('userData'), 'DesktopAppIPD')
+  if (!existsSync(userPath)) mkdirSync(userPath, { recursive: true })
+  return userPath
+}
+
+export function getBundledResourcesPath(): string | null {
   const resourcePath = join(process.resourcesPath, 'DesktopAppIPD')
   if (existsSync(resourcePath)) return resourcePath
   const devPath = join(__dirname, '..', '..', 'resources', 'DesktopAppIPD')
   if (existsSync(devPath)) return devPath
-  const userPath = join(app.getPath('userData'), 'DesktopAppIPD')
-  if (!existsSync(userPath)) mkdirSync(userPath, { recursive: true })
-  return userPath
+  return null
+}
+
+export function getBundledDbPath(): string | null {
+  const prodPath = join(process.resourcesPath, 'bible-data.db')
+  if (existsSync(prodPath)) return prodPath
+  const devPath = join(__dirname, '..', '..', 'resources', 'bible-data.db')
+  if (existsSync(devPath)) return devPath
+  return null
 }
 
 export function getDbPath(): string {

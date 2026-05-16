@@ -6,7 +6,7 @@ import pdfjs from 'pdfjs-dist'
 import { queryAll, queryOne, execute, noAccent } from './database'
 import { downloadAndSeedBible } from './bible-seed'
 import { getBibleApiTranslations, getApiBibleTranslations } from './bible-source'
-import { ok, fail, appDocsPath, getMime, IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS, DOCUMENT_EXTS, getMediaType } from './shared'
+import { ok, fail, appDocsPath, getBundledResourcesPath, getMime, IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS, DOCUMENT_EXTS, getMediaType } from './shared'
 import { DOC_CSS } from './doc-styles'
 
 export function registerIpcHandlers(): void {
@@ -278,17 +278,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('medialocal:getBiblioteca', () => {
     try {
-      const appFolder = appDocsPath()
-      const musicFolder = join(appFolder, 'Música')
-      const videosFolder = join(appFolder, 'Videos')
-      const documentosFolder = join(appFolder, 'Documentos')
-
       const result: { musica: { nombre: string; ruta: string; tamano: number }[]; videos: { nombre: string; ruta: string; tamano: number }[]; documentos: { nombre: string; ruta: string; tamano: number }[] } = { musica: [], videos: [], documentos: [] }
+      const seen = new Set<string>()
 
       const scanFolder = (folderPath: string, target: 'musica' | 'videos' | 'documentos') => {
         if (!existsSync(folderPath)) return
-        const files = readdirSync(folderPath)
-        for (const file of files) {
+        for (const file of readdirSync(folderPath)) {
+          if (seen.has(file)) continue
+          seen.add(file)
           const fullPath = join(folderPath, file)
           try {
             const stats = statSync(fullPath)
@@ -301,11 +298,17 @@ export function registerIpcHandlers(): void {
         }
       }
 
-      scanFolder(musicFolder, 'musica')
-      scanFolder(videosFolder, 'videos')
-      scanFolder(documentosFolder, 'documentos')
+      const bundledPath = getBundledResourcesPath()
+      if (bundledPath) {
+        scanFolder(join(bundledPath, 'Música'), 'musica')
+        scanFolder(join(bundledPath, 'Videos'), 'videos')
+        scanFolder(join(bundledPath, 'Documentos'), 'documentos')
+      }
+      scanFolder(join(appDocsPath(), 'Música'), 'musica')
+      scanFolder(join(appDocsPath(), 'Videos'), 'videos')
+      scanFolder(join(appDocsPath(), 'Documentos'), 'documentos')
 
-      return ok({ ruta: appFolder, musica: result.musica, videos: result.videos, documentos: result.documentos })
+      return ok({ ruta: appDocsPath(), musica: result.musica, videos: result.videos, documentos: result.documentos })
     } catch (err) {
       return fail(`Error al leer biblioteca: ${err}`)
     }
@@ -483,24 +486,26 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('app:getFondos', () => {
     try {
-      const fondosPath = join(appDocsPath(), 'Fondos')
-      if (!existsSync(fondosPath)) return ok([])
-      const files = readdirSync(fondosPath)
       const images: { id: string; name: string; filePath: string }[] = []
-      for (const file of files) {
-        const ext = extname(file).toLowerCase()
-        if (!IMAGE_EXTS.has(ext)) continue
-        const fullPath = join(fondosPath, file)
-        try {
-          const stats = statSync(fullPath)
-          if (!stats.isFile()) continue
-          images.push({
-            id: file,
-            name: parse(file).name,
-            filePath: fullPath
-          })
-        } catch { continue }
+      const seen = new Set<string>()
+      const scanDir = (dir: string) => {
+        if (!existsSync(dir)) return
+        for (const file of readdirSync(dir)) {
+          const ext = extname(file).toLowerCase()
+          if (!IMAGE_EXTS.has(ext)) continue
+          if (seen.has(file)) continue
+          seen.add(file)
+          const fullPath = join(dir, file)
+          try {
+            if (statSync(fullPath).isFile()) {
+              images.push({ id: file, name: parse(file).name, filePath: fullPath })
+            }
+          } catch {}
+        }
       }
+      const bundledPath = getBundledResourcesPath()
+      if (bundledPath) scanDir(join(bundledPath, 'Fondos'))
+      scanDir(join(appDocsPath(), 'Fondos'))
       return ok(images)
     } catch (err) {
       return fail(`Error al leer Fondos: ${err}`)
