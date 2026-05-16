@@ -12,10 +12,8 @@ import EffectsPanel from '../components/EffectsPanel'
 import SermonInfo from '../components/SermonInfo'
 import VideoControls from '../components/VideoControls'
 import AudioControl from '../components/mixer/AudioControl'
-import UpdateNotifier from '../components/UpdateNotifier'
-
 export interface ProjectedContent {
-  type: 'verse' | 'black' | 'media' | 'none'
+  type: 'verse' | 'black' | 'media' | 'document' | 'none'
   text?: string
   reference?: string
   mediaUrl?: string
@@ -50,6 +48,16 @@ export default function DashboardView() {
         setProjected({ type: 'media', text: data.title, mediaUrl: '' })
       } else {
         setProjected({ type: 'none' })
+      }
+    })
+    return () => { unsub?.() }
+  }, [])
+
+  useEffect(() => {
+    const unsub = window.api.on('projector:content', (arg: unknown) => {
+      const data = arg as { type?: string; mediaUrl?: string; text?: string } | undefined
+      if (data?.type === 'document') {
+        setProjected({ type: 'document', text: data.text || 'Documento', mediaUrl: data.mediaUrl })
       }
     })
     return () => { unsub?.() }
@@ -139,6 +147,8 @@ export default function DashboardView() {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') goPrevVerseRef.current?.()
       else if (e.key === 'ArrowRight') goNextVerseRef.current?.()
+      else if (e.key === 'ArrowUp') window.api.projector.scrollDocument('up')
+      else if (e.key === 'ArrowDown') window.api.projector.scrollDocument('down')
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
@@ -252,7 +262,6 @@ export default function DashboardView() {
           </div>
         </div>
       </div>
-      <UpdateNotifier />
     </div>
   )
 }

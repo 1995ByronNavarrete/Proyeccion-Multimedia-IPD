@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Radio, Minus, Square, X, Settings, Image, Trash2, Download, Upload, Keyboard, Info, Github, User, Lightbulb, Sparkles } from 'lucide-react'
+import { Radio, Minus, Square, X, Settings, Image, Trash2, Download, Upload, Keyboard, Info, Github, User, Lightbulb, Sparkles, RefreshCw } from 'lucide-react'
 import ThemeToggle from '../theme/ThemeToggle'
 
 function fileUrl(p: string): string {
@@ -9,9 +9,11 @@ function fileUrl(p: string): string {
 const NAV_ITEMS: string[] = []
 
 export default function Header() {
+  const [isLive, setIsLive] = useState(true)
   const [time, setTime] = useState(new Date())
   const [showSettings, setShowSettings] = useState(false)
-  const [appName, setAppName] = useState('SOFTWARE PREMIUM')
+  const [version, setVersion] = useState('1.0.0')
+  const [appName, setAppName] = useState('SOFTWARE PREMIUM+')
   const [subName, setSubName] = useState('PARA IGLESIAS')
   const [editName, setEditName] = useState('')
   const [editSub, setEditSub] = useState('')
@@ -29,6 +31,7 @@ export default function Header() {
   })
 
   useEffect(() => {
+    window.api.app.getVersion().then(v => { if (v) setVersion(v) })
     Promise.all([
       window.api.app.getConfig(),
       window.api.app.getLogo(),
@@ -47,6 +50,12 @@ export default function Header() {
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const onClose = () => setIsLive(false)
+    window.addEventListener('beforeunload', onClose)
+    return () => window.removeEventListener('beforeunload', onClose)
   }, [])
 
   const openSettings = () => {
@@ -135,9 +144,9 @@ export default function Header() {
 
       {/* Right */}
       <div className="flex items-center gap-4 no-drag">
-        <div className="flex items-center gap-2 bg-red-600/15 border border-red-500/30 rounded-lg px-3 py-1.5">
-          <Radio size={12} className="text-red-500 animate-pulse" />
-          <span className="text-[10px] font-bold text-red-400 tracking-widest">EN VIVO</span>
+        <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${isLive ? 'bg-green-600/15 border border-green-500/30' : 'bg-red-600/15 border border-red-500/30'}`}>
+          <Radio size={12} className={`${isLive ? 'text-green-500' : 'text-red-500'} animate-pulse`} />
+          <span className={`text-[10px] font-bold tracking-widest ${isLive ? 'text-green-400' : 'text-red-400'}`}>EN VIVO</span>
         </div>
         <button onClick={() => setShowInfo(true)}
           className="p-1.5 hover:bg-[#6c5ce7]/20 rounded-lg transition-colors" title="Acerca de">
@@ -152,6 +161,9 @@ export default function Header() {
             <Settings size={12} className="text-gray-500 text-theme-muted" />
           </button>
           <ThemeToggle />
+          <button onClick={() => window.api.update.checkNow()} className="p-1.5 hover:bg-white/5 rounded transition-colors" title="Buscar actualizaciones">
+            <RefreshCw size={12} className="text-gray-500 text-theme-muted" />
+          </button>
           <button onClick={() => window.api.app.minimize()} className="p-1.5 hover:bg-white/5 rounded transition-colors">
             <Minus size={12} className="text-gray-500 text-theme-muted" />
           </button>
@@ -327,7 +339,7 @@ export default function Header() {
 
               <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[#6c5ce7]/10 border border-[#6c5ce7]/20">
                 <span className="text-[9px] text-theme-dim">Versión</span>
-                <span className="text-[10px] font-bold text-[#6c5ce7]">1.0.0</span>
+                <span className="text-[10px] font-bold text-[#6c5ce7]">{version}</span>
               </div>
             </div>
             <div className="px-5 pb-5">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Monitor, MonitorPlay, MonitorOff, Square, FileVideo, BookOpen, Laptop } from 'lucide-react'
+import { Monitor, MonitorPlay, MonitorOff, Square, FileVideo, FileText, BookOpen, Laptop } from 'lucide-react'
 import type { ProjectedContent } from '../views/DashboardView'
 
 interface Display { id: number; name: string; bounds: { x: number; y: number; width: number; height: number }; primary: boolean }
@@ -60,6 +60,16 @@ export default function ProyectorPanel({ projected }: ProyectorPanelProps) {
         <div className="text-center px-2">
           <FileVideo size={12} className="text-[#a855f7] mx-auto mb-0.5" />
           <p className="text-[7px] text-white/70 leading-tight line-clamp-2">{projected.text || 'Reproduciendo video'}</p>
+        </div>
+      )
+    }
+    if (projected.type === 'document') {
+      const isPdf = projected.mediaUrl?.match(/\.pdf/i)
+      return (
+        <div className="text-center px-2">
+          <FileText size={12} className="text-[#f59e0b] mx-auto mb-0.5" />
+          <p className="text-[7px] text-white/70 leading-tight line-clamp-2">{projected.text || 'Documento'}</p>
+          {isPdf && <p className="text-[5px] text-[#f59e0b]/60 mt-0.5 uppercase tracking-wider">PDF</p>}
         </div>
       )
     }

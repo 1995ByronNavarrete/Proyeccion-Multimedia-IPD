@@ -26,7 +26,8 @@ const api = {
     showAnnouncement: (data: { text: string; animation: string }) => ipcRenderer.invoke('projector:showAnnouncement', data),
     hideAnnouncement: () => ipcRenderer.invoke('projector:hideAnnouncement'),
     updateAnnouncement: (data: Record<string, string>) => ipcRenderer.invoke('projector:updateAnnouncement', data),
-    overlay: (data: { type: string; speed?: number; color?: string }) => ipcRenderer.invoke('projector:overlay', data)
+    overlay: (data: { type: string; speed?: number; color?: string }) => ipcRenderer.invoke('projector:overlay', data),
+    scrollDocument: (direction: 'up' | 'down') => ipcRenderer.invoke('projector:scrollDocument', direction)
   },
   medialocal: {
     importFile: () => ipcRenderer.invoke('medialocal:importFile'),
@@ -82,10 +83,14 @@ const api = {
     getFondos: () => ipcRenderer.invoke('app:getFondos'),
     saveEditedImage: (dataUrl: string, name: string) => ipcRenderer.invoke('app:saveEditedImage', dataUrl, name),
     readImageAsDataUrl: (filePath: string) => ipcRenderer.invoke('app:readImageAsDataUrl', filePath),
-    readFileAsDataUrl: (filePath: string) => ipcRenderer.invoke('app:readFileAsDataUrl', filePath)
+    readFileAsDataUrl: (filePath: string) => ipcRenderer.invoke('app:readFileAsDataUrl', filePath),
+    openDocument: (filePath: string) => ipcRenderer.invoke('app:openDocument', filePath),
+    convertDocumentToHtml: (filePath: string) => ipcRenderer.invoke('app:convertDocumentToHtml', filePath)
   },
   update: {
     check: () => ipcRenderer.invoke('update:check'),
+    checkNow: () => ipcRenderer.invoke('update:checkNow'),
+    checkAndReturn: () => ipcRenderer.invoke('update:checkAndReturn'),
     download: () => ipcRenderer.invoke('update:download'),
     install: () => ipcRenderer.invoke('update:install')
   },
@@ -105,7 +110,7 @@ const api = {
     restore: () => ipcRenderer.invoke('backup:restore'),
   },
   on: (channel: string, callback: (...args: unknown[]) => void) => {
-    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'projector:prevVerse', 'projector:nextVerse', 'projector:showAnnouncement', 'projector:hideAnnouncement', 'projector:updateAnnouncement', 'projector:overlay', 'video:progress', 'medialocal:changed', 'bible:downloadProgress', 'update:available', 'update:not-available', 'update:download-progress', 'update:downloaded', 'update:error']
+    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'projector:prevVerse', 'projector:nextVerse', 'projector:scrollDocument', 'projector:showAnnouncement', 'projector:hideAnnouncement', 'projector:updateAnnouncement', 'projector:overlay', 'video:progress', 'medialocal:changed', 'bible:downloadProgress', 'update:available', 'update:not-available', 'update:download-progress', 'update:downloaded', 'update:error']
     if (validChannels.includes(channel)) {
       const handler = (_event: unknown, ...args: unknown[]) => callback(...args)
       ipcRenderer.on(channel, handler)

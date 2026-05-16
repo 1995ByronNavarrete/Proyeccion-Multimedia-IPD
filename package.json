@@ -1,6 +1,6 @@
 {
   "name": "desktopappipd",
-  "version": "1.0.0",
+  "version": "1.2.1",
   "description": "Sistema de proyección multimedia profesional para iglesias",
   "author": "Byron Antonio Navarrete Cañada",
   "main": "./out/main/index.js",
@@ -18,6 +18,8 @@
   "dependencies": {
     "electron-updater": "^6.8.3",
     "lucide-react": "^0.487.0",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^2.16.105",
     "play-dl": "^1.9.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -51,7 +53,8 @@
       "provider": "github",
       "owner": "1995ByronNavarrete",
       "repo": "Proyeccion-Multimedia-IPD",
-      "releaseType": "release"
+      "releaseType": "release",
+      "private": true
     },
     "win": {
       "target": "nsis",

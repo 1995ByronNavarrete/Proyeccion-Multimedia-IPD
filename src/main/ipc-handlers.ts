@@ -1,6 +1,8 @@
-import { ipcMain, dialog, app, BrowserWindow } from 'electron'
+import { ipcMain, dialog, app, BrowserWindow, shell } from 'electron'
 import { statSync, readdirSync, existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs'
 import { extname, parse, join, basename } from 'path'
+import mammoth from 'mammoth'
+import pdfjs from 'pdfjs-dist'
 import { queryAll, queryOne, execute, noAccent } from './database'
 import { downloadAndSeedBible } from './bible-seed'
 import { getBibleApiTranslations, getApiBibleTranslations } from './bible-source'
@@ -37,11 +39,13 @@ const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'])
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.opus'])
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.avi', '.mkv', '.mov', '.webm', '.m4v'])
+const DOCUMENT_EXTENSIONS = new Set(['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.rtf', '.odt', '.odp', '.ods', '.csv'])
 
-function getMediaType(ext: string): 'audio' | 'video' | null {
+function getMediaType(ext: string): 'audio' | 'video' | 'document' | null {
   const lower = ext.toLowerCase()
   if (AUDIO_EXTENSIONS.has(lower)) return 'audio'
   if (VIDEO_EXTENSIONS.has(lower)) return 'video'
+  if (DOCUMENT_EXTENSIONS.has(lower)) return 'document'
   return null
 }
 
@@ -238,7 +242,8 @@ export function registerIpcHandlers(): void {
         filters: [
           { name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'opus'] },
           { name: 'Video', extensions: ['mp4', 'avi', 'mkv', 'mov', 'webm', 'm4v'] },
-          { name: 'Todos', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'opus', 'mp4', 'avi', 'mkv', 'mov', 'webm', 'm4v'] }
+          { name: 'Documentos', extensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'rtf', 'odt', 'odp', 'ods', 'csv'] },
+          { name: 'Todos', extensions: ['*'] }
         ]
       })
       if (result.canceled || !result.filePaths.length) return ok({ imported: 0 })
@@ -246,8 +251,10 @@ export function registerIpcHandlers(): void {
       const docsPath = appDocsPath()
       const musicFolder = join(docsPath, 'Música')
       const videosFolder = join(docsPath, 'Videos')
+      const documentosFolder = join(docsPath, 'Documentos')
       if (!existsSync(musicFolder)) mkdirSync(musicFolder, { recursive: true })
       if (!existsSync(videosFolder)) mkdirSync(videosFolder, { recursive: true })
+      if (!existsSync(documentosFolder)) mkdirSync(documentosFolder, { recursive: true })
 
       let imported = 0
       for (const fp of result.filePaths) {
@@ -255,8 +262,9 @@ export function registerIpcHandlers(): void {
           const ext = extname(fp).toLowerCase()
           const isAudio = AUDIO_EXTENSIONS.has(ext)
           const isVideo = VIDEO_EXTENSIONS.has(ext)
-          if (!isAudio && !isVideo) continue
-          const destFolder = isAudio ? musicFolder : videosFolder
+          const isDoc = DOCUMENT_EXTENSIONS.has(ext)
+          if (!isAudio && !isVideo && !isDoc) continue
+          const destFolder = isAudio ? musicFolder : isVideo ? videosFolder : documentosFolder
           const destPath = join(destFolder, basename(fp))
           writeFileSync(destPath, readFileSync(fp))
           imported++
@@ -314,13 +322,15 @@ export function registerIpcHandlers(): void {
       const appFolder = join(docsPath, 'DesktopAppIPD')
       const musicFolder = join(appFolder, 'Música')
       const videosFolder = join(appFolder, 'Videos')
+      const documentosFolder = join(appFolder, 'Documentos')
 
-      const result: { musica: { nombre: string; ruta: string; tamano: number }[]; videos: { nombre: string; ruta: string; tamano: number }[] } = { musica: [], videos: [] }
+      const result: { musica: { nombre: string; ruta: string; tamano: number }[]; videos: { nombre: string; ruta: string; tamano: number }[]; documentos: { nombre: string; ruta: string; tamano: number }[] } = { musica: [], videos: [], documentos: [] }
 
       const AUDIO_EXTS = new Set(['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.opus', '.wma'])
       const VIDEO_EXTS = new Set(['.mp4', '.avi', '.mkv', '.mov', '.webm', '.m4v', '.wmv', '.flv'])
+      const DOC_EXTS = new Set(['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.rtf', '.odt', '.odp', '.ods', '.csv'])
 
-      const scanFolder = (folderPath: string, target: 'musica' | 'videos') => {
+      const scanFolder = (folderPath: string, target: 'musica' | 'videos' | 'documentos') => {
         if (!existsSync(folderPath)) return
         const files = readdirSync(folderPath)
         for (const file of files) {
@@ -329,17 +339,18 @@ export function registerIpcHandlers(): void {
             const stats = statSync(fullPath)
             if (!stats.isFile()) continue
             const ext = extname(file).toLowerCase()
-            if ((target === 'musica' && AUDIO_EXTS.has(ext)) || (target === 'videos' && VIDEO_EXTS.has(ext))) {
-              result[target].push({ nombre: parse(file).name, ruta: fullPath, tamano: stats.size })
-            }
+            if (target === 'musica' && AUDIO_EXTS.has(ext)) result.musica.push({ nombre: parse(file).name, ruta: fullPath, tamano: stats.size })
+            else if (target === 'videos' && VIDEO_EXTS.has(ext)) result.videos.push({ nombre: parse(file).name, ruta: fullPath, tamano: stats.size })
+            else if (target === 'documentos' && DOC_EXTS.has(ext)) result.documentos.push({ nombre: parse(file).name, ruta: fullPath, tamano: stats.size })
           } catch { continue }
         }
       }
 
       scanFolder(musicFolder, 'musica')
       scanFolder(videosFolder, 'videos')
+      scanFolder(documentosFolder, 'documentos')
 
-      return ok({ ruta: appFolder, musica: result.musica, videos: result.videos })
+      return ok({ ruta: appFolder, musica: result.musica, videos: result.videos, documentos: result.documentos })
     } catch (err) {
       return fail(`Error al leer biblioteca: ${err}`)
     }
@@ -671,6 +682,227 @@ export function registerIpcHandlers(): void {
   })
 
   // Seleccionar una imagen y devolver data URL (abre en la carpeta Fondos)
+  ipcMain.handle('app:openDocument', async (_event, filePath: string) => {
+    try {
+      let decodedPath = decodeURIComponent(filePath.replace(/^file:\/\//, ''))
+      if (process.platform === 'win32' && decodedPath.startsWith('/')) {
+        decodedPath = decodedPath.slice(1)
+      }
+      await shell.openPath(decodedPath)
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al abrir documento: ${err}`)
+    }
+  })
+
+  const DOC_CSS = `* { margin: 0; padding: 0; box-sizing: border-box; }
+.doc-content {
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  color: #111;
+  line-height: 1.5;
+  padding: 5% 0;
+  width: 80%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.doc-content p {
+  margin-bottom: 1.4em;
+  font-size: clamp(1.6rem, 2.5vw, 3rem);
+  text-align: left;
+  letter-spacing: 0.01em;
+  font-weight: 400;
+  color: #1a1a1a;
+}
+.doc-content h1, .doc-content h2, .doc-content h3, .doc-content h4 {
+  font-weight: 700;
+  margin-top: 2em;
+  margin-bottom: 0.8em;
+  line-height: 1.15;
+  color: #000;
+}
+.doc-content h1 { font-size: clamp(2.4rem, 4vw, 4.5rem); text-align: center; letter-spacing: -0.02em; }
+.doc-content h2 { font-size: clamp(1.8rem, 3vw, 3.2rem); }
+.doc-content h3 { font-size: clamp(1.5rem, 2.4vw, 2.6rem); }
+.doc-content img {
+  display: block;
+  max-width: 85%;
+  height: auto;
+  margin: 2.5em auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.12);
+}
+.doc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2em 0;
+  font-size: clamp(1.2rem, 1.8vw, 2.2rem);
+}
+.doc-content td, .doc-content th {
+  border: 1px solid #d0d0d0;
+  padding: 0.8em 1.2em;
+  text-align: left;
+}
+.doc-content th { background: #f0f0f0; font-weight: 600; }
+.doc-content ul, .doc-content ol {
+  margin: 1em 0 1.5em 2.5em;
+  font-size: clamp(1.6rem, 2.5vw, 3.2rem);
+  line-height: 1.6;
+}
+.doc-content li { margin-bottom: 0.4em; }
+.doc-content pre {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: clamp(1rem, 1.5vw, 1.8rem);
+  background: #f5f5f5;
+  padding: 1.5em;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 1.5em 0;
+  white-space: pre-wrap;
+  border: 1px solid #e8e8e8;
+}
+.doc-content blockquote {
+  border-left: 4px solid #2563eb;
+  padding: 1.2em 2em;
+  margin: 1.8em 0;
+  background: #f8faff;
+  font-style: italic;
+  color: #2a2a2a;
+  font-size: clamp(1.4rem, 2.2vw, 2.8rem);
+  border-radius: 0 8px 8px 0;
+}
+.doc-content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #ccc, transparent);
+  margin: 3em 0;
+}
+.pdf-toc {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2.5em 3em;
+  margin-bottom: 3em;
+}
+.pdf-toc h2 {
+  text-align: center;
+  font-size: clamp(1.6rem, 2.5vw, 3rem);
+  color: #1e40af;
+  letter-spacing: 0.02em;
+  margin-top: 0;
+  margin-bottom: 1.5em;
+  font-weight: 600;
+}
+.pdf-toc ol { list-style: none; margin: 0; padding: 0; }
+.pdf-toc li {
+  border-bottom: 1px solid #e8ecf0;
+  padding: 0.7em 0;
+  margin: 0;
+}
+.pdf-toc li:last-child { border-bottom: none; }
+.pdf-toc a {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  text-decoration: none;
+  color: #1a1a1a;
+  padding: 0.4em 0.6em;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.pdf-toc a:hover { background: #eef2ff; }
+.pdf-toc .page-num {
+  font-weight: 700;
+  font-size: clamp(1.1rem, 1.6vw, 2rem);
+  color: #2563eb;
+  min-width: 2.5em;
+  text-align: center;
+  background: #eef2ff;
+  border-radius: 8px;
+  padding: 0.2em 0.5em;
+}
+.pdf-toc .page-title {
+  font-size: clamp(1.1rem, 1.6vw, 2rem);
+  color: #333;
+}
+.pdf-pages { margin-top: 1.5em; }
+.pdf-page {
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  border-radius: 16px;
+  padding: 3em 3.5em;
+  margin-bottom: 2.5em;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  position: relative;
+}
+.pdf-page .page-header {
+  position: absolute;
+  top: 1.5em;
+  right: 2em;
+  font-weight: 600;
+  font-size: clamp(0.9rem, 1.2vw, 1.5rem);
+  color: #2563eb;
+  background: #eef2ff;
+  padding: 0.3em 0.9em;
+  border-radius: 20px;
+}
+.pdf-page p {
+  font-size: clamp(1.4rem, 2.2vw, 2.8rem);
+  line-height: 1.6;
+  margin-bottom: 0.8em;
+}
+.pdf-page p:last-child { margin-bottom: 0; }`
+
+  ipcMain.handle('app:convertDocumentToHtml', async (_event, filePath: string) => {
+    try {
+      let decodedPath = decodeURIComponent(filePath.replace(/^file:\/\//, ''))
+      if (process.platform === 'win32' && decodedPath.startsWith('/')) {
+        decodedPath = decodedPath.slice(1)
+      }
+      const ext = extname(decodedPath).toLowerCase()
+      let bodyHtml = ''
+      if (ext === '.pdf') {
+        pdfjs.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/build/pdf.worker.js')
+        const data = new Uint8Array(readFileSync(decodedPath))
+        const doc = await pdfjs.getDocument({ data }).promise
+        const totalPages = doc.numPages
+        const toc: string[] = []
+        const pages: string[] = []
+        for (let i = 1; i <= totalPages; i++) {
+          const page = await doc.getPage(i)
+          const content = await page.getTextContent()
+          const items = content.items.filter((item: any) => 'str' in item).map((item: any) => item.str)
+          const text = items.join(' ').replace(/\s+/g, ' ').trim()
+          if (text) {
+            const firstLine = text.split(/[.:!?]/)[0].slice(0, 80).trim()
+            toc.push(`<li><a href="#page-${i}"><span class="page-num">${i}</span><span class="page-title">${firstLine.replace(/</g, '&lt;')}</span></a></li>`)
+            const paragraphs = text.split(/\n{2,}/).map((p: string) => p.replace(/\n/g, ' ').trim()).filter(Boolean)
+            const body = paragraphs.map((p: string) => `<p>${p.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`).join('')
+            pages.push(`<div id="page-${i}" class="pdf-page"><div class="page-header">${i}</div>${body}</div>`)
+          }
+        }
+        const tocHtml = `<div class="pdf-toc"><h2>Índice</h2><ol>${toc.join('')}</ol></div>`
+        bodyHtml = tocHtml + '<div class="pdf-pages">' + pages.join('') + '</div>'
+        if (!bodyHtml) bodyHtml = '<p>No se pudo extraer texto de este PDF</p>'
+      } else if (ext === '.docx') {
+        const result = await mammoth.convertToHtml({ path: decodedPath })
+        bodyHtml = result.value
+      } else if (ext === '.doc') {
+        const result = await mammoth.extractRawText({ path: decodedPath })
+        const escaped = result.value.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '</p><p>')
+        bodyHtml = `<p>${escaped}</p>`
+      } else if (ext === '.txt' || ext === '.rtf') {
+        const content = readFileSync(decodedPath, 'utf-8')
+        const escaped = content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '</p><p>')
+        bodyHtml = `<p>${escaped}</p>`
+      } else {
+        return fail('Formato no soportado para vista previa')
+      }
+      return ok({ html: bodyHtml, css: DOC_CSS })
+    } catch (err) {
+      return fail(`Error al convertir documento: ${err}`)
+    }
+  })
+
   ipcMain.handle('app:readImageAsDataUrl', async (_event, filePath: string) => {
     try {
       const buffer = readFileSync(filePath)

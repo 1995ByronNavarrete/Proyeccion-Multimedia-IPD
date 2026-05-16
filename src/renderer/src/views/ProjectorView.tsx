@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { Monitor } from 'lucide-react'
+import { Monitor, FileText } from 'lucide-react'
 import AnuncioOverlay from '../components/AnuncioOverlay'
 
 
@@ -23,6 +23,11 @@ export default function ProjectorView() {
   const [videoTitle, setVideoTitle] = useState('')
   const [isYoutube, setIsYoutube] = useState(false)
   const [isImage, setIsImage] = useState(false)
+  const [docUrl, setDocUrl] = useState('')
+  const [docHtmlContent, setDocHtmlContent] = useState('')
+  const [docCss, setDocCss] = useState('')
+  const [docConverting, setDocConverting] = useState(false)
+  const docRef = useRef<HTMLDivElement>(null)
   const [ytPaused, setYtPaused] = useState(false)
   const [logoSrc, setLogoSrc] = useState<string | null>(null)
   const [headerTitle, setHeaderTitle] = useState('')
@@ -123,27 +128,26 @@ export default function ProjectorView() {
     }, 500)
   }, [stopLocalTimer])
 
-  // Escuchar eventos del iframe de YouTube (state changes, ended)
   useEffect(() => {
-    const handleYtMessage = (e: MessageEvent) => {
-      try {
-        const data = e.data
-        if (!data || data.event !== 'onStateChange') return
-        if (data.info === 0) {
-          const dur = ytDurationRef.current
-          window.api.video.reportProgress({ currentTime: dur, duration: dur, paused: true, title: titleRef.current })
-          setYtPaused(true)
-          stopYtTimer()
-        } else if (data.info === 1) {
-          setYtPaused(false)
-        } else if (data.info === 2) {
-          setYtPaused(true)
-        }
-      } catch {}
+    if (!docUrl) { setDocHtmlContent(''); setDocCss(''); return }
+    setDocConverting(true)
+    window.api.app.convertDocumentToHtml(docUrl).then(res => {
+      if (res.success && res.data?.html) {
+        setDocHtmlContent(res.data.html)
+        setDocCss(res.data.css || '')
+      } else {
+        setDocHtmlContent(''); setDocCss('')
+      }
+    }).catch(() => { setDocHtmlContent(''); setDocCss('') })
+      .finally(() => setDocConverting(false))
+  }, [docUrl])
+
+  useEffect(() => {
+    if (docHtmlContent) {
+      const el = document.querySelector('.doc-scroll-container') as HTMLElement
+      if (el) el.focus()
     }
-    window.addEventListener('message', handleYtMessage)
-    return () => window.removeEventListener('message', handleYtMessage)
-  }, [])
+  }, [docHtmlContent])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -151,11 +155,18 @@ export default function ProjectorView() {
         window.api.projector.prevVerse()
       } else if (e.key === 'ArrowRight') {
         window.api.projector.nextVerse()
+      } else if (e.key === 'ArrowUp') {
+        const el = document.querySelector('.doc-scroll-container') as HTMLElement
+        if (el) { e.preventDefault(); el.scrollTop -= 250 }
+      } else if (e.key === 'ArrowDown') {
+        const el = document.querySelector('.doc-scroll-container') as HTMLElement
+        if (el) { e.preventDefault(); el.scrollTop += 250 }
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
+
 
   useEffect(() => {
     // Capturar errores de carga del iframe
@@ -183,7 +194,7 @@ export default function ProjectorView() {
     const unsub1 = window.api.on('projector:content', (arg: unknown) => {
       const data = arg as { type?: string; text?: string; reference?: string; mediaUrl?: string; backgroundUrl?: string; animation?: string; effect?: string; speed?: number; sermonTitle?: string; sermonPreacher?: string } | undefined
       if (data?.type === 'verse') {
-        setEffect(null)
+        setEffect(null); setDocUrl(''); setDocHtmlContent(''); setDocCss('')
         setVerseText(data.text || '')
         setVerseRef(data.reference || '')
         setVerseBackground(data.backgroundUrl || '')
@@ -194,10 +205,10 @@ export default function ProjectorView() {
         stopLocalTimer(); stopYtTimer()
       } else if (data?.type === 'effect') {
         setEffect({ type: data.effect || 'waves', speed: data.speed || 1 })
-        setVerseText(''); setVerseRef(''); setVerseBackground(''); setVideoUrl(''); setIsImage(false); setIsBlack(false)
+        setVerseText(''); setVerseRef(''); setVerseBackground(''); setVideoUrl(''); setIsImage(false); setIsBlack(false); setDocUrl('')
         stopLocalTimer(); stopYtTimer()
       } else if (data?.type === 'media' && (data.mediaUrl?.startsWith('data:image') || data.mediaUrl?.startsWith('file://') || data.mediaUrl?.match(/\.(png|jpg|jpeg|gif|webp|bmp)/i))) {
-        setEffect(null)
+        setEffect(null); setDocUrl('')
         setVerseText('')
         setVerseRef('')
         setVerseBackground('')
@@ -206,6 +217,11 @@ export default function ProjectorView() {
         setIsYoutube(false)
         setVideoUrl(data.mediaUrl)
         setVideoTitle(data.text || 'Imagen')
+        stopLocalTimer(); stopYtTimer()
+      } else if (data?.type === 'document' && data.mediaUrl) {
+        setEffect(null); setVerseText(''); setVerseRef(''); setVerseBackground(''); setVideoUrl(''); setIsImage(false); setIsBlack(false)
+        setDocUrl(data.mediaUrl)
+        setVideoTitle(data.text || 'Documento')
         stopLocalTimer(); stopYtTimer()
       }
     })
@@ -375,6 +391,48 @@ export default function ProjectorView() {
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/40 px-6 py-2 rounded-full">
           <p className="text-xs text-white/30 tracking-widest uppercase">Pantalla en negro</p>
         </div>
+        <OverlayFX />
+      </div>
+    )
+  }
+
+  if (docUrl) {
+    return (
+      <div className="h-screen w-screen bg-white relative">
+        {docHtmlContent ? (
+          <div ref={docRef} tabIndex={-1} className="doc-scroll-container absolute inset-0 overflow-auto outline-none">
+            <style>{docCss}</style>
+            <div className="doc-content" dangerouslySetInnerHTML={{ __html: docHtmlContent }} />
+          </div>
+        ) : (
+          <div className="h-full w-full flex items-center justify-center">
+            <div className="text-center p-8">
+              <FileText size={64} className="text-gray-400 mx-auto mb-4" />
+              <p className="text-xl text-gray-600 font-medium mb-2">{videoTitle}</p>
+              {docConverting ? (
+                <p className="text-sm text-gray-400">Convirtiendo documento...</p>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-400 mb-4">Vista previa no disponible. Abrir con aplicación externa.</p>
+                  <button onClick={() => window.api.app.openDocument(docUrl)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm font-medium">
+                    Abrir documento
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
+          {logoSrc && <img src={logoSrc} alt="Logo" className="h-24 w-auto object-contain pointer-events-none" />}
+          {(headerTitle || headerSub) && (
+            <div>
+              <p className="text-3xl font-bold text-white drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{headerTitle || 'SOFTWARE PREMIUM'}</p>
+              <p className="text-sm text-white/70 drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{headerSub || 'PARA IGLESIAS'}</p>
+            </div>
+          )}
+        </div>
+        <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
         <OverlayFX />
       </div>
     )

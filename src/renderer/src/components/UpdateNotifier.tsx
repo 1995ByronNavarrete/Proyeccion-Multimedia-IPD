@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Download, RefreshCw, X, Loader2 } from 'lucide-react'
+import { Download, RefreshCw, X, Loader2, AlertTriangle, Search } from 'lucide-react'
 
 export default function UpdateNotifier() {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
@@ -7,6 +7,26 @@ export default function UpdateNotifier() {
   const [downloaded, setDownloaded] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dismissed, setDismissed] = useState(false)
+  const [updateError, setUpdateError] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
+
+  const doCheck = async () => {
+    setChecking(true)
+    setUpdateError(null)
+    try {
+      const res = await window.api.update.checkAndReturn()
+      if (res.available && res.info) {
+        setUpdateInfo(res.info)
+        setDismissed(false)
+      } else if (res.error) {
+        setUpdateError(res.error)
+      }
+    } catch (e) {
+      setUpdateError(String(e))
+    } finally {
+      setChecking(false)
+    }
+  }
 
   useEffect(() => {
     const unsub1 = window.api.on('update:available', (arg: unknown) => {
@@ -15,9 +35,15 @@ export default function UpdateNotifier() {
       setDownloaded(false)
       setDownloading(false)
       setDismissed(false)
+      setUpdateError(null)
+      setChecking(false)
     })
 
-    const unsub2 = window.api.on('update:not-available', () => {})
+    const unsub2 = window.api.on('update:not-available', () => {
+      setUpdateInfo(null)
+      setChecking(false)
+      setUpdateError(null)
+    })
 
     const unsub3 = window.api.on('update:download-progress', (arg: unknown) => {
       const p = arg as UpdateDownloadProgress
@@ -30,28 +56,55 @@ export default function UpdateNotifier() {
       setProgress(100)
     })
 
-    const unsub5 = window.api.on('update:error', () => {})
+    const unsub5 = window.api.on('update:error', (arg: unknown) => {
+      const msg = typeof arg === 'string' ? arg : 'Error desconocido'
+      setUpdateError(msg)
+      setChecking(false)
+    })
 
-    return () => { unsub1?.(); unsub2?.(); unsub3?.(); unsub4?.(); unsub5?.() }
+    const timer = setTimeout(doCheck, 3000)
+
+    return () => { clearTimeout(timer); unsub1?.(); unsub2?.(); unsub3?.(); unsub4?.(); unsub5?.() }
   }, [])
 
-  if (!updateInfo || dismissed) return null
+  if (!updateInfo && !updateError && !checking) return null
 
   return (
     <div className="fixed bottom-4 right-4 z-50 bg-theme-card border border-[#a855f7]/30 rounded-xl shadow-2xl p-4 w-80">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <RefreshCw size={14} className="text-[#a855f7]" />
-          <span className="text-[11px] font-semibold text-theme">Actualización disponible</span>
+          {updateError ? (
+            <AlertTriangle size={14} className="text-yellow-400" />
+          ) : checking ? (
+            <Loader2 size={14} className="text-[#a855f7] animate-spin" />
+          ) : (
+            <RefreshCw size={14} className="text-[#a855f7]" />
+          )}
+          <span className="text-[11px] font-semibold text-theme">
+            {updateError ? 'Error de actualización' : checking ? 'Buscando...' : 'Actualización disponible'}
+          </span>
         </div>
-        <button onClick={() => setDismissed(true)} className="text-theme-dim hover:text-theme transition-colors">
+        <button onClick={() => { setDismissed(true); setUpdateError(null); setUpdateInfo(null) }} className="text-theme-dim hover:text-theme transition-colors">
           <X size={12} />
         </button>
       </div>
 
-      <p className="text-[10px] text-theme-dim mb-3">
-        Versión <span className="text-theme font-medium">{updateInfo.version}</span> disponible
-      </p>
+      {updateInfo && (
+        <p className="text-[10px] text-theme-dim mb-3">
+          Versión <span className="text-theme font-medium">{updateInfo.version}</span> disponible
+        </p>
+      )}
+
+      {updateError && (
+        <div>
+          <p className="text-[10px] text-yellow-400/80 mb-2 break-words">{updateError}</p>
+          <button onClick={doCheck}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-[#6c5ce7]/20 hover:bg-[#6c5ce7]/30 text-[#6c5ce7] rounded-lg text-[10px] font-medium transition-colors">
+            <Search size={10} />
+            Reintentar
+          </button>
+        </div>
+      )}
 
       {downloading && (
         <div className="mb-3">
@@ -62,14 +115,16 @@ export default function UpdateNotifier() {
         </div>
       )}
 
-      {!downloaded ? (
+      {!downloaded && updateInfo && (
         <button onClick={() => { setDownloading(true); window.api.update.download() }}
           disabled={downloading}
           className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-[#6c5ce7]/20 hover:bg-[#6c5ce7]/30 text-[#6c5ce7] rounded-lg text-[10px] font-medium transition-colors disabled:opacity-50">
           {downloading ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
           {downloading ? 'Descargando...' : 'Descargar actualización'}
         </button>
-      ) : (
+      )}
+
+      {downloaded && (
         <button onClick={() => window.api.update.install()}
           className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-[10px] font-medium transition-colors">
           <RefreshCw size={10} />

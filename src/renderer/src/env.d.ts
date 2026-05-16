@@ -101,6 +101,7 @@ interface Window {
       hideAnnouncement: () => Promise<void>
       updateAnnouncement: (data: Record<string, unknown>) => Promise<void>
       overlay: (data: { type: string; speed?: number; color?: string }) => Promise<void>
+      scrollDocument: (direction: 'up' | 'down') => Promise<void>
     }
     medialocal: {
       importFile: () => Promise<IpcResponse<unknown[]>>
@@ -108,7 +109,7 @@ interface Window {
       deleteFile: (filePath: string) => Promise<IpcResponse<null>>
       scanFolder: () => Promise<IpcResponse<unknown[]>>
       openFolder: () => Promise<IpcResponse<{ ruta: string; archivos: { nombre: string; ruta: string; tipo: string; tamano: number }[] } | null>>
-      getBiblioteca: () => Promise<IpcResponse<{ ruta: string; musica: { nombre: string; ruta: string; tamano: number }[]; videos: { nombre: string; ruta: string; tamano: number }[] }>>
+      getBiblioteca: () => Promise<IpcResponse<{ ruta: string; musica: { nombre: string; ruta: string; tamano: number }[]; videos: { nombre: string; ruta: string; tamano: number }[]; documentos: { nombre: string; ruta: string; tamano: number }[] }>>
       getAll: () => Promise<IpcResponse<MediaItem[]>>
       delete: (id: number) => Promise<IpcResponse<null>>
       toggleFavorite: (id: number) => Promise<IpcResponse<null>>
@@ -150,6 +151,8 @@ interface Window {
       readImageAsDataUrl: (filePath: string) => Promise<IpcResponse<{ dataUrl: string } | null>>
       readFileAsDataUrl: (filePath: string) => Promise<IpcResponse<{ dataUrl: string } | null>>
       getFondos: () => Promise<IpcResponse<{ id: string; name: string; filePath: string }[]>>
+      openDocument: (filePath: string) => Promise<IpcResponse<null>>
+      convertDocumentToHtml: (filePath: string) => Promise<IpcResponse<{ html: string; css: string } | null>>
     }
     capture: {
       projector: () => Promise<{ success: boolean; data?: { base64: string }; error?: string }>
@@ -176,6 +179,8 @@ interface Window {
     }
     update: {
       check: () => Promise<void>
+      checkNow: () => Promise<void>
+      checkAndReturn: () => Promise<{ success: boolean; available: boolean; info?: UpdateInfo; error?: string }>
       download: () => Promise<void>
       install: () => Promise<void>
     }

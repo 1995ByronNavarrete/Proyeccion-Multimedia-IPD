@@ -127,11 +127,17 @@ function createProjectorWindow(displayId: number): void {
   if (!display) return
 
   const { x, y, width, height } = display.bounds
+  const appDisplayId = getAppDisplayId()
+  const isSameDisplay = displayId === appDisplayId
+
   const win = new BrowserWindow({
-    x, y, width, height,
-    fullscreen: true,
-    frame: false,
-    alwaysOnTop: true,
+    x: isSameDisplay ? x + 50 : x,
+    y: isSameDisplay ? y + 50 : y,
+    width: isSameDisplay ? Math.min(width - 100, 800) : width,
+    height: isSameDisplay ? Math.min(height - 100, 600) : height,
+    fullscreen: !isSameDisplay,
+    frame: isSameDisplay,
+    alwaysOnTop: !isSameDisplay,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -160,10 +166,16 @@ function createProjectorWindow(displayId: number): void {
 
 function autoOpenProjectors(): void {
   const appDisplayId = getAppDisplayId()
+  let opened = false
   for (const display of screen.getAllDisplays()) {
     if (display.id !== appDisplayId) {
       createProjectorWindow(display.id)
+      opened = true
     }
+  }
+  if (!opened && screen.getAllDisplays().length > 0) {
+    // Fallback: crear ventana proyector en la misma pantalla (para pruebas/sin monitor externo)
+    createProjectorWindow(screen.getPrimaryDisplay().id)
   }
   mainWindow?.webContents.send('projector:layoutChanged')
 }
@@ -213,6 +225,14 @@ function registerMainIpcHandlers(): void {
   ipcMain.handle('projector:nextVerse', () => {
     mainWindow?.webContents.send('projector:nextVerse')
   })
+  ipcMain.handle('projector:scrollDocument', (_event, direction: 'up' | 'down') => {
+    for (const [, win] of projectorWindows) {
+      if (!win.isDestroyed()) {
+        win.focus()
+        win.webContents.sendInputEvent({ type: 'keyDown', keyCode: direction === 'up' ? 'Up' : 'Down' })
+      }
+    }
+  })
 
   ipcMain.handle('projector:showAnnouncement', (_event, data: { text: string; animation: string }) => {
     for (const [, win] of projectorWindows) {
@@ -248,6 +268,9 @@ function registerMainIpcHandlers(): void {
     for (const [, win] of projectorWindows) {
       if (!win.isDestroyed()) win.webContents.send('projector:content', content)
     }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('projector:content', content)
+    }
   })
 
   ipcMain.handle('projector:overlay', (_event, overlay: { type: string; speed: number; color?: string }) => {
@@ -279,7 +302,8 @@ app.whenReady().then(async () => {
   const videosFolder = join(appFolder, 'Videos')
   const fondosFolder = join(appFolder, 'Fondos')
   const logoEnVideoFolder = join(appFolder, 'logoEnVideo')
-  const folders = [appFolder, musicFolder, videosFolder, fondosFolder, logoEnVideoFolder]
+  const documentosFolder = join(appFolder, 'Documentos')
+  const folders = [appFolder, musicFolder, videosFolder, fondosFolder, logoEnVideoFolder, documentosFolder]
   for (const folder of folders) {
     if (!existsSync(folder)) mkdirSync(folder, { recursive: true })
   }
@@ -303,36 +327,86 @@ app.whenReady().then(async () => {
     watch(fondosFolder, (eventType) => {
       if (eventType === 'rename' || eventType === 'change') notifyMediaChange()
     })
+    watch(documentosFolder, (eventType) => {
+      if (eventType === 'rename' || eventType === 'change') notifyMediaChange()
+    })
   } catch {
     // watcher not critical
   }
+
+  // ── Token GitHub (para auto-updater) ──
+  process.env.GH_TOKEN = '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'
 
   // Auto-updater configuration
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
 
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: '1995ByronNavarrete',
+    repo: 'Proyeccion-Multimedia-IPD',
+    private: true
+  })
+
+  const sendToMain = (channel: string, data?: unknown) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(channel, data)
+    }
+  }
+
   autoUpdater.on('update-available', (info) => {
-    mainWindow?.webContents.send('update:available', info)
+    console.log('[auto-updater] Update available:', info?.version)
+    sendToMain('update:available', info)
   })
 
   autoUpdater.on('update-not-available', () => {
-    mainWindow?.webContents.send('update:not-available')
+    console.log('[auto-updater] No update available')
+    sendToMain('update:not-available')
   })
 
   autoUpdater.on('download-progress', (progress) => {
-    mainWindow?.webContents.send('update:download-progress', progress)
+    sendToMain('update:download-progress', progress)
   })
 
   autoUpdater.on('update-downloaded', () => {
-    mainWindow?.webContents.send('update:downloaded')
+    console.log('[auto-updater] Update downloaded')
+    sendToMain('update:downloaded')
   })
 
   autoUpdater.on('error', (err) => {
-    mainWindow?.webContents.send('update:error', err.message)
+    console.error('[auto-updater] Error:', err.message, err.stack)
+    sendToMain('update:error', err.message)
   })
 
-  ipcMain.handle('update:check', () => {
-    autoUpdater.checkForUpdates()
+  ipcMain.handle('update:check', async () => {
+    try {
+      await autoUpdater.checkForUpdates()
+    } catch (e) {
+      console.error('[auto-updater] check error:', e)
+    }
+  })
+
+  ipcMain.handle('update:checkNow', async () => {
+    try {
+      await autoUpdater.checkForUpdates()
+    } catch (e) {
+      console.error('[auto-updater] checkNow error:', e)
+    }
+  })
+
+  ipcMain.handle('update:checkAndReturn', async () => {
+    try {
+      console.log('[auto-updater] Checking for updates (checkAndReturn)...')
+      const result = await autoUpdater.checkForUpdates()
+      console.log('[auto-updater] checkAndReturn result:', JSON.stringify(result?.versionInfo))
+      if (result && result.versionInfo) {
+        return { success: true, available: true, info: result.versionInfo }
+      }
+      return { success: true, available: false }
+    } catch (e: any) {
+      console.error('[auto-updater] checkAndReturn error:', e)
+      return { success: false, available: false, error: e?.message || String(e) }
+    }
   })
 
   ipcMain.handle('update:download', () => {
@@ -343,12 +417,18 @@ app.whenReady().then(async () => {
     autoUpdater.quitAndInstall()
   })
 
-  // Check for updates after a short delay (don't block startup)
-  setTimeout(() => {
+  // Check for updates on startup automatically
+  setTimeout(async () => {
     try {
-      autoUpdater.checkForUpdates()
-    } catch {}
-  }, 5000)
+      console.log('[auto-updater] Checking for updates...')
+      await autoUpdater.checkForUpdates()
+    } catch (e) {
+      console.error('[auto-updater] Check failed:', e)
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('update:error', String(e))
+      }
+    }
+  }, 4000)
 
   // En producción, iniciar servidor HTTP local (evita errores con file://)
   if (!process.env.ELECTRON_RENDERER_URL) {
