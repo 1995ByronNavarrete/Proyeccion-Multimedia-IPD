@@ -316,7 +316,11 @@ export default function Header() {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 shadow-sm">2</span>
-                    <div><p className="text-[11px] font-bold text-amber-400">Edwin</p><p className="text-[9px] text-theme-dim mt-0.5 leading-relaxed">Imágenes en la proyección · Proyección de documentos</p></div>
+                    <div><p className="text-[11px] font-bold text-amber-400">Edwin Gaitán Castro Tester</p><p className="text-[9px] text-theme-dim mt-0.5 leading-relaxed">Imágenes en la proyección · Proyección de documentos</p></div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-teal-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 shadow-sm">4</span>
+                    <div><p className="text-[11px] font-bold text-green-400">Fernando Gaitán Méndez</p><p className="text-[9px] text-theme-dim mt-0.5 leading-relaxed">Tester</p></div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 shadow-sm">3</span>

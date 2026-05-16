@@ -168,7 +168,7 @@ interface Window {
       create: (nombre: string) => Promise<IpcResponse<{ id: number; nombre: string }>>
       getAll: () => Promise<IpcResponse<{ id: number; nombre: string; fecha_creacion: string; imagen_count: number }[]>>
       delete: (id: number) => Promise<IpcResponse<null>>
-      addImage: (tareaId: number) => Promise<IpcResponse<{ id: number; nombre: string; filePath: string } | null>>
+      addImage: (tareaId: number) => Promise<IpcResponse<{ imported: number; added: { id: number; nombre: string; filePath: string }[] } | null>>
       getImages: (tareaId: number) => Promise<IpcResponse<{ id: number; nombre: string; filePath: string }[]>>
       deleteImage: (id: number) => Promise<IpcResponse<null>>
     }

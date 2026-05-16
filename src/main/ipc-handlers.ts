@@ -606,7 +606,7 @@ export function registerIpcHandlers(): void {
           imported.push({ id: dbResult.lastInsertRowid, nombre: name, filePath: destPath })
         } catch {}
       }
-      return ok({ imported: imported.length })
+      return ok({ imported: imported.length, added: imported })
     } catch (err) {
       return fail(`Error al agregar imagen: ${err}`)
     }

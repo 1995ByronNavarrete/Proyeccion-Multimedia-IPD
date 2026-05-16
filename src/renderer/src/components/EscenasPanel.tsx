@@ -289,9 +289,11 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
     if (!selectedTarea) return
     const res = await window.api.tarea.addImage(selectedTarea.id)
     if (res.success && res.data) {
-      const newImg: TareaImagen = { id: res.data.id, nombre: res.data.nombre, filePath: res.data.filePath }
-      setTareaImagenes([...tareaImagenes, newImg])
-      setTareas(tareas.map((t) => t.id === selectedTarea.id ? { ...t, imagen_count: t.imagen_count + 1 } : t))
+      const added = res.data.added || []
+      if (added.length) {
+        setTareaImagenes([...tareaImagenes, ...added])
+        setTareas(tareas.map((t) => t.id === selectedTarea.id ? { ...t, imagen_count: t.imagen_count + added.length } : t))
+      }
     }
   }
 
