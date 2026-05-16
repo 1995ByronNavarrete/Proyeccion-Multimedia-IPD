@@ -99,7 +99,20 @@ export function registerVideoHandlers(): void {
       console.error('[ytdl] youtube-dl-exec error:', e?.message || e)
     }
 
-    // Fallback: embed de YouTube
+    // Fallback: play-dl stream (no requiere binarios externos)
+    try {
+      const ytInfo = await play.video_info(`https://www.youtube.com/watch?v=${videoId}`)
+      const stream = await play.stream_from_info(ytInfo, 0)
+      if (stream?.url) {
+        if (!title) title = ytInfo.video_details?.title || ''
+        if (!duration) duration = ytInfo.video_details?.durationInSec || 0
+        return { success: true, data: { url: stream.url, title, duration } }
+      }
+    } catch (e: any) {
+      console.error('[ytdl] play-dl stream error:', e?.message || e)
+    }
+
+    // Fallback: embed de YouTube (último recurso)
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`
     return { success: true, data: { url: embedUrl, title, duration } }
   })
