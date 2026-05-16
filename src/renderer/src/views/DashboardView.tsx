@@ -204,7 +204,10 @@ export default function DashboardView() {
   }
 
   const handleProjectImage = (dataUrl: string, name: string) => {
-    setProjected({ type: 'media', text: name, mediaUrl: dataUrl })
+    const content: ProjectedContent = { type: 'media', text: name, mediaUrl: dataUrl }
+    setProjected(content)
+    window.api.projector.sendContent(content)
+    window.api.projector.projectToAll()
   }
 
   return (

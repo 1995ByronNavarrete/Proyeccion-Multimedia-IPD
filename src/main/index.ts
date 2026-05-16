@@ -9,7 +9,7 @@ import { initDatabase, seedBibleIfEmpty } from './database'
 import { registerIpcHandlers } from './ipc-handlers'
 import { registerVideoHandlers, setOpenProjector, setOnVideoPlay } from './video-handlers'
 import { registerBackupHandlers } from './backup-handler'
-import { appDocsPath } from './shared'
+import { appDocsPath, getMime } from './shared'
 let mainWindow: BrowserWindow | null = null
 const projectorWindows: Map<number, BrowserWindow> = new Map()
 let devServerPort: number | null = null
@@ -279,7 +279,16 @@ function registerMainIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('projector:sendContent', (_event, content: unknown) => {
+  ipcMain.handle('projector:sendContent', async (_event, content: any) => {
+    if (content?.mediaUrl?.startsWith('file://')) {
+      try {
+        const filePath = decodeURIComponent(content.mediaUrl.replace('file:///', ''))
+        const ext = extname(filePath).toLowerCase()
+        const mime = getMime(ext)
+        const buf = readFileSync(filePath)
+        content.mediaUrl = `data:${mime};base64,${buf.toString('base64')}`
+      } catch {}
+    }
     for (const [, win] of projectorWindows) {
       if (!win.isDestroyed()) win.webContents.send('projector:content', content)
     }
