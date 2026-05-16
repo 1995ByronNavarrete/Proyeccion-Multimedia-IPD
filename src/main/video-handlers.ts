@@ -70,50 +70,83 @@ export function registerVideoHandlers(): void {
       console.error('[ytdl] play-dl error:', e?.message || e)
     }
 
-    // Obtener stream URL desde youtube-dl-exec (yt-dlp) con la mejor calidad
-    try {
-      const output = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
-        dumpSingleJson: true,
-        noWarnings: true,
-        noCallHome: true,
-        format: 'best[height<=1080]'
-      })
-      if (output?.url) {
-        return { success: true, data: { url: output.url, title, duration } }
-      }
-      const allFormats = output?.formats || []
-      const best = allFormats
-        .filter((f: any) => f.url && f.vcodec !== 'none' && f.acodec !== 'none')
-        .sort((a: any, b: any) => {
-          const aScore = (a.ext === 'mp4' ? 1000 : 0) + (a.height || 0)
-          const bScore = (b.ext === 'mp4' ? 1000 : 0) + (b.height || 0)
-          return bScore - aScore
+    // ── INTENTO 1: youtube-dl-exec (yt-dlp) dumpSingleJson ──
+    for (const fmt of ['best[height<=1080]', 'best[ext=mp4]', 'worst[ext=mp4]', 'best[height<=720]']) {
+      try {
+        const output = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
+          dumpSingleJson: true,
+          noWarnings: true,
+          noCallHome: true,
+          format: fmt
         })
-      if (best.length > 0) {
-        return { success: true, data: { url: best[0].url, title, duration } }
+        if (output?.url) {
+          return { success: true, data: { url: output.url, title, duration } }
+        }
+        const allFormats = output?.formats || []
+        const best = allFormats
+          .filter((f: any) => f.url && f.vcodec !== 'none' && f.acodec !== 'none')
+          .sort((a: any, b: any) => {
+            const aScore = (a.ext === 'mp4' ? 1000 : 0) + (a.height || 0)
+            const bScore = (b.ext === 'mp4' ? 1000 : 0) + (b.height || 0)
+            return bScore - aScore
+          })
+        if (best.length > 0) {
+          return { success: true, data: { url: best[0].url, title, duration } }
+        }
+      } catch (e: any) {
+        console.error(`[ytdl] yt-dlp (${fmt}) error:`, e?.message || e)
       }
-      if (output?.url) {
-        return { success: true, data: { url: output.url, title, duration } }
-      }
-    } catch (e: any) {
-      console.error('[ytdl] youtube-dl-exec error:', e?.message || e)
     }
 
-    // Fallback: play-dl stream (no requiere binarios externos)
+    // ── INTENTO 2: youtube-dl-exec con --get-url ──
     try {
-      const ytInfo = await play.video_info(`https://www.youtube.com/watch?v=${videoId}`)
-      const stream = await play.stream_from_info(ytInfo, 0)
+      const url = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
+        getUrl: true,
+        noWarnings: true,
+        noCallHome: true,
+        format: 'best[ext=mp4]/worst[ext=mp4]/best'
+      })
+      if (url && typeof url === 'string' && url.startsWith('http')) {
+        return { success: true, data: { url, title, duration } }
+      }
+    } catch (e: any) {
+      console.error('[ytdl] yt-dlp get-url error:', e?.message || e)
+    }
+
+    // ── INTENTO 3: play-dl stream directo ──
+    try {
+      const stream = await play.stream(`https://www.youtube.com/watch?v=${videoId}`, { quality: 0 })
       if (stream?.url) {
-        if (!title) title = ytInfo.video_details?.title || ''
-        if (!duration) duration = ytInfo.video_details?.durationInSec || 0
+        if (!title) {
+          try { const info = await play.video_basic_info(`https://www.youtube.com/watch?v=${videoId}`); title = info.video_details?.title || ''; duration = info.video_details?.durationInSec || 0 } catch {}
+        }
         return { success: true, data: { url: stream.url, title, duration } }
       }
     } catch (e: any) {
       console.error('[ytdl] play-dl stream error:', e?.message || e)
     }
 
-    // Fallback: embed de YouTube (último recurso)
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`
+    // ── INTENTO 4: play-dl video_info + stream_from_info ──
+    try {
+      const ytInfo = await play.video_info(`https://www.youtube.com/watch?v=${videoId}`)
+      if (ytInfo?.formats?.length) {
+        for (let i = 0; i < Math.min(ytInfo.formats.length, 5); i++) {
+          try {
+            const s = await play.stream_from_info(ytInfo, i)
+            if (s?.url) {
+              if (!title) title = ytInfo.video_details?.title || ''
+              if (!duration) duration = ytInfo.video_details?.durationInSec || 0
+              return { success: true, data: { url: s.url, title, duration } }
+            }
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      console.error('[ytdl] play-dl info error:', e?.message || e)
+    }
+
+    // ── ÚLTIMO RECURSO: YouTube IFrame embed ──
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=https://www.youtube.com`
     return { success: true, data: { url: embedUrl, title, duration } }
   })
 
