@@ -9,16 +9,26 @@ const ytSearch = require('yt-search')
 const play = require('play-dl')
 
 function findYtDlpPath(): string {
+  const fs = require('fs')
+  const { dirname } = require('path')
+  const modPath = (() => {
+    try { return dirname(require.resolve('youtube-dl-exec/bin/yt-dlp')) } catch {}
+    try { return dirname(require.resolve('youtube-dl-exec')) } catch {}
+    return ''
+  })()
   const paths = [
+    join(modPath, 'bin', 'yt-dlp.exe'),
     join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe'),
     join(__dirname, '..', '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe'),
     join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe'),
     join(process.resourcesPath, 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe')
   ]
   for (const p of paths) {
-    try { if (require('fs').existsSync(p)) return p } catch {}
+    try { if (fs.existsSync(p)) return p } catch {}
   }
-  return 'yt-dlp'
+  const fallback = join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe')
+  console.log('[yt-dlp] Binary not found, trying fallback:', fallback)
+  return fallback
 }
 
 async function ytDlpGetUrl(videoId: string, format: string): Promise<string | null> {

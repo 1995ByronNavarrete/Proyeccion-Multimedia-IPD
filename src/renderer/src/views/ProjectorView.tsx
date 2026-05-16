@@ -525,7 +525,7 @@ export default function ProjectorView() {
             {sermonPreacher && <p className="text-2xl text-amber-400/70 mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">{sermonPreacher}</p>}
           </div>
         )}
-        <div className="relative text-center max-w-5xl px-8">
+        <div className="relative text-center w-[95%] px-8">
           {verseAnimation.startsWith('anim-letter-') ? (
             <p className={`text-7xl font-bold leading-[1.3] text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] ${verseAnimation}`}>
               {verseText.split('').map((char, i) => (
