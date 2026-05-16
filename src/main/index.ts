@@ -358,9 +358,18 @@ app.whenReady().then(async () => {
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: '1995ByronNavarrete',
-    repo: 'Proyeccion-Multimedia-IPD',
-    private: true
+    repo: 'Proyeccion-Multimedia-IPD'
   })
+
+  function compareVersions(a: string, b: string): number {
+    const pa = a.replace('v', '').split('.').map(Number)
+    const pb = b.replace('v', '').split('.').map(Number)
+    for (let i = 0; i < 3; i++) {
+      if ((pa[i] || 0) > (pb[i] || 0)) return 1
+      if ((pa[i] || 0) < (pb[i] || 0)) return -1
+    }
+    return 0
+  }
 
   const sendToMain = (channel: string, data?: unknown) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -369,6 +378,11 @@ app.whenReady().then(async () => {
   }
 
   autoUpdater.on('update-available', (info) => {
+    const current = app.getVersion()
+    if (info?.version && compareVersions(info.version, current) <= 0) {
+      console.log('[auto-updater] Ignoring same/older version:', info.version)
+      return
+    }
     console.log('[auto-updater] Update available:', info?.version)
     sendToMain('update:available', info)
   })
@@ -400,21 +414,18 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.handle('update:checkNow', async () => {
-    try {
-      await autoUpdater.checkForUpdates()
-    } catch (e) {
-      console.error('[auto-updater] checkNow error:', e)
-    }
-  })
-
   ipcMain.handle('update:checkAndReturn', async () => {
     try {
       console.log('[auto-updater] Checking for updates (checkAndReturn)...')
       const result = await autoUpdater.checkForUpdates()
-      console.log('[auto-updater] checkAndReturn result:', JSON.stringify(result?.versionInfo))
+      const current = app.getVersion()
       if (result && result.versionInfo) {
-        return { success: true, available: true, info: result.versionInfo }
+        const remote = result.versionInfo.version || ''
+        const isNewer = compareVersions(remote, current) > 0
+        console.log('[auto-updater] checkAndReturn current:', current, 'remote:', remote, 'isNewer:', isNewer)
+        if (isNewer) {
+          return { success: true, available: true, info: result.versionInfo }
+        }
       }
       return { success: true, available: false }
     } catch (e: any) {
@@ -423,26 +434,19 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.handle('update:download', () => {
-    autoUpdater.downloadUpdate()
+  ipcMain.handle('update:download', async () => {
+    try {
+      await autoUpdater.downloadUpdate()
+      return { success: true }
+    } catch (e: any) {
+      console.error('[auto-updater] download error:', e)
+      return { success: false, error: e?.message || String(e) }
+    }
   })
 
   ipcMain.handle('update:install', () => {
     autoUpdater.quitAndInstall()
   })
-
-  // Check for updates on startup automatically
-  setTimeout(async () => {
-    try {
-      console.log('[auto-updater] Checking for updates...')
-      await autoUpdater.checkForUpdates()
-    } catch (e) {
-      console.error('[auto-updater] Check failed:', e)
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('update:error', String(e))
-      }
-    }
-  }, 4000)
 
   // En producción, iniciar servidor HTTP local (evita errores con file://)
   if (!process.env.ELECTRON_RENDERER_URL) {
