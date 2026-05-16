@@ -279,15 +279,27 @@ function registerMainIpcHandlers(): void {
     }
   })
 
+  function fileUrlToDataUrl(url: string): string | null {
+    try {
+      let filePath = url.replace(/^file:\/\/\//, '').replace(/^file:\/\//, '')
+      filePath = decodeURIComponent(filePath)
+      if (!filePath || !existsSync(filePath)) return null
+      const ext = extname(filePath).toLowerCase()
+      const mime = getMime(ext)
+      if (!mime.startsWith('image/')) return null
+      const buf = readFileSync(filePath)
+      return `data:${mime};base64,${buf.toString('base64')}`
+    } catch { return null }
+  }
+
   ipcMain.handle('projector:sendContent', async (_event, content: any) => {
     if (content?.mediaUrl?.startsWith('file://')) {
-      try {
-        const filePath = decodeURIComponent(content.mediaUrl.replace('file:///', ''))
-        const ext = extname(filePath).toLowerCase()
-        const mime = getMime(ext)
-        const buf = readFileSync(filePath)
-        content.mediaUrl = `data:${mime};base64,${buf.toString('base64')}`
-      } catch {}
+      const dataUrl = fileUrlToDataUrl(content.mediaUrl)
+      if (dataUrl) content.mediaUrl = dataUrl
+    }
+    if (content?.backgroundUrl?.startsWith('file://')) {
+      const dataUrl = fileUrlToDataUrl(content.backgroundUrl)
+      if (dataUrl) content.backgroundUrl = dataUrl
     }
     for (const [, win] of projectorWindows) {
       if (!win.isDestroyed()) win.webContents.send('projector:content', content)

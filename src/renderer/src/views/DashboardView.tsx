@@ -161,22 +161,29 @@ export default function DashboardView() {
     return () => { unsub1?.(); unsub2?.() }
   }, [])
 
-  // Cuando cambia el fondo, re-proyectar el verso actual con el nuevo fondo
+  // Cuando cambia el fondo, re-proyectar con el nuevo fondo
   useEffect(() => {
-    if (!lastVerse.current) return
-    let sermonTitle = '', sermonPreacher = ''
-    try { const s = JSON.parse(localStorage.getItem('sermonInfo') || '{}'); sermonTitle = s.title || ''; sermonPreacher = s.preacher || '' } catch {}
-    const content: ProjectedContent = {
-      type: 'verse',
-      text: lastVerse.current.text,
-      reference: lastVerse.current.reference,
-      animation: animBiblia,
-      sermonTitle, sermonPreacher
+    if (!backgroundUrl) return
+    if (lastVerse.current) {
+      let sermonTitle = '', sermonPreacher = ''
+      try { const s = JSON.parse(localStorage.getItem('sermonInfo') || '{}'); sermonTitle = s.title || ''; sermonPreacher = s.preacher || '' } catch {}
+      const content: ProjectedContent = {
+        type: 'verse',
+        text: lastVerse.current.text,
+        reference: lastVerse.current.reference,
+        animation: animBiblia,
+        sermonTitle, sermonPreacher,
+        backgroundUrl
+      }
+      setProjected(content)
+      window.api.projector.sendContent(content)
+      window.api.projector.projectToAll()
+    } else {
+      const content: ProjectedContent = { type: 'media', text: 'Fondo', mediaUrl: '', backgroundUrl }
+      setProjected(content)
+      window.api.projector.sendContent(content)
+      window.api.projector.projectToAll()
     }
-    if (backgroundUrl) content.backgroundUrl = backgroundUrl
-    setProjected(content)
-    window.api.projector.sendContent(content)
-    window.api.projector.projectToAll()
   }, [backgroundUrl])
 
   const handleShowBlack = () => {
