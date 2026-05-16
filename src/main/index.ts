@@ -365,9 +365,8 @@ app.whenReady().then(async () => {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: '1995ByronNavarrete',
-    repo: 'Proyeccion-Multimedia-IPD'
+    provider: 'generic',
+    url: 'https://github.com/1995ByronNavarrete/Proyeccion-Multimedia-IPD/releases/latest/download'
   })
 
   function compareVersions(a: string, b: string): number {
