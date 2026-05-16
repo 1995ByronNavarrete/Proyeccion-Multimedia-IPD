@@ -37,14 +37,25 @@ export default function ProyectorPanel({ projected }: ProyectorPanelProps) {
     }
     if (projected.type === 'verse') {
       return (
-        <div className="text-center px-2">
-          <BookOpen size={10} className="text-[#6c5ce7] mx-auto mb-0.5" />
-          <p className="text-[7px] text-white/70 leading-tight line-clamp-2">{projected.text}</p>
-          <p className="text-[6px] text-gray-500 mt-0.5">— {projected.reference}</p>
+        <div className="relative w-full h-full flex items-center justify-center px-1 overflow-hidden rounded">
+          {projected.backgroundUrl ? (
+            <img src={projected.backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ) : null}
+          <div className="relative z-10 text-center">
+            <p className="text-[9px] font-bold text-white leading-snug line-clamp-3 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">{projected.text}</p>
+            {projected.reference && <p className="text-[7px] text-white/70 mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">— {projected.reference}</p>}
+          </div>
         </div>
       )
     }
     if (projected.type === 'media') {
+      if (projected.mediaUrl?.startsWith('data:image')) {
+        return (
+          <div className="px-2 flex items-center justify-center h-full">
+            <img src={projected.mediaUrl} alt="" className="max-h-full max-w-full object-contain rounded" />
+          </div>
+        )
+      }
       return (
         <div className="text-center px-2">
           <FileVideo size={12} className="text-[#a855f7] mx-auto mb-0.5" />

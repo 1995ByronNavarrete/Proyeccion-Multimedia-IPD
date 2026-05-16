@@ -9,12 +9,18 @@ interface YTResult {
   description: string
 }
 
-export default function YouTubeSearch() {
+interface YouTubeSearchProps {
+  onPlayBg?: (url: string, title: string) => void
+}
+
+export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<YTResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [playing, setPlaying] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [bgLoading, setBgLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -41,6 +47,7 @@ export default function YouTubeSearch() {
   const handlePlay = async (item: YTResult) => {
     setError('')
     setPlaying(true)
+    setActiveId(item.id)
     try {
       const streamRes = await window.api.ytdl.getStreamUrl(item.id)
       if (streamRes.success && streamRes.data?.url) {
@@ -52,6 +59,11 @@ export default function YouTubeSearch() {
       setError('Error al reproducir')
     }
     setPlaying(false)
+  }
+
+  const handlePlayBg = async (item: YTResult) => {
+    const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1`
+    onPlayBg?.(embedUrl, item.title)
   }
 
   return (
@@ -103,8 +115,12 @@ export default function YouTubeSearch() {
                 <p className="text-[8px] text-theme-dim truncate">{r.channel}</p>
               </div>
               <button onClick={() => handlePlay(r)} disabled={playing}
-                className="p-1.5 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/40 transition-colors shrink-0 self-center disabled:opacity-40" title="Proyectar">
-                {playing ? <Loader2 size={10} className="animate-spin" /> : <Play size={10} />}
+                className={`p-1.5 rounded transition-colors shrink-0 self-center disabled:opacity-40 ${activeId === r.id ? 'bg-green-500/30 text-green-400' : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`} title="Proyectar">
+                {playing && activeId === r.id ? <Loader2 size={10} className="animate-spin" /> : <Play size={10} />}
+              </button>
+              <button onClick={() => handlePlayBg(r)} disabled={bgLoading}
+                className="p-1.5 bg-emerald-600/20 rounded text-emerald-500 hover:bg-emerald-600/40 transition-colors shrink-0 self-center disabled:opacity-40 text-[7px] font-bold" title="Fondo para pantalla secundaria">
+                {bgLoading ? <Loader2 size={8} className="animate-spin" /> : 'FONDO'}
               </button>
             </div>
           ))

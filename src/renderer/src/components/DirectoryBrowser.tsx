@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FolderOpen, Music, FileVideo, Folder, Play } from 'lucide-react'
+import { FolderOpen, Music, FileVideo, Folder, Play, RefreshCw, Plus, Trash2 } from 'lucide-react'
 
 interface MediaFile {
   nombre: string
@@ -7,7 +7,11 @@ interface MediaFile {
   tamano: number
 }
 
-export default function DirectoryBrowser() {
+interface DirectoryBrowserProps {
+  onPlayBg?: (url: string, title: string) => void
+}
+
+export default function DirectoryBrowser({ onPlayBg }: DirectoryBrowserProps) {
   const [folderPath, setFolderPath] = useState('')
   const [musica, setMusica] = useState<MediaFile[]>([])
   const [videos, setVideos] = useState<MediaFile[]>([])
@@ -42,38 +46,50 @@ export default function DirectoryBrowser() {
 
   const handlePlayVideo = async (file: MediaFile) => {
     const fileUrl = file.ruta.startsWith('file://') ? file.ruta : `file:///${file.ruta.replace(/\\/g, '/')}`
+    window.dispatchEvent(new CustomEvent('play-media', { detail: { ruta: file.ruta, nombre: file.nombre, tipo: 'video' } }))
     await window.api.video.play(fileUrl, file.nombre)
+  }
+
+  const handlePlayMusic = (file: MediaFile) => {
+    window.dispatchEvent(new CustomEvent('play-media', { detail: { ruta: file.ruta, nombre: file.nombre, tipo: 'audio' } }))
   }
 
   const files = tab === 'musica' ? musica : videos
   const total = musica.length + videos.length
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="px-3 py-2 border-b border-[rgba(120,80,255,0.15)] border-theme">
-        <h3 className="text-[10px] font-semibold text-gray-400 text-theme-muted uppercase tracking-wider flex items-center gap-1.5">
-          <FolderOpen size={11} /> Biblioteca
-        </h3>
+    <div className="h-full bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-theme shrink-0">
+        <FolderOpen size={10} className="text-[#00d4ff]" />
+        <h3 className="text-[9px] font-semibold text-theme-muted uppercase tracking-wider flex-1">Multimedia</h3>
+        <button onClick={async () => { const r = await window.api.medialocal.importFiles(); if (r?.success && r.data != null && r.data.imported > 0) loadBiblioteca() }}
+          className="p-1 hover:bg-[#6c5ce7]/20 rounded transition-colors" title="Agregar archivos">
+          <Plus size={9} className="text-[#6c5ce7]" />
+        </button>
+        <button onClick={loadBiblioteca} className="p-1 hover:bg-white/5 rounded transition-colors" title="Actualizar">
+          <RefreshCw size={9} className="text-theme-dim" />
+        </button>
       </div>
 
-      <div className="flex gap-1 px-2 pt-2">
+      <div className="flex gap-1 px-2 pt-2 shrink-0">
         <button onClick={() => setTab('musica')}
-          className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[8px] font-semibold transition-colors ${tab === 'musica' ? 'bg-[#6c5ce7] text-white' : 'bg-[#091225] bg-theme-card text-gray-500'}`}>
+          className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[8px] font-semibold transition-colors ${tab === 'musica' ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
           <Music size={10} /> Música ({musica.length})
         </button>
         <button onClick={() => setTab('videos')}
-          className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[8px] font-semibold transition-colors ${tab === 'videos' ? 'bg-[#6c5ce7] text-white' : 'bg-[#091225] bg-theme-card text-gray-500'}`}>
+          className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[8px] font-semibold transition-colors ${tab === 'videos' ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
           <FileVideo size={10} /> Videos ({videos.length})
         </button>
       </div>
 
-      {folderPath && (
-        <div className="px-2 pt-1 pb-0.5">
-          <p className="text-[6px] text-gray-500 text-theme-dim truncate" title={folderPath}>
+      <div className="px-2 pt-1.5 pb-0.5 flex items-center justify-between shrink-0">
+        <span className="text-[7px] text-theme-dim uppercase tracking-wider">Archivos locales</span>
+        {folderPath && (
+          <p className="text-[6px] text-theme-dim truncate max-w-[120px]" title={folderPath}>
             <Folder size={8} className="inline mr-0.5" />{folderPath}
           </p>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
         {loading ? (
@@ -88,29 +104,37 @@ export default function DirectoryBrowser() {
             <p className="text-[6px] text-gray-500/40 mt-0.5 truncate w-full">{folderPath}\\{tab === 'musica' ? 'Música' : 'Videos'}</p>
           </div>
         ) : (
-          files.map((f, i) => (
-            <div key={i} onClick={() => tab === 'videos' && handlePlayVideo(f)}
-              className={`flex items-center gap-1.5 px-1.5 py-1 bg-[#091225] bg-theme-card rounded cursor-pointer hover:bg-[#091225]/80 transition-colors text-[9px] ${tab === 'videos' ? 'hover:ring-1 hover:ring-[#a855f7]/40' : ''}`}>
-              {tab === 'musica' ? (
-                <Music size={9} className="text-[#00d4ff] shrink-0" />
-              ) : (
-                <FileVideo size={9} className="text-[#a855f7] shrink-0" />
-              )}
-              <span className="flex-1 truncate text-gray-200 text-theme">{f.nombre}</span>
-              {tab === 'videos' && (
-                <Play size={8} className="text-[#a855f7]/60 shrink-0 opacity-0 group-hover:opacity-100" />
-              )}
-              <span className="text-[7px] text-gray-500 text-theme-dim shrink-0">{formatSize(f.tamano)}</span>
+          files.map((f) => (
+            <div key={f.ruta}
+              className={`flex items-center gap-1.5 px-1.5 py-1 rounded cursor-pointer transition-colors text-[9px] group ${tab === 'videos' ? 'hover:ring-1 hover:ring-[#a855f7]/40' : 'hover:bg-theme-card'}`}>
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                {tab === 'musica' ? (
+                  <Music size={9} className="text-[#00d4ff] shrink-0" />
+                ) : (
+                  <FileVideo size={9} className="text-[#a855f7] shrink-0" />
+                )}
+                <span className="truncate text-theme">{f.nombre}</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => tab === 'videos' ? handlePlayVideo(f) : handlePlayMusic(f)}
+                  className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/40 transition-colors" title={tab === 'videos' ? 'Proyectar' : 'Reproducir'}>
+                  <Play size={8} />
+                </button>
+                {tab === 'videos' && (
+                  <button onClick={() => { const fileUrl = f.ruta.startsWith('file://') ? f.ruta : `file:///${f.ruta.replace(/\\/g, '/')}`; onPlayBg?.(fileUrl, f.nombre) }}
+                    className="p-1 bg-emerald-600/20 rounded text-emerald-500 hover:bg-emerald-600/40 transition-colors" title="Fondo">
+                    <Play size={8} className="opacity-70" />
+                  </button>
+                )}
+                <span className="text-[7px] text-theme-dim">{formatSize(f.tamano)}</span>
+                <button onClick={async () => { if (confirm(`¿Eliminar "${f.nombre}"?`)) { await window.api.medialocal.deleteFile(f.ruta); loadBiblioteca() } }}
+                  className="p-1 text-theme-dim hover:text-red-400 transition-colors" title="Eliminar">
+                  <Trash2 size={7} />
+                </button>
+              </div>
             </div>
           ))
         )}
-      </div>
-
-      <div className="px-2 pb-2">
-        <button onClick={loadBiblioteca}
-          className="w-full text-[8px] py-1.5 bg-[#091225] bg-theme-card text-gray-500 rounded-lg hover:text-gray-300 transition-colors border border-[rgba(120,80,255,0.15)] border-theme">
-          Actualizar
-        </button>
       </div>
     </div>
   )

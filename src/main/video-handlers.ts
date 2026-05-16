@@ -1,4 +1,10 @@
 import { ipcMain, BrowserWindow } from 'electron'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ytSearch = require('yt-search')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const play = require('play-dl')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const youtubedl = require('youtube-dl-exec')
 
 let openProjector: (() => void) | null = null
 
@@ -11,18 +17,18 @@ const MAIN = () => WINS().find((w) => w.webContents?.getURL() && !w.webContents.
 const ALL = (channel: string, data?: unknown) => WINS().forEach((w) => w.webContents?.send(channel, data))
 
 export function registerVideoHandlers(): void {
-  const ytSearch = require('yt-search')
-
   ipcMain.handle('ytdl:search', async (_event, query: string, maxResults = 10) => {
     try {
       const result = await ytSearch({ query, pages: 1 })
-      const videos = result.videos.slice(0, maxResults).map((v: any) => ({
-        id: v.videoId,
-        title: v.title || '',
-        channel: v.author?.name || '',
-        thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${v.videoId}/default.jpg`,
-        description: (v.description || '').substring(0, 200)
-      }))
+      const videos = result.videos.slice(0, maxResults)
+        .filter((v: any) => v.videoId && v.title)
+        .map((v: any) => ({
+          id: v.videoId,
+          title: v.title || '',
+          channel: v.author?.name || '',
+          thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${v.videoId}/default.jpg`,
+          description: (v.description || '').substring(0, 200)
+        }))
       return { success: true, data: videos }
     } catch (err) {
       return { success: false, error: String(err), data: [] }
@@ -37,13 +43,9 @@ export function registerVideoHandlers(): void {
     try {
       const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
       const result = await ytSearch(videoUrl)
-      // yt-search devuelve VideoMetadataResult cuando se le pasa una URL
       if (result && typeof result === 'object') {
-        if (result.seconds != null) {
-          duration = Number(result.seconds) || 0
-        }
+        if (result.seconds != null) duration = Number(result.seconds) || 0
         if (result.title) title = result.title
-        // Si tiene estructura de SearchResult (videos array)
         if (!duration && result.videos && result.videos.length > 0) {
           const v = result.videos[0]
           duration = v.duration ? (v.duration.seconds || Number(v.duration) || 0) : 0
@@ -54,39 +56,42 @@ export function registerVideoHandlers(): void {
       console.error('[ytdl] yt-search error:', e?.message || e)
     }
 
-    // Intentar obtener stream URL desde play-dl
+    // Intentar obtener metadatos desde play-dl
     try {
-      const play = require('play-dl')
       const info = await play.video_basic_info(`https://www.youtube.com/watch?v=${videoId}`)
-      const formats = info.format
-
       if (!title) title = info.video_details?.title || ''
       if (!duration) duration = info.video_details?.durationInSec || 0
-
-      let bestUrl = ''
-      for (const key of Object.keys(formats)) {
-        const f = formats[key]
-        if (f.url && f.hasVideo && f.hasAudio) {
-          bestUrl = f.url
-          break
-        }
-      }
-
-      if (!bestUrl) {
-        for (const key of Object.keys(formats)) {
-          const f = formats[key]
-          if (f.url && f.hasVideo) {
-            bestUrl = f.url
-            break
-          }
-        }
-      }
-
-      if (bestUrl) {
-        return { success: true, data: { url: bestUrl, title, duration } }
-      }
     } catch (e: any) {
       console.error('[ytdl] play-dl error:', e?.message || e)
+    }
+
+    // Obtener stream URL desde youtube-dl-exec (yt-dlp) con la mejor calidad
+    try {
+      const output = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
+        dumpSingleJson: true,
+        noWarnings: true,
+        noCallHome: true,
+        format: 'best[height<=1080]'
+      })
+      if (output?.url) {
+        return { success: true, data: { url: output.url, title, duration } }
+      }
+      const allFormats = output?.formats || []
+      const best = allFormats
+        .filter((f: any) => f.url && f.vcodec !== 'none' && f.acodec !== 'none')
+        .sort((a: any, b: any) => {
+          const aScore = (a.ext === 'mp4' ? 1000 : 0) + (a.height || 0)
+          const bScore = (b.ext === 'mp4' ? 1000 : 0) + (b.height || 0)
+          return bScore - aScore
+        })
+      if (best.length > 0) {
+        return { success: true, data: { url: best[0].url, title, duration } }
+      }
+      if (output?.url) {
+        return { success: true, data: { url: output.url, title, duration } }
+      }
+    } catch (e: any) {
+      console.error('[ytdl] youtube-dl-exec error:', e?.message || e)
     }
 
     // Fallback: embed de YouTube
@@ -139,6 +144,8 @@ export function registerVideoHandlers(): void {
 
   ipcMain.handle('video:setVolume', (_event, volume: number) => {
     ALL('projector:volumeVideo', volume)
+    const mw = MAIN()
+    if (mw) mw.webContents.send('projector:volumeVideo', volume)
   })
 
   ipcMain.handle('video:setTime', (_event, time: number) => {
@@ -149,4 +156,5 @@ export function registerVideoHandlers(): void {
     const mw = MAIN()
     if (mw) mw.webContents.send('video:progress', data)
   })
+
 }

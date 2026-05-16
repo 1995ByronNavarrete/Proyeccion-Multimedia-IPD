@@ -1,7 +1,7 @@
 import { ipcMain, dialog, app, BrowserWindow } from 'electron'
-import { queryAll, queryOne, execute } from './database'
-import { statSync, readdirSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { statSync, readdirSync, existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs'
 import { extname, parse, join, basename } from 'path'
+import { queryAll, queryOne, execute, noAccent } from './database'
 import { downloadAndSeedBible } from './bible-seed'
 import { getBibleApiTranslations, getApiBibleTranslations } from './bible-source'
 
@@ -22,6 +22,18 @@ function fail(error: string): IpcResponse {
 function appDocsPath(): string {
   return join(app.getPath('documents'), 'DesktopAppIPD')
 }
+
+const IMAGE_MIME: Record<string, string> = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml'
+}
+
+function getMime(ext: string): string {
+  return IMAGE_MIME[ext.toLowerCase()] || 'image/png'
+}
+
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'])
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.opus'])
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.avi', '.mkv', '.mov', '.webm', '.m4v'])
@@ -79,7 +91,8 @@ export function registerIpcHandlers(): void {
       const bookPattern = `%${match[1].trim()}%`
       const chapter = parseInt(match[2], 10)
       const verse = match[3] ? parseInt(match[3], 10) : null
-      const transFilter = translationId ? `AND l.traduccion_id = ${translationId}` : ''
+
+      const bookClean = `%${noAccent(match[1].trim())}%`
 
       let sql, params
       if (verse) {
@@ -87,17 +100,17 @@ export function registerIpcHandlers(): void {
                FROM versiculos v
                JOIN libros l ON v.libro_id = l.id
                JOIN traducciones t ON l.traduccion_id = t.id
-               WHERE l.nombre LIKE ? AND v.capitulo = ? AND v.versiculo = ? ${transFilter}
+               WHERE noacct(l.nombre) LIKE ? AND v.capitulo = ? AND v.versiculo = ? ${translationId ? 'AND l.traduccion_id = ?' : ''}
                LIMIT 5`
-        params = [bookPattern, chapter, verse]
+        params = translationId ? [bookClean, chapter, verse, translationId] : [bookClean, chapter, verse]
       } else {
         sql = `SELECT v.*, l.nombre as libro, t.abreviatura as traduccion
                FROM versiculos v
                JOIN libros l ON v.libro_id = l.id
                JOIN traducciones t ON l.traduccion_id = t.id
-               WHERE l.nombre LIKE ? AND v.capitulo = ? ${transFilter}
+               WHERE noacct(l.nombre) LIKE ? AND v.capitulo = ? ${translationId ? 'AND l.traduccion_id = ?' : ''}
                LIMIT 50`
-        params = [bookPattern, chapter]
+        params = translationId ? [bookClean, chapter, translationId] : [bookClean, chapter]
       }
       const rows = queryAll(sql, params)
       return ok(rows)
@@ -108,15 +121,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('bible:search', (_event, query: string, translationId?: number) => {
     try {
-      const transFilter = translationId ? `AND l.traduccion_id = ${translationId}` : ''
-      const rows = queryAll(
-        `SELECT v.*, l.nombre as libro, l.traduccion_id, t.abreviatura as traduccion
+      const clean = noAccent(query)
+      const sql = `SELECT v.*, l.nombre as libro, l.traduccion_id, t.abreviatura as traduccion
          FROM versiculos v
          JOIN libros l ON v.libro_id = l.id
          JOIN traducciones t ON l.traduccion_id = t.id
-         WHERE v.texto LIKE ? ${transFilter} LIMIT 50`,
-        [`%${query}%`]
-      )
+         WHERE noacct(v.texto) LIKE ? ${translationId ? 'AND l.traduccion_id = ?' : ''} LIMIT 50`
+      const params = translationId ? [`%${clean}%`, translationId] : [`%${clean}%`]
+      const rows = queryAll(sql, params)
       return ok(rows)
     } catch (err) {
       return fail(`Error al buscar: ${err}`)
@@ -210,6 +222,52 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  ipcMain.handle('medialocal:deleteFile', async (_event, filePath: string) => {
+    try {
+      if (existsSync(filePath)) unlinkSync(filePath)
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al eliminar: ${err}`)
+    }
+  })
+
+  ipcMain.handle('medialocal:importFiles', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile', 'multiSelections'],
+        filters: [
+          { name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'opus'] },
+          { name: 'Video', extensions: ['mp4', 'avi', 'mkv', 'mov', 'webm', 'm4v'] },
+          { name: 'Todos', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'opus', 'mp4', 'avi', 'mkv', 'mov', 'webm', 'm4v'] }
+        ]
+      })
+      if (result.canceled || !result.filePaths.length) return ok({ imported: 0 })
+
+      const docsPath = appDocsPath()
+      const musicFolder = join(docsPath, 'Música')
+      const videosFolder = join(docsPath, 'Videos')
+      if (!existsSync(musicFolder)) mkdirSync(musicFolder, { recursive: true })
+      if (!existsSync(videosFolder)) mkdirSync(videosFolder, { recursive: true })
+
+      let imported = 0
+      for (const fp of result.filePaths) {
+        try {
+          const ext = extname(fp).toLowerCase()
+          const isAudio = AUDIO_EXTENSIONS.has(ext)
+          const isVideo = VIDEO_EXTENSIONS.has(ext)
+          if (!isAudio && !isVideo) continue
+          const destFolder = isAudio ? musicFolder : videosFolder
+          const destPath = join(destFolder, basename(fp))
+          writeFileSync(destPath, readFileSync(fp))
+          imported++
+        } catch {}
+      }
+      return ok({ imported })
+    } catch (err) {
+      return fail(`Error al importar: ${err}`)
+    }
+  })
+
   ipcMain.handle('medialocal:openFolder', async () => {
     try {
       const result = await dialog.showOpenDialog({
@@ -289,7 +347,11 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('medialocal:getAll', () => {
     try {
-      const rows = queryAll('SELECT * FROM medios_locales ORDER BY fecha_agregado DESC')
+      let rows = queryAll('SELECT * FROM medios_locales ORDER BY fecha_agregado DESC')
+      rows = rows.filter((r: any) => {
+        if (!r.ruta_archivo) return false
+        try { return existsSync(r.ruta_archivo as string) } catch { return false }
+      })
       return ok(rows)
     } catch (err) {
       return fail(`Error al obtener medios: ${err}`)
@@ -343,6 +405,51 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  // ── Anuncios IPC ──
+  ipcMain.handle('anuncios:getAll', () => {
+    try {
+      const rows = queryAll('SELECT * FROM anuncios ORDER BY fecha_creacion DESC')
+      return ok(rows)
+    } catch (err) {
+      return fail(`Error al obtener anuncios: ${err}`)
+    }
+  })
+
+  ipcMain.handle('anuncios:create', (_event, texto: string, animacion: string) => {
+    try {
+      const result = execute('INSERT INTO anuncios (texto, animacion) VALUES (?, ?)', [texto, animacion])
+      return ok({ id: result.lastInsertRowid, texto, animacion })
+    } catch (err) {
+      return fail(`Error al crear anuncio: ${err}`)
+    }
+  })
+
+  ipcMain.handle('anuncios:delete', (_event, id: number) => {
+    try {
+      execute('DELETE FROM anuncios WHERE id = ?', [id])
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al eliminar anuncio: ${err}`)
+    }
+  })
+
+  ipcMain.handle('anuncios:saveAnim', (_event, animacion: string) => {
+    try {
+      const docsPath = appDocsPath()
+      if (!existsSync(docsPath)) mkdirSync(docsPath, { recursive: true })
+      const configPath = join(docsPath, 'config.json')
+      let cfg: Record<string, unknown> = {}
+      if (existsSync(configPath)) {
+        cfg = JSON.parse(readFileSync(configPath, 'utf-8'))
+      }
+      cfg.animAnuncios = animacion
+      writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8')
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al guardar animación: ${err}`)
+    }
+  })
+
   // ── App IPC ──
   ipcMain.handle('app:selectAndSaveLogo', async () => {
     try {
@@ -356,24 +463,20 @@ export function registerIpcHandlers(): void {
       if (result.canceled || !result.filePaths.length) return ok(null)
 
       const filePath = result.filePaths[0]
-      const ext = extname(filePath).toLowerCase()
       const buffer = readFileSync(filePath)
       const docsPath = appDocsPath()
       if (!existsSync(docsPath)) mkdirSync(docsPath, { recursive: true })
       const logoPath = join(docsPath, 'logo.png')
 
-      // Save as PNG
       writeFileSync(logoPath, buffer)
 
-      // If it's not PNG, save with original extension too
-      const extPath = join(docsPath, `logo${ext}`)
-      if (ext !== '.png') writeFileSync(extPath, buffer)
+      const ext = extname(filePath).toLowerCase()
+      if (ext !== '.png') {
+        const extPath = join(docsPath, `logo${ext}`)
+        writeFileSync(extPath, buffer)
+      }
 
-      const base64 = buffer.toString('base64')
-      const mime = ext === '.svg' ? 'image/svg+xml' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.gif' ? 'image/gif' : ext === '.webp' ? 'image/webp' : ext === '.bmp' ? 'image/bmp' : 'image/png'
-      const dataUrl = `data:${mime};base64,${base64}`
-
-      return ok({ dataUrl, nombre: basename(filePath) })
+      return ok({ filePath: logoPath, nombre: basename(filePath) })
     } catch (err) {
       return fail(`Error al guardar logo: ${err}`)
     }
@@ -383,14 +486,7 @@ export function registerIpcHandlers(): void {
     try {
       const logoPath = join(appDocsPath(), 'logo.png')
       if (!existsSync(logoPath)) return ok(null)
-
-      const ext = extname(logoPath).toLowerCase()
-      const buffer = readFileSync(logoPath)
-      const base64 = buffer.toString('base64')
-      const mime = 'image/png'
-      const dataUrl = `data:${mime};base64,${base64}`
-
-      return ok({ dataUrl, nombre: 'logo.png' })
+      return ok({ filePath: logoPath, nombre: 'logo.png' })
     } catch {
       return ok(null)
     }
@@ -418,11 +514,214 @@ export function registerIpcHandlers(): void {
       return fail(`Error al guardar configuración: ${err}`)
     }
   })
+
+  ipcMain.handle('app:getFondos', () => {
+    try {
+      const fondosPath = join(app.getPath('documents'), 'DesktopAppIPD', 'Fondos')
+      if (!existsSync(fondosPath)) return ok([])
+      const files = readdirSync(fondosPath)
+      const images: { id: string; name: string; filePath: string }[] = []
+      for (const file of files) {
+        const ext = extname(file).toLowerCase()
+        if (!IMAGE_EXTS.has(ext)) continue
+        const fullPath = join(fondosPath, file)
+        try {
+          const stats = statSync(fullPath)
+          if (!stats.isFile()) continue
+          images.push({
+            id: file,
+            name: parse(file).name,
+            filePath: fullPath
+          })
+        } catch { continue }
+      }
+      return ok(images)
+    } catch (err) {
+      return fail(`Error al leer Fondos: ${err}`)
+    }
+  })
+
   ipcMain.handle('app:getVersion', () => {
     return app.getVersion()
   })
 
   ipcMain.handle('app:quit', () => {
     app.quit()
+  })
+
+  // ── Video Logo (logoEnVideo) ──
+  ipcMain.handle('app:selectAndSaveVideoLogo', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] }]
+      })
+      if (result.canceled || !result.filePaths.length) return ok(null)
+      const filePath = result.filePaths[0]
+      const buffer = readFileSync(filePath)
+      const ext = extname(filePath).toLowerCase()
+      const logoFolder = join(appDocsPath(), 'logoEnVideo')
+      if (!existsSync(logoFolder)) mkdirSync(logoFolder, { recursive: true })
+      const logoPath = join(logoFolder, `logo${ext}`)
+      writeFileSync(logoPath, buffer)
+      return ok({ filePath: logoPath, nombre: basename(filePath) })
+    } catch (err) {
+      return fail(`Error al guardar logo de video: ${err}`)
+    }
+  })
+
+  ipcMain.handle('app:getVideoLogo', () => {
+    try {
+      const logoFolder = join(appDocsPath(), 'logoEnVideo')
+      if (!existsSync(logoFolder)) return ok(null)
+      const files = readdirSync(logoFolder).filter((f) => /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(f))
+      if (!files.length) return ok(null)
+      const logoPath = join(logoFolder, files[0])
+      return ok({ filePath: logoPath, nombre: files[0] })
+    } catch {
+      return ok(null)
+    }
+  })
+
+  // ── Tareas de imágenes ──
+  ipcMain.handle('tarea:create', (_event, nombre: string) => {
+    try {
+      const result = execute('INSERT INTO tareas_imagenes (nombre) VALUES (?)', [nombre])
+      return ok({ id: result.lastInsertRowid, nombre })
+    } catch (err) {
+      return fail(`Error al crear tarea: ${err}`)
+    }
+  })
+
+  ipcMain.handle('tarea:getAll', () => {
+    try {
+      const rows = queryAll(`SELECT t.*, (SELECT COUNT(*) FROM tarea_imagenes WHERE tarea_id = t.id) as imagen_count FROM tareas_imagenes t ORDER BY t.fecha_creacion DESC`)
+      return ok(rows)
+    } catch (err) {
+      return fail(`Error al obtener tareas: ${err}`)
+    }
+  })
+
+  ipcMain.handle('tarea:delete', (_event, id: number) => {
+    try {
+      execute('DELETE FROM tarea_imagenes WHERE tarea_id = ?', [id])
+      execute('DELETE FROM tareas_imagenes WHERE id = ?', [id])
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al eliminar tarea: ${err}`)
+    }
+  })
+
+  ipcMain.handle('tarea:addImage', async (_event, tareaId: number) => {
+    try {
+      const tareasFolder = join(appDocsPath(), 'Tareas')
+      if (!existsSync(tareasFolder)) mkdirSync(tareasFolder, { recursive: true })
+
+      const result = await dialog.showOpenDialog({
+        defaultPath: tareasFolder,
+        properties: ['openFile'],
+        filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }]
+      })
+      if (result.canceled || !result.filePaths.length) return ok(null)
+
+      const filePath = result.filePaths[0]
+      const name = parse(filePath).name
+      const destName = `${Date.now()}_${basename(filePath)}`
+      const destPath = join(tareasFolder, destName)
+      writeFileSync(destPath, readFileSync(filePath))
+
+      const dbResult = execute('INSERT INTO tarea_imagenes (tarea_id, ruta_archivo, nombre) VALUES (?, ?, ?)', [tareaId, destPath, name])
+
+      return ok({ id: dbResult.lastInsertRowid, nombre: name, filePath: destPath })
+    } catch (err) {
+      return fail(`Error al agregar imagen: ${err}`)
+    }
+  })
+
+  ipcMain.handle('tarea:getImages', (_event, tareaId: number) => {
+    try {
+      const rows = queryAll('SELECT * FROM tarea_imagenes WHERE tarea_id = ? ORDER BY fecha_agregado DESC', [tareaId])
+      const images: { id: number; nombre: string; filePath: string }[] = []
+      for (const row of rows) {
+        const ruta = row.ruta_archivo as string
+        if (!ruta || !existsSync(ruta)) continue
+        const ext = extname(ruta).toLowerCase()
+        if (!IMAGE_EXTS.has(ext)) continue
+        try {
+          images.push({ id: row.id as number, nombre: row.nombre as string, filePath: ruta })
+        } catch { continue }
+      }
+      return ok(images)
+    } catch (err) {
+      return fail(`Error al obtener imágenes: ${err}`)
+    }
+  })
+
+  ipcMain.handle('tarea:deleteImage', (_event, id: number) => {
+    try {
+      const row = queryOne('SELECT ruta_archivo FROM tarea_imagenes WHERE id = ?', [id])
+      execute('DELETE FROM tarea_imagenes WHERE id = ?', [id])
+      if (row?.ruta_archivo) {
+        try { unlinkSync(row.ruta_archivo as string) } catch {}
+      }
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al eliminar imagen: ${err}`)
+    }
+  })
+
+  // Seleccionar una imagen y devolver data URL (abre en la carpeta Fondos)
+  ipcMain.handle('app:readImageAsDataUrl', async (_event, filePath: string) => {
+    try {
+      const buffer = readFileSync(filePath)
+      const ext = extname(filePath).toLowerCase()
+      const mime = getMime(ext)
+      return ok({ dataUrl: `data:${mime};base64,${buffer.toString('base64')}` })
+    } catch { return ok(null) }
+  })
+
+  ipcMain.handle('app:readFileAsDataUrl', async (_event, filePath: string) => {
+    try {
+      const buffer = readFileSync(filePath)
+      const ext = extname(filePath).toLowerCase()
+      const mime: Record<string, string> = {
+        '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.flac': 'audio/flac',
+        '.aac': 'audio/aac', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4',
+        '.opus': 'audio/ogg', '.mp4': 'video/mp4', '.webm': 'video/webm'
+      }
+      return ok({ dataUrl: `data:${mime[ext] || 'audio/mpeg'};base64,${buffer.toString('base64')}` })
+    } catch { return ok(null) }
+  })
+
+  ipcMain.handle('app:saveEditedImage', async (_event, dataUrl: string, name: string) => {
+    try {
+      const fondosPath = join(appDocsPath(), 'Fondos')
+      if (!existsSync(fondosPath)) mkdirSync(fondosPath, { recursive: true })
+      const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+      const buffer = Buffer.from(base64, 'base64')
+      const fileName = `${name.replace(/\.[^.]+$/, '')}-edit-${Date.now()}.png`
+      const filePath = join(fondosPath, fileName)
+      writeFileSync(filePath, buffer)
+      return ok({ filePath, nombre: fileName })
+    } catch (err) {
+      return fail(`Error al guardar imagen: ${err}`)
+    }
+  })
+
+  ipcMain.handle('app:pickImage', async () => {
+    try {
+      const fondosPath = join(appDocsPath(), 'Fondos')
+      if (!existsSync(fondosPath)) mkdirSync(fondosPath, { recursive: true })
+      const result = await dialog.showOpenDialog({
+        defaultPath: fondosPath,
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }]
+      })
+      if (result.canceled || !result.filePaths.length) return ok(null)
+      const files = result.filePaths.map(fp => ({ filePath: fp, nombre: basename(fp) }))
+      return ok(files)
+    } catch {
+      return ok(null)
+    }
   })
 }

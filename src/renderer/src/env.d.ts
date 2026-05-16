@@ -92,11 +92,20 @@ interface Window {
       projectToDisplay: (displayId?: number) => Promise<void>
       projectToAll: () => Promise<void>
       showBlack: () => Promise<void>
+      sendContent: (content: unknown) => Promise<void>
       stopAll: () => Promise<void>
       close: () => Promise<void>
+      prevVerse: () => Promise<void>
+      nextVerse: () => Promise<void>
+      showAnnouncement: (data: Record<string, unknown>) => Promise<void>
+      hideAnnouncement: () => Promise<void>
+      updateAnnouncement: (data: Record<string, unknown>) => Promise<void>
+      overlay: (data: { type: string; speed?: number; color?: string }) => Promise<void>
     }
     medialocal: {
       importFile: () => Promise<IpcResponse<unknown[]>>
+      importFiles: () => Promise<IpcResponse<{ imported: number }>>
+      deleteFile: (filePath: string) => Promise<IpcResponse<null>>
       scanFolder: () => Promise<IpcResponse<unknown[]>>
       openFolder: () => Promise<IpcResponse<{ ruta: string; archivos: { nombre: string; ruta: string; tipo: string; tamano: number }[] } | null>>
       getBiblioteca: () => Promise<IpcResponse<{ ruta: string; musica: { nombre: string; ruta: string; tamano: number }[]; videos: { nombre: string; ruta: string; tamano: number }[] }>>
@@ -130,10 +139,40 @@ interface Window {
       quit: () => Promise<void>
       minimize: () => Promise<void>
       maximize: () => Promise<void>
-      selectAndSaveLogo: () => Promise<IpcResponse<{ dataUrl: string; nombre: string } | null>>
-      getLogo: () => Promise<IpcResponse<{ dataUrl: string; nombre: string } | null>>
+      selectAndSaveLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
+      getLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
+      selectAndSaveVideoLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
+      getVideoLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
       getConfig: () => Promise<IpcResponse<Record<string, unknown>>>
       saveConfig: (config: Record<string, unknown>) => Promise<IpcResponse<null>>
+      pickImage: () => Promise<IpcResponse<{ filePath: string; nombre: string }[] | null>>
+      saveEditedImage: (dataUrl: string, name: string) => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
+      readImageAsDataUrl: (filePath: string) => Promise<IpcResponse<{ dataUrl: string } | null>>
+      readFileAsDataUrl: (filePath: string) => Promise<IpcResponse<{ dataUrl: string } | null>>
+      getFondos: () => Promise<IpcResponse<{ id: string; name: string; filePath: string }[]>>
+    }
+    capture: {
+      projector: () => Promise<{ success: boolean; data?: { base64: string }; error?: string }>
+    }
+    anuncios: {
+      getAll: () => Promise<IpcResponse<{ id: number; texto: string; animacion: string; fecha_creacion: string }[]>>
+      create: (texto: string, animacion: string) => Promise<IpcResponse<{ id: number; texto: string; animacion: string }>>
+      delete: (id: number) => Promise<IpcResponse<null>>
+      saveAnim: (animacion: string) => Promise<IpcResponse<null>>
+    }
+    tarea: {
+      create: (nombre: string) => Promise<IpcResponse<{ id: number; nombre: string }>>
+      getAll: () => Promise<IpcResponse<{ id: number; nombre: string; fecha_creacion: string; imagen_count: number }[]>>
+      delete: (id: number) => Promise<IpcResponse<null>>
+      addImage: (tareaId: number) => Promise<IpcResponse<{ id: number; nombre: string; filePath: string } | null>>
+      getImages: (tareaId: number) => Promise<IpcResponse<{ id: number; nombre: string; filePath: string }[]>>
+      deleteImage: (id: number) => Promise<IpcResponse<null>>
+    }
+
+
+    backup: {
+      create: () => Promise<{ success: boolean; data?: { path: string }; error?: string }>
+      restore: () => Promise<{ success: boolean; data?: { path: string }; error?: string }>
     }
     update: {
       check: () => Promise<void>

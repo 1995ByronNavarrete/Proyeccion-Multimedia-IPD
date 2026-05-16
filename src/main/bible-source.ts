@@ -53,6 +53,43 @@ export async function getBibleApiTranslations(): Promise<SourceTranslation[]> {
   }
 }
 
+type WorkerItem = { book: { id: number; name: string }; chapter: number; chapterId?: string }
+
+async function runWorkers(
+  queue: WorkerItem[],
+  totalChapters: number,
+  concurrency: number,
+  fetchVerses: (item: WorkerItem) => Promise<{ capitulo: number; versiculo: number; texto: string }[]>,
+  onProgress: (completed: number, total: number, bookName?: string) => void
+): Promise<void> {
+  let completedChapters = 0
+  let index = 0
+  const workers = Array.from({ length: concurrency }, () => worker())
+  await Promise.all(workers)
+
+  async function worker(): Promise<void> {
+    while (index < queue.length) {
+      const item = queue[index++]
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const verses = await fetchVerses(item)
+          for (const v of verses) {
+            execute(
+              'INSERT INTO versiculos (libro_id, capitulo, versiculo, texto) VALUES (?, ?, ?, ?)',
+              [item.book.id, v.capitulo, v.versiculo, v.texto]
+            )
+          }
+          break
+        } catch {
+          if (attempt < 2) await delay(1000 * (attempt + 1))
+        }
+      }
+      completedChapters++
+      onProgress(completedChapters, totalChapters, item.book.name)
+    }
+  }
+}
+
 export async function seedFromBibleApi(
   translationId: number,
   abbreviation: string,
@@ -63,14 +100,12 @@ export async function seedFromBibleApi(
   )
   const booksList = transData.books
 
-  let completedChapters = 0
   const insertedBooks: { id: number; name: string; bookId: string; chapters: number }[] = []
 
   for (let i = 0; i < booksList.length; i++) {
     const book = booksList[i]
     const testament = i < 39 ? 'AT' : 'NT'
 
-    // Fetch individual book to get chapter count
     let chapterCount = 0
     try {
       const bookData = await fetchJson<{ chapters: unknown[] }>(
@@ -90,41 +125,19 @@ export async function seedFromBibleApi(
 
   const totalChapters = insertedBooks.reduce((s, b) => s + b.chapters, 0)
 
-  const queue: { book: typeof insertedBooks[0]; chapter: number }[] = []
+  const queue: WorkerItem[] = []
   for (const book of insertedBooks) {
     for (let c = 1; c <= book.chapters; c++) {
-      queue.push({ book, chapter: c })
+      queue.push({ book: { id: book.id, name: book.name }, chapter: c })
     }
   }
 
-  let index = 0
-  const workers = Array.from({ length: 6 }, () => worker())
-  await Promise.all(workers)
-
-  async function worker(): Promise<void> {
-    while (index < queue.length) {
-      const item = queue[index++]
-
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const data = await fetchJson<{ verses: { chapter: number; verse: number; text: string }[] }>(
-            `${BIBLE_API_BASE}/${abbreviation.toLowerCase()}/${item.book.bookId}/${item.chapter}`
-          )
-          for (const v of data.verses) {
-            execute(
-              'INSERT INTO versiculos (libro_id, capitulo, versiculo, texto) VALUES (?, ?, ?, ?)',
-              [item.book.id, v.chapter, v.verse, v.text]
-            )
-          }
-          break
-        } catch {
-          if (attempt < 2) await delay(1000 * (attempt + 1))
-        }
-      }
-      completedChapters++
-      onProgress(completedChapters, totalChapters, item.book.name)
-    }
-  }
+  await runWorkers(queue, totalChapters, 6, async (item) => {
+    const data = await fetchJson<{ verses: { chapter: number; verse: number; text: string }[] }>(
+      `${BIBLE_API_BASE}/${abbreviation.toLowerCase()}/${insertedBooks.find(b => b.id === item.book.id)!.bookId}/${item.chapter}`
+    )
+    return data.verses.map(v => ({ capitulo: v.chapter, versiculo: v.verse, texto: v.text }))
+  }, onProgress)
 }
 
 export async function seedFromApiBible(
@@ -142,7 +155,6 @@ export async function seedFromApiBible(
   if (!booksData.length) throw new Error('No se pudieron obtener los libros')
 
   const totalChapters = booksData.reduce((s: number, b: { chapters: unknown[] }) => s + (b.chapters?.length || 0), 0)
-  let completedChapters = 0
 
   const insertedBooks: { id: number; name: string; bookId: string; chapters: string[] }[] = []
 
@@ -157,42 +169,25 @@ export async function seedFromApiBible(
     insertedBooks.push({ id: result.lastInsertRowid, name: book.name, bookId: book.id, chapters: chapterIds })
   }
 
-  const queue: { book: typeof insertedBooks[0]; chapterId: string }[] = []
+  const queue: WorkerItem[] = []
   for (const book of insertedBooks) {
     for (const ch of book.chapters) {
-      queue.push({ book, chapterId: ch })
+      queue.push({ book: { id: book.id, name: book.name }, chapter: 0, chapterId: ch })
     }
   }
 
-  let index = 0
-  const workers = Array.from({ length: 4 }, () => worker())
-  await Promise.all(workers)
-
-  async function worker(): Promise<void> {
-    while (index < queue.length) {
-      const item = queue[index++]
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const chRes = await fetchJsonWithHeaders(
-            `${API_BIBLE_BASE}/bibles/${bibleId}/chapters/${item.chapterId}/verses`,
-            headers
-          )
-          const versesData = chRes?.data ?? []
-          for (const v of versesData) {
-            execute(
-              'INSERT INTO versiculos (libro_id, capitulo, versiculo, texto) VALUES (?, ?, ?, ?)',
-              [item.book.id, v.chapterId ? parseInt(v.chapterId.split('.').pop() || '1', 10) : 1, v.orgId ? parseInt(v.orgId, 10) : 1, v.textContent || v.content?.[0]?.text || '']
-            )
-          }
-          break
-        } catch {
-          if (attempt < 2) await delay(1000 * (attempt + 1))
-        }
-      }
-      completedChapters++
-      onProgress(completedChapters, totalChapters, item.book.name)
-    }
-  }
+  await runWorkers(queue, totalChapters, 4, async (item) => {
+    const chRes = await fetchJsonWithHeaders(
+      `${API_BIBLE_BASE}/bibles/${bibleId}/chapters/${item.chapterId}/verses`,
+      headers
+    )
+    const versesData = chRes?.data ?? []
+    return versesData.map((v: any) => ({
+      capitulo: v.chapterId ? parseInt(v.chapterId.split('.').pop() || '1', 10) : 1,
+      versiculo: v.orgId ? parseInt(v.orgId, 10) : 1,
+      texto: v.textContent || v.content?.[0]?.text || ''
+    }))
+  }, onProgress)
 }
 
 async function fetchJson<T>(url: string): Promise<T> {

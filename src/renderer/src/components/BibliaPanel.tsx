@@ -3,6 +3,8 @@ import { Search, Send, BookOpen, Download, Globe, Plus } from 'lucide-react'
 
 interface BibliaPanelProps {
   onProject: (text: string, reference: string) => void
+  onLoadChapter?: (verses: { text: string; reference: string; verseNumber: number }[], idx: number) => void
+  projectedVerseNumber?: number | null
 }
 
 interface DownloadProgress {
@@ -14,7 +16,13 @@ interface DownloadProgress {
 
 type View = 'loading' | 'download' | 'ready'
 
-export default function BibliaPanel({ onProject }: BibliaPanelProps) {
+const TRANS_COLORS: Record<string, string> = {
+  RVR1960: '#6c5ce7', NTV: '#00d4ff', TLA: '#22c55e',
+  NVI: '#f59e0b', PDT: '#ef4444', LBLA: '#a855f7',
+  DHH: '#ec4899', NBV: '#14b8a6', BLP: '#f97316',
+}
+
+export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNumber }: BibliaPanelProps) {
   const [view, setView] = useState<View>('loading')
   const [progress, setProgress] = useState<DownloadProgress | null>(null)
   const [downloading, setDownloading] = useState(false)
@@ -27,7 +35,7 @@ export default function BibliaPanel({ onProject }: BibliaPanelProps) {
   const [chapters, setChapters] = useState<number[]>([])
   const [selectedChapter, setSelectedChapter] = useState(1)
   const [verses, setVerses] = useState<Verse[]>([])
-  const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set())
+  const [selectedVerse, setSelectedVerse] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<Verse[]>([])
   const [searching, setSearching] = useState(false)
@@ -40,7 +48,7 @@ export default function BibliaPanel({ onProject }: BibliaPanelProps) {
 
   const savedBookName = useRef<string | null>(null)
   const savedChapter = useRef<number>(1)
-  const savedVerses = useRef<Set<number>>(new Set())
+  const savedVerse = useRef<number | null>(null)
 
   useEffect(() => {
     checkData()
@@ -131,16 +139,52 @@ export default function BibliaPanel({ onProject }: BibliaPanelProps) {
 
   useEffect(() => {
     if (!selectedTrans || view !== 'ready') return
+    let cancelled = false
     const nameToFind = savedBookName.current
-    window.api.bible.getBooks(selectedTrans).then((res) => {
+    const chapterToLoad = savedChapter.current
+    const verseToSelect = savedVerse.current
+    window.api.bible.getBooks(selectedTrans).then((res) => { if (cancelled) return
       if (res.success && res.data) {
         setBooks(res.data)
         if (res.data.length) {
           const match = nameToFind ? res.data.find((b: Book) => b.nombre === nameToFind) : null
-          setSelectedBook(match || res.data[0])
+          const book = match || res.data[0]
+          setSelectedBook(book)
+          if (match && chapterToLoad) {
+            window.api.bible.getChapters(book.id).then((cRes) => {
+              if (cRes.success && cRes.data) setChapters(cRes.data.map((r: { capitulo: number }) => r.capitulo))
+            })
+            window.api.bible.getVerses(book.id, chapterToLoad).then((vRes) => {
+              if (vRes.success && vRes.data) {
+                setVerses(vRes.data)
+                setSelectedChapter(chapterToLoad)
+                if (verseToSelect != null) {
+                  const matchV = vRes.data.find((v: Verse) => v.versiculo === verseToSelect)
+                  if (matchV) {
+                    const ref = `${book.nombre} ${chapterToLoad}:${verseToSelect}`
+                    const text = `${verseToSelect}. ${matchV.texto}`
+                    setSelectedVerse(verseToSelect)
+                    savedVerse.current = verseToSelect
+                    onProject(text, ref)
+                    if (onLoadChapter) {
+                      const chapterRef = `${book.nombre} ${chapterToLoad}`
+                      const allVerses = vRes.data.map((vv: Verse) => ({
+                        text: `${vv.versiculo}. ${vv.texto}`,
+                        reference: `${chapterRef}:${vv.versiculo}`,
+                        verseNumber: vv.versiculo
+                      }))
+                      const idx = vRes.data.findIndex((vv: Verse) => vv.versiculo === verseToSelect)
+                      onLoadChapter(allVerses, idx >= 0 ? idx : 0)
+                    }
+                  }
+                }
+              }
+            })
+          }
         }
       }
-    })
+    }).catch(() => {})
+    return () => { cancelled = true }
   }, [selectedTrans, view])
 
   useEffect(() => {
@@ -162,71 +206,98 @@ export default function BibliaPanel({ onProject }: BibliaPanelProps) {
     window.api.bible.getVerses(selectedBook.id, selectedChapter).then((res) => {
       if (res.success && res.data) {
         setVerses(res.data)
-        if (savedVerses.current.size) {
-          setSelectedVerses(new Set(savedVerses.current))
-          savedVerses.current = new Set()
+        const sv = savedVerse.current
+        if (sv != null) {
+          const match = res.data.find((v: Verse) => v.versiculo === sv)
+          if (match) {
+            setSelectedVerse(sv)
+            savedVerse.current = sv
+            const ref = `${selectedBook.nombre} ${selectedChapter}:${sv}`
+            const text = `${sv}. ${match.texto}`
+            onProject(text, ref)
+            const chapterRef = `${selectedBook.nombre} ${selectedChapter}`
+            const allVerses = res.data.map((vv: Verse) => ({
+              text: `${vv.versiculo}. ${vv.texto}`,
+              reference: `${chapterRef}:${vv.versiculo}`,
+              verseNumber: vv.versiculo
+            }))
+            const idx = res.data.findIndex((vv: Verse) => vv.versiculo === sv)
+            onLoadChapter?.(allVerses, idx >= 0 ? idx : 0)
+          } else {
+            setSelectedVerse(null)
+            savedVerse.current = null
+          }
         } else {
-          setSelectedVerses(new Set())
+          setSelectedVerse(null)
         }
       }
     })
   }, [selectedBook, selectedChapter])
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setSearchResults([])
-      return
-    }
-    const timer = setTimeout(async () => {
-      setSearching(true)
-      const q = search.trim()
-      const transId = selectedTrans || undefined
-      const isRef = /^\d?\s*[a-z\u00E0-\u00FC]+\s+\d+(\s*[.:,]\s*\d+)?$/i.test(q)
+  const doSearch = useCallback(async (q: string) => {
+    if (!q.trim()) { setSearchResults([]); return }
+    setSearching(true)
+    const isRef = /^\d?\s*[a-z\u00E0-\u00FC]+\s+\d+(\s*[.:,]\s*\d+)?$/i.test(q)
 
-      let results: Verse[] = []
-      if (isRef) {
-        const refRes = await window.api.bible.searchReference(q, transId)
-        if (refRes.success && refRes.data) results = refRes.data
+    const refPromise = isRef ? window.api.bible.searchReference(q) : Promise.resolve(null)
+    const textPromise = window.api.bible.search(q)
+
+    const [refRes, textRes] = await Promise.all([refPromise, textPromise])
+
+    let results: Verse[] = []
+    if (refRes?.success && refRes.data) results = refRes.data
+    if (textRes.success && textRes.data) {
+      const existing = new Set(results.map(r => `${r.libro}-${r.capitulo}-${r.versiculo}-${r.traduccion || ''}`))
+      for (const v of textRes.data) {
+        const key = `${v.libro || ''}-${v.capitulo || ''}-${v.versiculo || ''}-${v.traduccion || ''}`
+        if (!existing.has(key)) results.push(v)
       }
-      if (!results.length) {
-        const textRes = await window.api.bible.search(q, transId)
-        if (textRes.success && textRes.data) results = textRes.data
-      }
-      setSearchResults(results)
-      setSearching(false)
-    }, 300)
+    }
+    setSearchResults(results)
+    setSearching(false)
+  }, [])
+
+  useEffect(() => {
+    if (!search.trim()) { setSearchResults([]); return }
+    const timer = setTimeout(() => doSearch(search.trim()), 400)
     return () => clearTimeout(timer)
-  }, [search, selectedTrans])
+  }, [search, doSearch])
 
   const toggleVerse = useCallback((v: number) => {
-    setSelectedVerses((prev) => {
-      const next = new Set(prev)
-      if (next.has(v)) next.delete(v)
-      else next.add(v)
-      savedVerses.current = new Set(next)
+    setSelectedVerse((prev) => {
+      const next = prev === v ? null : v
+      savedVerse.current = next
       return next
     })
   }, [])
 
   const getReference = () => {
-    if (!selectedBook) return ''
-    const sorted = [...selectedVerses].sort((a, b) => a - b)
-    return `${selectedBook.nombre} ${selectedChapter}:${sorted.join(',')}`
+    if (!selectedBook || !selectedVerse) return ''
+    return `${selectedBook.nombre} ${selectedChapter}:${selectedVerse}`
   }
 
   const getSelectedText = () => {
-    if (!selectedBook || !selectedVerses.size) return ''
-    const reference = getReference()
-    const text = verses
-      .filter((v) => selectedVerses.has(v.versiculo))
-      .map((v) => `${v.versiculo}. ${v.texto}`)
-      .join(' ')
-    return `${text}\n\n— ${reference}`
+    if (!selectedBook || !selectedVerse) return ''
+    const v = verses.find((v) => v.versiculo === selectedVerse)
+    if (!v) return ''
+    return `${v.versiculo}. ${v.texto}`
   }
 
   const handleProject = () => {
     const text = getSelectedText()
-    if (text) onProject(text, getReference())
+    if (text) {
+      onProject(text, getReference())
+      if (onLoadChapter && verses.length > 0) {
+        const chapterRef = `${selectedBook?.nombre} ${selectedChapter}`
+        const allVerses = verses.map((v) => ({
+          text: `${v.versiculo}. ${v.texto}`,
+          reference: `${chapterRef}:${v.versiculo}`,
+          verseNumber: v.versiculo
+        }))
+        const idx = verses.findIndex((v) => v.versiculo === selectedVerse)
+        onLoadChapter(allVerses, idx >= 0 ? idx : 0)
+      }
+    }
   }
 
   const handleProjectResult = (v: Verse) => {
@@ -365,7 +436,22 @@ export default function BibliaPanel({ onProject }: BibliaPanelProps) {
         <div className="flex flex-col gap-1.5 overflow-hidden">
           <div className="flex gap-1">
             {translations.map((t) => (
-              <button key={t.id} onClick={() => setSelectedTrans(t.id)}
+              <button key={t.id} onClick={() => {
+                const curBook = selectedBook?.nombre
+                const curChapter = selectedChapter
+                const curVerse = selectedVerse
+                setSelectedTrans(t.id)
+                setSelectedBook(null)
+                setSelectedChapter(1)
+                setSelectedVerse(null)
+                setVerses([])
+                setChapters([])
+                setSearchResults([])
+                setSearch('')
+                savedBookName.current = curBook || null
+                savedChapter.current = curChapter || 1
+                savedVerse.current = curVerse
+              }}
                 className={`text-[9px] px-2 py-0.5 rounded-full font-medium transition-colors ${
                   selectedTrans === t.id ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'
                 }`}>{t.abreviatura}</button>
@@ -383,69 +469,124 @@ export default function BibliaPanel({ onProject }: BibliaPanelProps) {
 
         <div className="flex flex-col gap-2 overflow-hidden">
           <div className="flex-1 grid grid-cols-[1fr_1fr] gap-2 min-h-0 overflow-hidden">
-            <div className="flex flex-col gap-1.5 overflow-hidden">
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] text-theme-dim font-semibold uppercase tracking-wider">Cap</span>
-                <select value={selectedChapter} onChange={(e) => setSelectedChapter(Number(e.target.value))}
-                  className="w-16 px-1 py-0.5 bg-theme-card rounded text-xs text-theme border border-theme outline-none">
-                  {chapters.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex-1 overflow-y-auto grid grid-cols-6 gap-0.5 content-start">
-                {verses.map((v) => (
-                  <div key={v.versiculo} onClick={() => toggleVerse(v.versiculo)}
-                    className={`text-center py-1 rounded cursor-pointer text-[11px] transition-colors ${
-                      selectedVerses.has(v.versiculo) ? 'bg-[#6c5ce7] text-white' : 'text-theme-dim hover:text-theme hover:bg-theme-card'
-                    }`}>{v.versiculo}</div>
+            {/* ─── Capítulos + Versículos ─── */}
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-[10px] text-theme-dim font-bold uppercase tracking-wider mb-1 pt-1">Capítulos</span>
+              <div className="flex-1 overflow-y-auto grid grid-cols-6 gap-1 content-start">
+                {chapters.map((c) => (
+                  <div key={c} onClick={() => setSelectedChapter(c)}
+                    className={`text-center py-1.5 rounded cursor-pointer text-[11px] font-medium transition-colors ${
+                      selectedChapter === c ? 'bg-[#6c5ce7] text-white shadow-sm' : 'bg-theme-card text-theme-dim hover:text-theme hover:bg-[#6c5ce7]/10'
+                    }`}>{c}</div>
                 ))}
               </div>
+              <div className="border-t border-theme my-3 shrink-0" />
+              {selectedChapter > 0 && !search.trim() && (
+                <div className="flex flex-col min-h-0 flex-[4]">
+                  <span className="text-[10px] text-theme-dim font-bold uppercase tracking-wider flex items-center gap-1 mb-1">
+                    <BookOpen size={11} className="text-[#6c5ce7]" /> Versículos
+                  </span>
+                  <div className="flex-[10] grid grid-cols-6 gap-1 content-start">
+                    {currentVerses.map((v: any) => {
+                      const isProjected = projectedVerseNumber != null && v.versiculo === projectedVerseNumber
+                      const isSel = selectedVerse === v.versiculo
+                      let cls = 'bg-theme-card text-theme-dim hover:text-theme hover:bg-[#6c5ce7]/10'
+                      if (isSel) cls = 'bg-[#6c5ce7] text-white shadow-sm'
+                      else if (isProjected) cls = 'ring-2 ring-[#00d4ff] bg-theme-card text-[#00d4ff]'
+                      return (
+                        <div key={v.versiculo} onClick={() => {
+                          toggleVerse(v.versiculo)
+                          const ref = `${selectedBook?.nombre} ${selectedChapter}:${v.versiculo}`
+                          const text = `${v.versiculo}. ${v.texto}`
+                          onProject(text, ref)
+                          if (onLoadChapter && verses.length > 0) {
+                            const chapterRef = `${selectedBook?.nombre} ${selectedChapter}`
+                            const allVerses = verses.map((vv: any) => ({
+                              text: `${vv.versiculo}. ${vv.texto}`,
+                              reference: `${chapterRef}:${vv.versiculo}`,
+                              verseNumber: vv.versiculo
+                            }))
+                            const idx = verses.findIndex((vv: any) => vv.versiculo === v.versiculo)
+                            onLoadChapter(allVerses, idx >= 0 ? idx : 0)
+                          }
+                        }}
+                          className={`text-center py-1.5 rounded cursor-pointer text-[12px] font-medium transition-colors ${cls}`}>{v.versiculo}</div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {search.trim() && (
+                <div className="flex flex-col min-h-0 flex-[4]">
+                  <span className="text-[10px] text-theme-dim font-bold uppercase tracking-wider flex items-center gap-1 mb-1">
+                    <BookOpen size={11} className="text-[#6c5ce7]" /> Resultados
+                  </span>
+                  <div className="flex-[10] overflow-y-auto space-y-1">
+                    {currentVerses.map((v: any, i: number) => {
+                      const isSel = selectedVerse === v.versiculo
+                      return (
+                        <div key={i} onClick={() => {
+                          if (v.traduccion) {
+                            const matchTrans = translations.find((t: Translation) => t.abreviatura === v.traduccion)
+                            if (matchTrans) setSelectedTrans(matchTrans.id)
+                          }
+                          setSelectedVerse(v.versiculo)
+                          savedVerse.current = v.versiculo
+                          const ref = `${v.libro || selectedBook?.nombre} ${v.capitulo || selectedChapter}:${v.versiculo}`
+                          const text = `${v.versiculo}. ${v.texto}`
+                          onProject(text, ref)
+                          setSearch('')
+                          setSearchResults([])
+                        }}
+                          className={`p-2 rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-[#6c5ce7]/20 ring-1 ring-[#6c5ce7]' : 'bg-theme-card hover:bg-[#6c5ce7]/10'}`}>
+                          <p className="text-[9px] text-[#6c5ce7] font-semibold mb-0.5 flex items-center gap-1.5">
+                            {v.libro || selectedBook?.nombre} {v.capitulo || selectedChapter}:{v.versiculo}
+                            {v.traduccion && <span className="text-[6px] px-1.5 py-0.5 rounded-full font-normal" style={{ backgroundColor: (TRANS_COLORS[v.traduccion as string] || '#6c5ce7') + '30', color: TRANS_COLORS[v.traduccion as string] || '#6c5ce7' }}>{v.traduccion}</span>}
+                          </p>
+                          <p className="text-[9px] text-theme leading-relaxed line-clamp-2">{v.versiculo}. {v.texto}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
+            {/* ─── Vista previa del texto ─── */}
             <div className="flex flex-col gap-1.5 overflow-hidden">
               <span className="text-[9px] text-theme-dim font-semibold uppercase tracking-wider flex items-center gap-1">
-                <BookOpen size={10} className="text-[#6c5ce7]" /> Versículo
+                <BookOpen size={10} className="text-[#6c5ce7]" /> Vista previa
               </span>
               <div className="flex-1 overflow-y-auto bg-theme-card rounded-lg p-3">
                 {search.trim() ? (
-                  <div className="space-y-1">
-                    {searchResults.map((v, i) => (
-                      <div key={i} onClick={() => handleProjectResult(v)}
-                        className="group flex items-start gap-1 cursor-pointer rounded px-1 py-0.5 hover:bg-[#6c5ce7]/10 transition-colors">
-                        <Send size={10} className="text-[#6c5ce7] mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[9px] text-[#6c5ce7] font-semibold">{v.libro} {v.capitulo}:{v.versiculo}</p>
-                          <p className="text-[10px] leading-relaxed text-theme">{v.texto}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : verses.length === 0 ? (
-                  <p className="text-[10px] text-theme-dim">Selecciona un libro y capítulo</p>
+                  selectedVerse != null ? (
+                    currentVerses.filter((v: any) => v.versiculo === selectedVerse).map((v: any, i: number) => (
+                      <p key={i} className="text-xs leading-relaxed text-theme mb-2">
+                        <span className="text-[#6c5ce7] font-semibold">{v.versiculo}.</span> {v.texto}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-theme-dim">Selecciona un resultado</p>
+                  )
+                ) : !selectedChapter ? (
+                  <p className="text-[10px] text-theme-dim">Selecciona un capítulo</p>
+                ) : selectedVerse === null ? (
+                  <p className="text-[10px] text-theme-dim">Selecciona un versículo</p>
                 ) : (
-                  currentVerses.map((v) => (
-                    <p key={v.versiculo} onClick={() => toggleVerse(v.versiculo)}
-                      className={`text-xs leading-relaxed mb-1 cursor-pointer rounded px-0.5 transition-colors ${
-                        selectedVerses.has(v.versiculo) ? 'text-white bg-[#6c5ce7]/20 -mx-0.5 px-1' : 'text-theme hover:text-theme'
-                      }`}>
-                      <span className="text-[#6c5ce7] font-semibold">{v.versiculo}.</span>{' '}
-                      {v.texto}
+                  verses.filter((v) => v.versiculo === selectedVerse).map((v) => (
+                    <p key={v.versiculo} className="text-xs leading-relaxed text-theme mb-2">
+                      <span className="text-[#6c5ce7] font-semibold">{v.versiculo}.</span> {v.texto}
                     </p>
                   ))
-                )}
-                {selectedVerses.size > 1 && (
-                  <p className="text-[9px] text-theme-dim mt-2">
-                    Seleccionados: {[...selectedVerses].sort((a, b) => a - b).join(', ')}
-                  </p>
                 )}
               </div>
             </div>
           </div>
 
+          {/* ─── Proyectar ─── */}
           <div className="flex gap-2">
             <button onClick={handleProject}
-              disabled={!selectedVerses.size}
+              disabled={!selectedVerse}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#6c5ce7] rounded-lg text-[10px] font-medium hover:bg-[#5a4bd1] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               <Send size={11} /> Proyectar
             </button>
