@@ -130,6 +130,55 @@ El ReproductorPanel construye una cadena de audio:
 
 Los filtros EQ se aplican mediante `BiquadFilterNode` (lowshelf, peaking, highshelf).
 
+## Documentos (Word, PDF, TXT)
+
+### Conversión a HTML
+
+Los documentos se convierten a HTML en el proceso principal (`ipc-handlers.ts`) mediante:
+
+| Formato | Librería | Método |
+|---|---|---|
+| `.docx` | `mammoth` | `convertToHtml()` |
+| `.doc` | `mammoth` | `extractRawText()` |
+| `.pdf` | `pdfjs-dist` v2 | `getDocument()` + `getTextContent()` |
+| `.txt/.rtf` | Node.js | `readFileSync()` |
+
+### Flujo de conversión
+
+```
+Render (DirectoryBrowser) → IPC → Main Process → mammoth/pdfjs → HTML + CSS → ProjectorView
+```
+
+### PDF: Índice y páginas
+
+Para PDFs se genera automáticamente:
+1. **Índice** con número de página y primeras palabras de cada página
+2. **Páginas individuales** con diseño tipo libro, bordes y encabezado numerado
+3. Navegación por flechas igual que el resto de documentos
+
+### Estilos responsivos
+
+El CSS se define en `DOC_CSS` dentro de `ipc-handlers.ts` y usa:
+- `clamp()` con unidades `vw` para tipografía responsive
+- `width: 80%` centrado en pantalla
+- Fuente moderna (Inter, Segoe UI)
+- Diseño limpio con bordes redondeados y sombras sutiles
+
+## Navegación por teclado
+
+### En ventana principal (DashboardView)
+
+| Tecla | Acción |
+|---|---|
+| ← | Versículo anterior (`projector:prevVerse`) |
+| → | Versículo siguiente (`projector:nextVerse`) |
+| ↑ | Scroll arriba en documento (`projector:scrollDocument('up')`) |
+| ↓ | Scroll abajo en documento (`projector:scrollDocument('down')`) |
+
+### En ventana del proyector (ProjectorView)
+
+El `ProjectorView` también escucha `projector:scrollDocument` para desplazar el contenedor `.doc-scroll-container` cuando hay un documento HTML activo.
+
 ## Actualizaciones
 
 Configurado via `electron-updater` con GitHub Releases:
@@ -144,6 +193,14 @@ Configurado via `electron-updater` con GitHub Releases:
 }
 ```
 
+Requiere variable de entorno `GH_TOKEN` con un token de GitHub (scope `repo`).
+
+### Configurar token permanente
+
+```powershell
+[Environment]::SetEnvironmentVariable("GH_TOKEN", "tu_token_aqui", "User")
+```
+
 ## Empaquetado
 
 ```bash
@@ -151,3 +208,11 @@ npm run release
 ```
 
 Genera instalador NSIS para Windows en `/release`.
+
+### Script de release
+
+```bash
+npm run typecheck  # Verifica tipos
+electron-vite build  # Compila app
+electron-builder --win --publish always  # Empaqueta y sube a GitHub Releases
+```

@@ -4,7 +4,7 @@ Sistema profesional de proyección multimedia para iglesias, construido con Elec
 
 ## Versión
 
-1.0.0
+1.2.1
 
 ## Desarrollador
 

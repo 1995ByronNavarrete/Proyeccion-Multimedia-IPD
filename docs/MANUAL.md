@@ -95,11 +95,25 @@ El dashboard está organizado en 3 columnas:
 
 ---
 
-## Atajos de Teclado
+## Documentos (Word, PDF, TXT)
+
+### Proyección de documentos
+1. Desde el explorador de archivos (Directorio Multimedia), selecciona la pestaña **Documentos**
+2. Haz clic en cualquier archivo `.docx`, `.doc`, `.pdf`, `.txt` o `.rtf`
+3. Se proyecta automáticamente en la pantalla externa
+
+### Vista previa inteligente
+- **Word (.docx)**: Se convierte a HTML preservando formato, tablas, imágenes y listas
+- **Word (.doc)**: Se extrae el texto y se muestra con formato elegante
+- **PDF**: Se extrae el texto por páginas con un **índice interactivo** al inicio y páginas numeradas
+- **TXT/RTF**: Se muestra el texto plano con el mismo diseño profesional
+
+### Navegación con teclado
 
 | Tecla | Acción |
 |---|---|
 | ← → | Verso anterior / siguiente |
+| ↑ ↓ | Desplazar documento (Word, PDF, TXT) |
 | F11 | Pantalla completa |
 | Esc | Cerrar modal / panel |
 
