@@ -54,6 +54,17 @@ export function getBundledDbPath(): string | null {
   return null
 }
 
+export function getBibleBackupPath(): string | null {
+  const bundled = getBundledResourcesPath()
+  if (bundled) {
+    const p = join(bundled, 'BDBiblia', 'biblia-backup.db')
+    if (existsSync(p)) return p
+  }
+  const userPath = join(app.getPath('userData'), 'DesktopAppIPD', 'BDBiblia', 'biblia-backup.db')
+  if (existsSync(userPath)) return userPath
+  return null
+}
+
 export function getBundledDataDbPath(): string | null {
   try {
     if (process.resourcesPath) {

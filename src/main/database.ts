@@ -2,7 +2,7 @@ import initSqlJs, { Database as SqlJsDatabase, SqlValue } from 'sql.js'
 import { app } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { getBundledDbPath, getBundledDataDbPath } from './shared'
+import { getBundledDbPath, getBundledDataDbPath, getBibleBackupPath } from './shared'
 
 let db: SqlJsDatabase | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
@@ -179,7 +179,26 @@ export async function seedBibleIfEmpty(): Promise<void> {
     return
   }
 
-  // Intento 1: seed desde bible-data.db
+  // Intento 1: copiar biblia-backup.db (BDBiblia) - más completo
+  try {
+    const backupPath = getBibleBackupPath()
+    if (backupPath) {
+      const destPath = getDbPath()
+      const buf = readFileSync(backupPath)
+      writeFileSync(destPath, Buffer.from(buf))
+      db = null
+      const SQL = await initSqlJs()
+      db = new SQL.Database(readFileSync(destPath))
+      db.run('PRAGMA foreign_keys = ON')
+      registerCustomFunctions()
+      console.log('[seed] Bible restored from BDBiblia/biblia-backup.db')
+      return
+    }
+  } catch (err) {
+    console.error('[seed] Error restoring from BDBiblia backup:', err)
+  }
+
+  // Intento 2: seed desde bible-data.db
   let dbPath: string | null = null
   try { dbPath = getBundledDbPath() } catch {}
   if (dbPath) {
