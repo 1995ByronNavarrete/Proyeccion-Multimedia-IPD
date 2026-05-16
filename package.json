@@ -5,7 +5,8 @@
   "author": "Byron Antonio Navarrete Cañada",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "clean": "node -e \"require('fs').rmSync('./out',{recursive:true,force:true})\"",
+    "dev": "npm run clean && electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "postinstall": "electron-builder install-app-deps",
