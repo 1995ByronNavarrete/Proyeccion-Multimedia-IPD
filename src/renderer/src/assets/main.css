@@ -135,7 +135,7 @@ body {
 .anim-glitch     { animation: glitchIn 1s ease-out both; }
 
 /* Nuevos dinámicos */
-.anim-typewriter  { animation: typewriter 1.2s steps(40) 0.1s both; overflow: hidden; white-space: nowrap; display: inline-block; }
+.anim-typewriter  { animation: typewriter 1.5s steps(60) 0.1s both; overflow: hidden; display: block; }
 .anim-light-sweep { animation: lightSweep 1s var(--anim-smooth) both; }
 .anim-drop-in     { animation: dropIn 0.8s var(--anim-spring) both; }
 .anim-wave        { animation: waveIn 0.9s var(--anim-smooth) both; }

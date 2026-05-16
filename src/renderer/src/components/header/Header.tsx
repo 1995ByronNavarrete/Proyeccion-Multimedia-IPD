@@ -167,95 +167,95 @@ export default function Header() {
       {showSettings && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
-          <div className="absolute top-full right-4 mt-1 z-50 bg-[rgba(8,12,30,0.98)] bg-theme-panel border border-[rgba(120,80,255,0.25)] border-theme rounded-xl p-3 shadow-2xl shadow-black/50 min-w-[260px]">
-            <h4 className="text-[10px] font-semibold text-gray-400 text-theme-muted uppercase tracking-wider mb-3">Configuración</h4>
-            <div className="space-y-2.5">
+          <div className="absolute top-full right-4 mt-1 z-50 bg-[rgba(8,12,30,0.98)] bg-theme-panel border border-[rgba(120,80,255,0.25)] border-theme rounded-xl p-4 shadow-2xl shadow-black/50 min-w-[320px] max-h-[80vh] overflow-y-auto">
+            <h4 className="text-sm font-semibold text-gray-400 text-theme-muted uppercase tracking-wider mb-4">Configuración</h4>
+            <div className="space-y-3">
               <div>
-                <label className="text-[8px] text-gray-500 text-theme-muted block mb-1">Logotipo</label>
+                <label className="text-xs text-gray-500 text-theme-muted block mb-1">Logotipo</label>
                 <div className="flex items-center gap-2">
                   {logoSrc && (
-                    <img src={logoSrc} alt="Logo" className="h-10 w-10 rounded-lg object-cover border border-[rgba(120,80,255,0.15)] border-theme" />
+                    <img src={logoSrc} alt="Logo" className="h-12 w-12 rounded-lg object-cover border border-[rgba(120,80,255,0.15)] border-theme" />
                   )}
                   <button onClick={handleSelectLogo} disabled={loadingLogo}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#091225] bg-theme-card rounded-lg text-[9px] text-gray-400 text-theme-muted hover:text-white text-theme transition-colors border border-[rgba(120,80,255,0.15)] border-theme">
-                    <Image size={10} /> {loadingLogo ? 'Cargando...' : logoSrc ? 'Cambiar' : 'Seleccionar'}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#091225] bg-theme-card rounded-lg text-xs text-gray-400 text-theme-muted hover:text-white text-theme transition-colors border border-[rgba(120,80,255,0.15)] border-theme">
+                    <Image size={14} /> {loadingLogo ? 'Cargando...' : logoSrc ? 'Cambiar' : 'Seleccionar'}
                   </button>
                   {logoSrc && (
                     <button onClick={handleRemoveLogo}
-                      className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors">
-                      <Trash2 size={10} className="text-gray-500 hover:text-red-400" />
+                      className="p-2 hover:bg-red-500/20 rounded-lg transition-colors">
+                      <Trash2 size={14} className="text-gray-500 hover:text-red-400" />
                     </button>
                   )}
                 </div>
               </div>
               <div>
-                <label className="text-[8px] text-gray-500 text-theme-muted block mb-1">Logo para proyección</label>
+                <label className="text-xs text-gray-500 text-theme-muted block mb-1">Logo para proyección</label>
                 <div className="flex items-center gap-2">
                   {videoLogoSrc && (
-                    <img src={videoLogoSrc} alt="Logo Proy." className="h-10 w-10 rounded-lg object-cover border border-[rgba(120,80,255,0.15)] border-theme" />
+                    <img src={videoLogoSrc} alt="Logo Proy." className="h-12 w-12 rounded-lg object-cover border border-[rgba(120,80,255,0.15)] border-theme" />
                   )}
                   <button onClick={handleSelectVideoLogo} disabled={loadingVideoLogo}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#091225] bg-theme-card rounded-lg text-[9px] text-gray-400 text-theme-muted hover:text-white text-theme transition-colors border border-[rgba(120,80,255,0.15)] border-theme">
-                    <Image size={10} /> {loadingVideoLogo ? 'Cargando...' : videoLogoSrc ? 'Cambiar' : 'Seleccionar'}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#091225] bg-theme-card rounded-lg text-xs text-gray-400 text-theme-muted hover:text-white text-theme transition-colors border border-[rgba(120,80,255,0.15)] border-theme">
+                    <Image size={14} /> {loadingVideoLogo ? 'Cargando...' : videoLogoSrc ? 'Cambiar' : 'Seleccionar'}
                   </button>
                   {videoLogoSrc && (
                     <button onClick={handleRemoveVideoLogo}
-                      className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors">
-                      <Trash2 size={10} className="text-gray-500 hover:text-red-400" />
+                      className="p-2 hover:bg-red-500/20 rounded-lg transition-colors">
+                      <Trash2 size={14} className="text-gray-500 hover:text-red-400" />
                     </button>
                   )}
                 </div>
               </div>
               <div>
-                <label className="text-[8px] text-gray-500 text-theme-muted block mb-1">Nombre principal</label>
+                <label className="text-xs text-gray-500 text-theme-muted block mb-1">Nombre principal</label>
                 <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-2 py-1.5 bg-[#091225] bg-theme-card rounded-lg text-[10px] text-gray-200 text-theme border border-[rgba(120,80,255,0.15)] border-theme outline-none focus:border-[rgba(120,80,255,0.5)]" />
+                  className="w-full px-3 py-2 bg-[#091225] bg-theme-card rounded-lg text-sm text-gray-200 text-theme border border-[rgba(120,80,255,0.15)] border-theme outline-none focus:border-[rgba(120,80,255,0.5)]" />
               </div>
               <div>
-                <label className="text-[8px] text-gray-500 text-theme-muted block mb-1">Subtítulo</label>
+                <label className="text-xs text-gray-500 text-theme-muted block mb-1">Subtítulo</label>
                 <input type="text" value={editSub} onChange={(e) => setEditSub(e.target.value)}
-                  className="w-full px-2 py-1.5 bg-[#091225] bg-theme-card rounded-lg text-[10px] text-gray-200 text-theme border border-[rgba(120,80,255,0.15)] border-theme outline-none focus:border-[rgba(120,80,255,0.5)]" />
+                  className="w-full px-3 py-2 bg-[#091225] bg-theme-card rounded-lg text-sm text-gray-200 text-theme border border-[rgba(120,80,255,0.15)] border-theme outline-none focus:border-[rgba(120,80,255,0.5)]" />
               </div>
-              <div className="border-t border-[rgba(120,80,255,0.15)] pt-2 mt-1">
-                <p className="text-[8px] text-theme-muted mb-1.5 flex items-center gap-1"><Keyboard size={8} /> Atajos de teclado</p>
-                <div className="space-y-1 text-[7px]">
+              <div className="border-t border-[rgba(120,80,255,0.15)] pt-3 mt-2">
+                <p className="text-xs text-theme-muted mb-2 flex items-center gap-1"><Keyboard size={12} /> Atajos de teclado</p>
+                <div className="space-y-1.5 text-[10px]">
                   {shortcuts.map((s, i) => (
                     <div key={i} className="flex items-center gap-1">
                       <input type="text" value={s.key} readOnly
                         onFocus={e => { e.target.value = 'Presiona una tecla...'; const handler = (ke: KeyboardEvent) => { ke.preventDefault(); const combo: string[] = []; if (ke.ctrlKey) combo.push('Ctrl'); if (ke.altKey) combo.push('Alt'); if (ke.shiftKey) combo.push('Shift'); combo.push(ke.key === ' ' ? 'Espacio' : ke.key); const val = combo.join('+'); const next = [...shortcuts]; next[i] = { ...next[i], key: val }; setShortcuts(next); window.removeEventListener('keydown', handler); (document.activeElement as HTMLElement)?.blur() }; window.addEventListener('keydown', handler); e.target.addEventListener('blur', () => window.removeEventListener('keydown', handler), { once: true }) }}
-                        className="w-20 bg-theme-card px-1 py-0.5 rounded font-mono text-[#6c5ce7] text-center border border-theme outline-none cursor-pointer" />
+                        className="w-24 bg-theme-card px-2 py-1 rounded font-mono text-[#6c5ce7] text-center border border-theme outline-none cursor-pointer text-xs" />
                       <input type="text" value={s.desc} onChange={e => { const next = [...shortcuts]; next[i] = { ...next[i], desc: e.target.value }; setShortcuts(next) }}
-                        className="flex-1 bg-transparent text-theme-dim outline-none border-b border-transparent focus:border-theme-dim/30" />
+                        className="flex-1 bg-transparent text-theme-dim outline-none border-b border-transparent focus:border-theme-dim/30 text-xs" />
                       <button onClick={() => { const next = shortcuts.filter((_, j) => j !== i); setShortcuts(next); localStorage.setItem('shortcuts', JSON.stringify(next)) }}
-                        className="p-0.5 text-theme-dim hover:text-red-400">✕</button>
+                        className="p-1 text-theme-dim hover:text-red-400 text-xs">✕</button>
                     </div>
                   ))}
                   <button onClick={() => { const next = [...shortcuts, { key: '', desc: '' }]; setShortcuts(next) }}
-                    className="text-[7px] text-theme-dim hover:text-theme mt-1">+ Agregar atajo</button>
+                    className="text-[10px] text-theme-dim hover:text-theme mt-1">+ Agregar atajo</button>
                   <button onClick={() => localStorage.setItem('shortcuts', JSON.stringify(shortcuts))}
-                    className="w-full text-[7px] py-1 mt-1 bg-[#6c5ce7]/20 text-[#6c5ce7] rounded hover:bg-[#6c5ce7]/30 transition-colors">Guardar atajos</button>
+                    className="w-full text-[10px] py-1.5 mt-1 bg-[#6c5ce7]/20 text-[#6c5ce7] rounded hover:bg-[#6c5ce7]/30 transition-colors">Guardar atajos</button>
                 </div>
               </div>
-              <div className="border-t border-[rgba(120,80,255,0.15)] pt-2 mt-1">
-                <p className="text-[8px] text-gray-500 mb-1.5">Respaldo de datos</p>
+              <div className="border-t border-[rgba(120,80,255,0.15)] pt-3 mt-2">
+                <p className="text-xs text-gray-500 mb-1.5">Respaldo de datos</p>
                 <div className="flex gap-2">
                   <button onClick={async () => { const r = await window.api.backup.create(); if (r.success) alert('Backup creado en:\n' + r.data?.path); else alert('Error: ' + r.error) }}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-[#091225] rounded-lg text-[8px] text-gray-400 hover:text-white transition-colors border border-[rgba(120,80,255,0.15)]">
-                    <Download size={8} /> Respaldar
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#091225] rounded-lg text-[10px] text-gray-400 hover:text-white transition-colors border border-[rgba(120,80,255,0.15)]">
+                    <Download size={10} /> Respaldar
                   </button>
                   <button onClick={async () => { const r = await window.api.backup.restore(); if (r.success) { alert('Restauración exitosa. Reinicia la app.'); window.api.app.quit() } else if (r.error !== 'Cancelado') alert('Error: ' + r.error) }}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-[#091225] rounded-lg text-[8px] text-gray-400 hover:text-white transition-colors border border-[rgba(120,80,255,0.15)]">
-                    <Upload size={8} /> Restaurar
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-[#091225] rounded-lg text-[10px] text-gray-400 hover:text-white transition-colors border border-[rgba(120,80,255,0.15)]">
+                    <Upload size={10} /> Restaurar
                   </button>
                 </div>
               </div>
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2 pt-2">
                 <button onClick={() => setShowSettings(false)}
-                  className="flex-1 text-[9px] py-1.5 bg-transparent text-gray-500 rounded-lg border border-[rgba(120,80,255,0.15)] border-theme hover:text-white text-theme transition-colors">
+                  className="flex-1 text-xs py-2 bg-transparent text-gray-500 rounded-lg border border-[rgba(120,80,255,0.15)] border-theme hover:text-white text-theme transition-colors">
                   Cancelar
                 </button>
                 <button onClick={saveSettings}
-                  className="flex-1 text-[9px] py-1.5 bg-[#6c5ce7] text-white rounded-lg hover:bg-[#5a4bd1] transition-colors font-medium">
+                  className="flex-1 text-xs py-2 bg-[#6c5ce7] text-white rounded-lg hover:bg-[#5a4bd1] transition-colors font-medium">
                   Guardar
                 </button>
               </div>
@@ -316,7 +316,7 @@ export default function Header() {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 shadow-sm">2</span>
-                    <div><p className="text-[11px] font-bold text-amber-400">Edwin Gaitán Castro</p><p className="text-[9px] text-theme-dim mt-0.5 leading-relaxed">Imágenes en la proyección · Proyección de documentos</p><p className="text-[9px] text-theme-dim leading-relaxed">Control de tiempo</p></div>
+                    <div><p className="text-[11px] font-bold text-amber-400">Edwin Gaitán Castro <span className="text-[9px] text-amber-400/70 font-normal">(Colaborador)</span></p><p className="text-[9px] text-theme-dim mt-0.5 leading-relaxed">Imágenes en la proyección · Proyección de documentos</p><p className="text-[9px] text-theme-dim leading-relaxed">Control de tiempo</p></div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-teal-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 shadow-sm">4</span>
@@ -324,7 +324,7 @@ export default function Header() {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5 shadow-sm">3</span>
-                    <div><p className="text-[11px] font-bold text-purple-400">Jehiel</p><p className="text-[9px] text-theme-dim mt-0.5 leading-relaxed">Filtrar Biblia por versión · Agregar archivos desde la interfaz · Información de prédica</p></div>
+                    <div><p className="text-[11px] font-bold text-purple-400">Jehiel <span className="text-[9px] text-purple-400/70 font-normal">(Colaborador)</span></p><p className="text-[9px] text-theme-dim mt-0.5 leading-relaxed">Filtrar Biblia por versión · Agregar archivos desde la interfaz · Información de prédica</p></div>
                   </div>
                 </div>
               </div>
