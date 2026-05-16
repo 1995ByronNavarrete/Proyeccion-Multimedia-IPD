@@ -109,10 +109,15 @@ export default function DirectoryBrowser({ onPlayBg }: DirectoryBrowserProps) {
           className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[8px] font-semibold transition-colors ${tab === 'videos' ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
           <FileVideo size={10} /> Videos ({videos.length})
         </button>
-        <button onClick={() => setTab('documentos')}
-          className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[8px] font-semibold transition-colors ${tab === 'documentos' ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
-          <FileText size={10} /> Docs ({documentos.length})
-        </button>
+        <div className="flex-1 relative group">
+          <button disabled
+            className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[8px] font-semibold bg-theme-card text-theme-dim/40 cursor-not-allowed">
+            <FileText size={10} /> Docs — Próximamente
+          </button>
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
+            <div className="bg-[#1a1a3e] text-[9px] text-theme-dim px-2 py-1 rounded shadow-lg whitespace-nowrap">En desarrollo</div>
+          </div>
+        </div>
       </div>
 
       <div className="px-2 pt-1.5 pb-0.5 flex items-center justify-between shrink-0">

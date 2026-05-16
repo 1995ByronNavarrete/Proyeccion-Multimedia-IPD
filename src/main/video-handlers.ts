@@ -47,6 +47,24 @@ async function ytDlpGetUrl(videoId: string, format: string): Promise<string | nu
   }
 }
 
+const streamCache = new Map<string, { url: string; expires: number }>()
+const CACHE_TTL = 30 * 60 * 1000
+
+function getCachedStream(videoId: string): string | null {
+  const entry = streamCache.get(videoId)
+  if (entry && Date.now() < entry.expires) return entry.url
+  streamCache.delete(videoId)
+  return null
+}
+
+function setCachedStream(videoId: string, url: string): void {
+  if (streamCache.size > 100) {
+    const first = streamCache.keys().next().value
+    if (first) streamCache.delete(first)
+  }
+  streamCache.set(videoId, { url, expires: Date.now() + CACHE_TTL })
+}
+
 let openProjector: (() => void) | null = null
 let onVideoPlay: ((url: string, title: string, duration: number) => void) | null = null
 
@@ -111,11 +129,18 @@ export function registerVideoHandlers(): void {
       console.error('[ytdl] play-dl error:', e?.message || e)
     }
 
+    // ── Cache check ──
+    const cached = getCachedStream(videoId)
+    if (cached) {
+      return { success: true, data: { url: cached, title, duration } }
+    }
+
     // ── INTENTO: yt-dlp directo (child_process) con múltiples formatos ──
     const formats = ['best[ext=mp4]', 'best[height<=1080]', 'worst[ext=mp4]', 'best[height<=720]']
     for (const fmt of formats) {
       const url = await ytDlpGetUrl(videoId, fmt)
       if (url) {
+        setCachedStream(videoId, url)
         return { success: true, data: { url, title, duration } }
       }
     }
