@@ -142,17 +142,17 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
             )}
             <div className="relative text-center px-6">
               {isVerse ? (
-                <div key={`${projected!.text}-${projected!.backgroundUrl}`} className="px-2">
+                <div key={`${projected!.text}-${projected!.backgroundUrl}`}>
                   {activeAnim.startsWith('anim-letter-') ? (
-                    <p className={`text-[10px] font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim}`}>
+                    <p className={`text-sm font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim}`}>
                       {projected?.text?.split('').map((char, i) => (
                         <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
                       ))}
                     </p>
                   ) : (
-                    <p className={`text-[10px] font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>{projected!.text}</p>
+                    <p className={`text-sm font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>{projected!.text}</p>
                   )}
-                  <p className={`text-[9px] text-white/70 mt-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>— {projected?.reference}</p>
+                  <p className={`text-[11px] text-white/70 mt-4 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>— {projected?.reference}</p>
                 </div>
               ) : (backgroundUrl || projected?.backgroundUrl) ? (
                 <div>

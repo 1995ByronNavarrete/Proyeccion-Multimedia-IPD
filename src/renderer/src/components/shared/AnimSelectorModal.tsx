@@ -57,21 +57,20 @@ export default function AnimSelectorModal({ open, onClose, onSave, currentAnim, 
           {showPreview && (
             <div className="w-[460px] shrink-0 border-r border-theme flex flex-col p-3">
               <p className="text-[8px] text-theme-dim font-semibold uppercase tracking-wider mb-2">Vista previa</p>
-              <div className="flex-1 rounded-lg overflow-hidden relative bg-black" style={{ aspectRatio: '16/9' }} key={displayAnim}>
-                {previewBg && <img src={previewBg} alt="" className="absolute inset-0 w-full h-full object-contain" />}
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4">
-                  <div className="text-center">
-                    {isLetterAnim ? (
-                      <p className={`text-2xl font-bold text-white leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] ${displayAnim}`}>
-                        {previewContent.split('').map((char, i) => (
-                          <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
-                        ))}
-                      </p>
-                    ) : (
-                      <p className={`text-2xl font-bold text-white leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] ${displayAnim} anim-delay-text`}>{previewContent}</p>
-                    )}
-                    <p className={`text-base text-white/70 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)] ${displayAnim} anim-delay-ref`}>— {previewReference}</p>
-                  </div>
+              <div className="flex-1 rounded-lg overflow-hidden relative bg-black flex items-center justify-center" style={{ aspectRatio: '16/9' }} key={displayAnim}>
+                {previewBg && <img src={previewBg} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+                <div className="absolute inset-0 bg-black/50" />
+                <div className="relative z-10 text-center px-4 max-w-full">
+                  {isLetterAnim ? (
+                    <p className={`text-xs sm:text-sm md:text-base font-bold text-white leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] ${displayAnim}`}>
+                      {previewContent.split('').map((char, i) => (
+                        <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
+                      ))}
+                    </p>
+                  ) : (
+                    <p className={`text-xs sm:text-sm md:text-base font-bold text-white leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] ${displayAnim} anim-delay-text`}>{previewContent}</p>
+                  )}
+                  <p className={`text-[10px] sm:text-xs text-white/70 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.95)] ${displayAnim} anim-delay-ref`}>— {previewReference}</p>
                 </div>
               </div>
               <p className="text-[7px] text-theme-dim text-center mt-1">{currentLabel}</p>
