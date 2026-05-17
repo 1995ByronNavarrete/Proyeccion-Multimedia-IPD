@@ -110,7 +110,7 @@ export default function ProjectorView() {
         paused: false,
         title: titleRef.current
       })
-    }, 500)
+    }, 1000)
   }, [stopYtTimer])
 
   const startLocalTimer = useCallback(() => {
@@ -125,7 +125,7 @@ export default function ProjectorView() {
           title: titleRef.current
         })
       }
-    }, 500)
+    }, 1000)
   }, [stopLocalTimer])
 
   useEffect(() => {
@@ -214,6 +214,12 @@ export default function ProjectorView() {
 
     const unsub1 = window.api.on('projector:content', (arg: unknown) => {
       const data = arg as { type?: string; text?: string; reference?: string; mediaUrl?: string; backgroundUrl?: string; animation?: string; effect?: string; speed?: number; sermonTitle?: string; sermonPreacher?: string } | undefined
+      const clearVideo = () => {
+        const v = videoRef.current
+        if (v) { v.pause(); v.src = ''; v.load() }
+        setVideoUrl('')
+        stopLocalTimer(); stopYtTimer()
+      }
       if (data?.type === 'verse') {
         setEffect(null); setDocUrl(''); setDocHtmlContent(''); setDocCss('')
         setVerseText(data.text || '')
@@ -222,12 +228,11 @@ export default function ProjectorView() {
         setVerseAnimation(data.animation || 'anim-fade')
         setSermonTitle(data.sermonTitle || '')
         setSermonPreacher(data.sermonPreacher || '')
-        setIsBlack(false); setVideoUrl('')
-        stopLocalTimer(); stopYtTimer()
+        setIsBlack(false); clearVideo()
       } else if (data?.type === 'effect') {
         setEffect({ type: data.effect || 'waves', speed: data.speed || 1 })
-        setVerseText(''); setVerseRef(''); setVerseBackground(''); setVideoUrl(''); setIsImage(false); setIsBlack(false); setDocUrl('')
-        stopLocalTimer(); stopYtTimer()
+        setVerseText(''); setVerseRef(''); setVerseBackground(''); setIsImage(false); setIsBlack(false); setDocUrl('')
+        clearVideo()
       } else if (data?.type === 'media' && (data.mediaUrl?.startsWith('data:image') || data.mediaUrl?.startsWith('file://') || data.mediaUrl?.match(/\.(png|jpg|jpeg|gif|webp|bmp)/i))) {
         setEffect(null); setDocUrl('')
         setVerseText('')
@@ -240,15 +245,18 @@ export default function ProjectorView() {
         setVideoTitle(data.text || 'Imagen')
         stopLocalTimer(); stopYtTimer()
       } else if (data?.type === 'document' && data.mediaUrl) {
-        setEffect(null); setVerseText(''); setVerseRef(''); setVerseBackground(''); setVideoUrl(''); setIsImage(false); setIsBlack(false)
+        setEffect(null); setVerseText(''); setVerseRef(''); setVerseBackground(''); setIsImage(false); setIsBlack(false)
         setDocUrl(data.mediaUrl)
         setVideoTitle(data.text || 'Documento')
-        stopLocalTimer(); stopYtTimer()
+        clearVideo()
       }
     })
 
     const unsub2 = window.api.on('projector:showBlack', () => {
-      setIsBlack(true); setEffect(null); setVerseText(''); setVerseRef(''); setVerseBackground(''); setVideoUrl(''); setIsImage(false)
+      setIsBlack(true); setEffect(null); setVerseText(''); setVerseRef(''); setVerseBackground(''); setIsImage(false)
+      const v = videoRef.current
+      if (v) { v.pause(); v.src = ''; v.load() }
+      setVideoUrl('')
       stopLocalTimer(); stopYtTimer()
     })
 
@@ -270,15 +278,17 @@ export default function ProjectorView() {
 
     const unsub4 = window.api.on('projector:stopVideo', () => {
       stopLocalTimer(); stopYtTimer()
+      const v = videoRef.current
+      if (v) { v.pause(); v.src = ''; v.load() }
       setVideoUrl('')
     })
 
     const unsub5 = window.api.on('projector:pauseVideo', () => {
-      const v = document.querySelector('video')
-      if (v) { v.pause(); return }
-      const iframe = iframeRef.current || document.querySelector('iframe[src*="youtube.com/embed"]')
-      if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage(YT_CMD('pauseVideo'), '*')
+      const v = videoRef.current
+      if (v && v.src) { v.pause(); return }
+      const ifr = iframeRef.current
+      if (ifr?.contentWindow) {
+        ifr.contentWindow.postMessage(YT_CMD('pauseVideo'), '*')
       }
       setYtPaused(true)
       ytElapsedRef.current = (Date.now() - ytStartTime.current) / 1000
@@ -286,11 +296,11 @@ export default function ProjectorView() {
     })
 
     const unsub6 = window.api.on('projector:resumeVideo', () => {
-      const v = document.querySelector('video')
-      if (v) { v.play().catch(() => {}); return }
-      const iframe = iframeRef.current || document.querySelector('iframe[src*="youtube.com/embed"]')
-      if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage(YT_CMD('playVideo'), '*')
+      const v = videoRef.current
+      if (v && v.src) { v.play().catch(() => {}); return }
+      const ifr = iframeRef.current
+      if (ifr?.contentWindow) {
+        ifr.contentWindow.postMessage(YT_CMD('playVideo'), '*')
       }
       setYtPaused(false)
       ytStartTime.current = Date.now() - ytElapsedRef.current * 1000
@@ -299,24 +309,24 @@ export default function ProjectorView() {
 
     const unsub7 = window.api.on('projector:seekVideo', (arg: unknown) => {
       const time = arg as number
-      const v = document.querySelector('video')
-      if (v) { v.currentTime = time; return }
+      const v = videoRef.current
+      if (v && v.src) { v.currentTime = time; return }
       stopYtTimer()
       ytElapsedRef.current = time
       ytStartTime.current = Date.now() - time * 1000
-      const iframe = iframeRef.current || document.querySelector('iframe[src*="youtube.com/embed"]')
-      if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [time, true] }), '*')
+      const ifr = iframeRef.current
+      if (ifr?.contentWindow) {
+        ifr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [time, true] }), '*')
       }
     })
 
     const unsub8 = window.api.on('projector:volumeVideo', (arg: unknown) => {
       const vol = arg as number
-      const v = document.querySelector('video')
-      if (v) { v.volume = Math.max(0, Math.min(1, vol / 100)); return }
-      const iframe = iframeRef.current || document.querySelector('iframe[src*="youtube.com/embed"]')
-      if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [vol] }), '*')
+      const v = videoRef.current
+      if (v && v.src) { v.volume = Math.max(0, Math.min(1, vol / 100)); return }
+      const ifr = iframeRef.current
+      if (ifr?.contentWindow) {
+        ifr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [vol] }), '*')
       }
     })
 
@@ -466,14 +476,14 @@ export default function ProjectorView() {
   } else if (videoUrl && isYoutube) {
     content = (
       <div className="h-screen w-screen bg-black relative">
-        <iframe ref={iframeRef} src={videoUrl} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen" allowFullScreen
+        <iframe ref={iframeRef} src={videoUrl} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen" allowFullScreen loading="lazy"
           onError={(e) => console.error('[YT Iframe error]', e)} />
       </div>
     )
   } else if (videoUrl) {
     content = (
       <div className="h-screen w-screen bg-black relative">
-        <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain" controls={false} autoPlay
+        <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain" controls={false} autoPlay playsInline muted preload="metadata"
           onError={(e) => { const v = e.currentTarget; console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message) }} />
       </div>
     )

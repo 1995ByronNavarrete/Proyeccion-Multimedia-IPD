@@ -8,7 +8,10 @@ const ytSearch = require('yt-search')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const play = require('play-dl')
 
-function findYtDlpPath(): string {
+let ytDlpPath: string | null = null
+
+function getYtDlpPath(): string {
+  if (ytDlpPath) return ytDlpPath
   const fs = require('fs')
   const { dirname } = require('path')
   const modPath = (() => {
@@ -24,22 +27,23 @@ function findYtDlpPath(): string {
     join(process.resourcesPath, 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe')
   ]
   for (const p of paths) {
-    try { if (fs.existsSync(p)) return p } catch {}
+    try { if (fs.existsSync(p)) { ytDlpPath = p; return p } } catch {}
   }
   const fallback = join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp.exe')
   console.log('[yt-dlp] Binary not found, trying fallback:', fallback)
+  ytDlpPath = fallback
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 15000): Promise<string | null> {
   try {
-    const binaryPath = findYtDlpPath()
+    const binaryPath = getYtDlpPath()
     const { stdout } = await execFileAsync(binaryPath, [
       '--no-warnings',
       '--get-url',
       '-f', format,
       `https://www.youtube.com/watch?v=${videoId}`
-    ], { timeout: 30000 })
+    ], { timeout })
     const url = stdout?.toString().trim()
     return url?.startsWith('http') ? url : null
   } catch {
@@ -96,64 +100,78 @@ export function registerVideoHandlers(): void {
           id: v.videoId,
           title: v.title || '',
           channel: v.author?.name || '',
-          thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${v.videoId}/default.jpg`,
+          thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`,
           description: (v.description || '').substring(0, 200)
         }))
+      // Pre-calentar cache del primer resultado
+      if (videos.length > 0 && !getCachedStream(videos[0].id)) {
+        resolveStreamUrl(videos[0].id).then(url => { if (url) setCachedStream(videos[0].id, url) })
+      }
       return { success: true, data: videos }
     } catch (err) {
       return { success: false, error: String(err), data: [] }
     }
   })
 
-  ipcMain.handle('ytdl:getStreamUrl', async (_event, videoId: string) => {
+  async function resolveStreamUrl(videoId: string): Promise<string | null> {
+    const formats = ['best[height<=720]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
+    // Primeros 2 formatos en paralelo + fallbacks secuenciales
+    const [a, b] = await Promise.all([
+      ytDlpGetUrl(videoId, formats[0], 20000),
+      ytDlpGetUrl(videoId, formats[1], 10000)
+    ])
+    if (a) return a
+    if (b) return b
+    for (let i = 2; i < formats.length; i++) {
+      const url = await ytDlpGetUrl(videoId, formats[i], 10000)
+      if (url) return url
+    }
+    return null
+  }
+
+  async function getMeta(videoId: string): Promise<{ title: string; duration: number }> {
     let duration = 0
     let title = ''
-
-    // Obtener metadatos desde yt-search
     try {
-      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
-      const result = await ytSearch(videoUrl)
+      const result = await ytSearch(`https://www.youtube.com/watch?v=${videoId}`)
       if (result && typeof result === 'object') {
         if (result.seconds != null) duration = Number(result.seconds) || 0
         if (result.title) title = result.title
-        if (!duration && result.videos && result.videos.length > 0) {
+        if (!duration && result.videos?.length) {
           const v = result.videos[0]
           duration = v.duration ? (v.duration.seconds || Number(v.duration) || 0) : 0
           if (!title) title = v.title || ''
         }
       }
-    } catch (e: any) {
-      console.error('[ytdl] yt-search error:', e?.message || e)
+    } catch {}
+    if (!title || !duration) {
+      try {
+        const info = await play.video_basic_info(`https://www.youtube.com/watch?v=${videoId}`)
+        if (!title) title = info.video_details?.title || ''
+        if (!duration) duration = info.video_details?.durationInSec || 0
+      } catch {}
     }
+    return { title, duration }
+  }
 
-    // Intentar obtener metadatos desde play-dl
-    try {
-      const info = await play.video_basic_info(`https://www.youtube.com/watch?v=${videoId}`)
-      if (!title) title = info.video_details?.title || ''
-      if (!duration) duration = info.video_details?.durationInSec || 0
-    } catch (e: any) {
-      console.error('[ytdl] play-dl error:', e?.message || e)
-    }
-
-    // ── Cache check ──
+  ipcMain.handle('ytdl:getStreamUrl', async (_event, videoId: string) => {
     const cached = getCachedStream(videoId)
+    const [meta, streamUrl] = await Promise.all([
+      getMeta(videoId),
+      cached ? Promise.resolve<string | null>(null) : resolveStreamUrl(videoId)
+    ])
+
     if (cached) {
-      return { success: true, data: { url: cached, title, duration } }
+      return { success: true, data: { url: cached, title: meta.title, duration: meta.duration } }
     }
 
-    // ── INTENTO: yt-dlp directo (child_process) con múltiples formatos ──
-    const formats = ['best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
-    for (const fmt of formats) {
-      const url = await ytDlpGetUrl(videoId, fmt)
-      if (url) {
-        setCachedStream(videoId, url)
-        return { success: true, data: { url, title, duration } }
-      }
+    if (streamUrl) {
+      setCachedStream(videoId, streamUrl)
+      return { success: true, data: { url: streamUrl, title: meta.title, duration: meta.duration } }
     }
 
-    // ── ÚLTIMO RECURSO: YouTube IFrame embed ──
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=https://www.youtube.com`
-    return { success: true, data: { url: embedUrl, title, duration } }
+    return { success: true, data: { url: embedUrl, title: meta.title, duration: meta.duration } }
   })
 
   ipcMain.handle('video:play', async (_event, url: string, title?: string, duration?: number) => {

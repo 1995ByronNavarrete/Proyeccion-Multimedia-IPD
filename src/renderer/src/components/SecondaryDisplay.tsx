@@ -13,41 +13,38 @@ const YT_CMD = (fn: string) => JSON.stringify({ event: 'command', func: fn, args
 export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }: SecondaryDisplayProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const isYoutube = bgVideo.url != null && bgVideo.url.includes('youtube.com/embed')
   const [ytKey, setYtKey] = useState(0)
+  const lastUrlRef = useRef<string | null>(null)
+  const isYoutube = bgVideo.url != null && bgVideo.url.includes('youtube.com/embed')
 
-  // Sync video element with bgVideo state
   useEffect(() => {
-    if (isYoutube) return
+    if (isYoutube) {
+      if (!bgVideo.url) return
+      setYtKey((k) => k + 1)
+      return
+    }
     const v = videoRef.current
     if (!v) return
-    if (!bgVideo.url) { v.pause(); v.src = ''; return }
-    v.src = bgVideo.url
-    if (!bgVideo.paused) v.play().catch(() => {})
-    else v.pause()
-  }, [bgVideo, isYoutube])
+    if (!bgVideo.url) { v.pause(); v.src = ''; lastUrlRef.current = null; return }
+    if (bgVideo.url !== lastUrlRef.current) {
+      lastUrlRef.current = bgVideo.url
+      v.src = bgVideo.url
+      v.play().catch(() => {})
+    } else if (bgVideo.paused) {
+      v.pause()
+    } else {
+      v.play().catch(() => {})
+    }
+  }, [bgVideo.url, bgVideo.paused, isYoutube])
 
   useEffect(() => {
-    if (!isYoutube || !bgVideo.url) return
-    setYtKey((k) => k + 1)
-  }, [bgVideo.url])
-
-  useEffect(() => {
-    if (!isYoutube || !bgVideo.url) return
-    const iframe = iframeRef.current
-    if (!iframe?.contentWindow) return
-    if (bgVideo.paused) iframe.contentWindow.postMessage(YT_CMD('pauseVideo'), '*')
-    else iframe.contentWindow.postMessage(YT_CMD('playVideo'), '*')
+    if (!isYoutube || !bgVideo.url || !iframeRef.current?.contentWindow) return
+    iframeRef.current.contentWindow.postMessage(YT_CMD(bgVideo.paused ? 'pauseVideo' : 'playVideo'), '*')
   }, [bgVideo.paused, isYoutube])
 
-  const handleStop = () => {
-    onStop()
-    setYtKey((k) => k + 1)
-  }
+  const handleStop = () => { onStop() }
 
-  const hasBgVideo = bgVideo.url != null
-
-  if (!hasBgVideo) {
+  if (!bgVideo.url) {
     return (
       <div className="h-full w-full bg-[rgba(8,12,30,0.95)] bg-theme-panel border border-[rgba(120,80,255,0.15)] border-theme rounded-xl overflow-hidden flex flex-col">
         <div className="flex items-center px-3 py-2 border-b border-[rgba(120,80,255,0.15)] border-theme shrink-0">
@@ -74,35 +71,26 @@ export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }:
       </div>
 
       <div className="flex-1 relative overflow-hidden">
-        {hasBgVideo ? (
-          <>
-            {isYoutube ? (
-              <iframe ref={iframeRef} key={ytKey} src={bgVideo.url || ''} className="w-full h-full pointer-events-none" data-volume="bg" allow="autoplay; fullscreen" allowFullScreen />
-            ) : (
-              <video ref={videoRef} className="w-full h-full object-contain pointer-events-none" data-volume="bg" autoPlay playsInline
-                onError={(e) => console.error('[SecondaryDisplay] error:', (e.target as HTMLVideoElement).error?.message)} />
-            )}
-          </>
-        ) : null}
-
-        {hasBgVideo && (
-          <div className="absolute inset-0 z-10 pointer-events-none" />
+        {isYoutube ? (
+          <iframe ref={iframeRef} key={ytKey} src={bgVideo.url} className="w-full h-full pointer-events-none" data-volume="bg" allow="autoplay; fullscreen" allowFullScreen loading="lazy" />
+        ) : (
+          <video ref={videoRef} className="w-full h-full object-contain pointer-events-none" data-volume="bg" autoPlay playsInline muted preload="metadata"
+            onError={(e) => console.error('[SecondaryDisplay] error:', (e.target as HTMLVideoElement).error?.message)} />
         )}
 
-        {hasBgVideo && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-3 py-2 bg-gradient-to-t from-black/60 to-transparent pointer-events-auto">
-            <button onClick={bgVideo.paused ? onResume : onPause}
-              className="p-2 bg-[#6c5ce7]/30 rounded-full text-[#6c5ce7] hover:bg-[#6c5ce7]/50 transition-colors" title={bgVideo.paused ? 'Reanudar' : 'Pausar'}>
-              {bgVideo.paused ? <Play size={14} /> : <Pause size={14} />}
-            </button>
-            <button onClick={handleStop}
-              className="p-2 bg-red-600/30 rounded-full text-red-500 hover:bg-red-600/50 transition-colors" title="Detener">
-              <Square size={14} />
-            </button>
-          </div>
-        )}
+        <div className="absolute inset-0 z-10 pointer-events-none" />
+
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-3 py-2 bg-gradient-to-t from-black/60 to-transparent pointer-events-auto">
+          <button onClick={bgVideo.paused ? onResume : onPause}
+            className="p-2 bg-[#6c5ce7]/30 rounded-full text-[#6c5ce7] hover:bg-[#6c5ce7]/50 transition-colors" title={bgVideo.paused ? 'Reanudar' : 'Pausar'}>
+            {bgVideo.paused ? <Play size={14} /> : <Pause size={14} />}
+          </button>
+          <button onClick={handleStop}
+            className="p-2 bg-red-600/30 rounded-full text-red-500 hover:bg-red-600/50 transition-colors" title="Detener">
+            <Square size={14} />
+          </button>
+        </div>
       </div>
-
     </div>
   )
 }
