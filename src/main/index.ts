@@ -1,6 +1,6 @@
 import { app, BrowserWindow, screen, ipcMain } from 'electron'
 import { join, extname } from 'path'
-import { existsSync, mkdirSync, readFileSync, watch } from 'fs'
+import { existsSync, mkdirSync, readFileSync, watch, FSWatcher } from 'fs'
 import { createServer } from 'http'
 import { autoUpdater } from 'electron-updater'
 import { initDatabase, seedBibleIfEmpty } from './database'
@@ -16,6 +16,7 @@ let devServerPort: number | null = null
 let lastOverlay: unknown = null
 let lastVideoPayload: { url: string; title: string; duration: number } | null = null
 let displayAssignments: Record<number, string[]> = {}
+const fileWatchers: import('fs').FSWatcher[] = []
 
 function sendContentToDisplay(displayId: number, channel: string, data: unknown): void {
   const win = projectorWindows.get(displayId)
@@ -441,21 +442,19 @@ app.whenReady().then(async () => {
     }, 500)
   }
 
-  try {
-    watch(musicFolder, (eventType) => {
-      if (eventType === 'rename' || eventType === 'change') notifyMediaChange()
-    })
-    watch(videosFolder, (eventType) => {
-      if (eventType === 'rename' || eventType === 'change') notifyMediaChange()
-    })
-    watch(fondosFolder, (eventType) => {
-      if (eventType === 'rename' || eventType === 'change') notifyMediaChange()
-    })
-    watch(documentosFolder, (eventType) => {
-      if (eventType === 'rename' || eventType === 'change') notifyMediaChange()
-    })
-  } catch {
-    // watcher not critical
+  const foldersToWatch = [
+    { name: 'Música', path: musicFolder },
+    { name: 'Videos', path: videosFolder },
+    { name: 'Fondos', path: fondosFolder },
+    { name: 'Documentos', path: documentosFolder }
+  ]
+  for (const f of foldersToWatch) {
+    try {
+      const w = watch(f.path, (eventType) => {
+        if (eventType === 'rename' || eventType === 'change') notifyMediaChange()
+      })
+      fileWatchers.push(w)
+    } catch {}
   }
 
   // Auto-updater configuration
@@ -565,6 +564,11 @@ app.whenReady().then(async () => {
   }
 
   createMainWindow()
+})
+
+app.on('before-quit', () => {
+  try { const { flushDatabase } = require('./database'); flushDatabase() } catch {}
+  for (const w of fileWatchers) { try { w.close() } catch {} }
 })
 
 app.on('window-all-closed', () => {

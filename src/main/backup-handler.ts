@@ -1,7 +1,7 @@
 import { dialog, app, ipcMain } from 'electron'
 import { writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { queryAll, execute, flushDatabase, getDbPath } from './database'
+import { queryAll, execute, flushDatabase, getDbPath, reloadDatabase } from './database'
 
 export function registerBackupHandlers(): void {
   ipcMain.handle('backup:create', async () => {
@@ -40,6 +40,7 @@ export function registerBackupHandlers(): void {
 
       const buffer = Buffer.from(backup.db, 'base64')
       writeFileSync(getDbPath(), buffer)
+      await reloadDatabase()
       return { success: true, data: { path: result.filePaths[0] } }
     } catch (err) {
       return { success: false, error: String(err) }

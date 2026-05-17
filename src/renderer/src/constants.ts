@@ -94,3 +94,60 @@ export const ANIM_GROUPS: AnimGroup[] = [
     ]
   },
 ]
+
+export const ANUNCIO_ANIM_IDS = [
+  'anim-fade', 'anim-dissolve', 'anuncio-blur-in', 'anuncio-slide-up',
+  'anuncio-drop-in', 'anuncio-float-in', 'anuncio-bounce', 'anuncio-flip',
+  'anuncio-zoom', 'anuncio-swirl-in', 'anuncio-glow', 'anuncio-gradient',
+  'anuncio-fire', 'letra-fade', 'letra-slide-up', 'letra-pop',
+  'letra-bounce', 'letra-flip'
+]
+
+export const BG_CATEGORIES = [
+  { label: 'Suaves', items: [
+    { id: 'anuncio-bg-soft-lavender', label: 'Lavanda' },
+    { id: 'anuncio-bg-soft-sky', label: 'Cielo' },
+    { id: 'anuncio-bg-glass', label: 'Vidrio' },
+    { id: 'anuncio-bg-fade', label: 'Degradado' },
+  ]},
+  { label: 'Oscuros', items: [
+    { id: 'anuncio-bg-midnight', label: 'Medianoche' },
+    { id: 'anuncio-bg-gradient', label: 'Violeta' },
+    { id: 'anuncio-bg-circles', label: 'Círculos' },
+    { id: 'anuncio-bg-waves', label: 'Olas' },
+  ]},
+  { label: 'Vibrantes', items: [
+    { id: 'anuncio-bg-rainbow', label: 'Arcoíris' },
+    { id: 'anuncio-bg-neon', label: 'Neón' },
+    { id: 'anuncio-bg-sunset', label: 'Atardecer' },
+    { id: 'anuncio-bg-ocean', label: 'Océano' },
+  ]},
+]
+
+export const ANUNCIO_SIZES = [
+  { id: 'anuncio-sm', label: 'S' },
+  { id: 'anuncio-md', label: 'M' },
+  { id: 'anuncio-lg', label: 'L' },
+  { id: 'anuncio-xl', label: 'XL' },
+]
+
+export const ANUNCIO_FONTS = [
+  { id: 'anuncio-font-normal', label: 'Normal' },
+  { id: 'anuncio-font-bold', label: 'Negrita' },
+  { id: 'anuncio-font-light', label: 'Fino' },
+  { id: 'anuncio-font-italic', label: 'Itálica' },
+  { id: 'anuncio-font-cursive', label: 'Cursiva' },
+]
+
+export const COLOR_CATEGORIES = [
+  { label: 'Sólidos', items: [
+    { id: 'anuncio-color-white', label: 'Blanco' },
+    { id: 'anuncio-color-gold', label: 'Dorado' },
+    { id: 'anuncio-color-gradient', label: 'Violeta' },
+    { id: 'anuncio-color-sunset', label: 'Atardecer' },
+    { id: 'anuncio-color-ocean', label: 'Océano' },
+    { id: 'anuncio-color-aurora', label: 'Aurora' },
+    { id: 'anuncio-color-rainbow', label: 'Arcoíris' },
+    { id: 'anuncio-color-neon', label: 'Neón' },
+  ]},
+]

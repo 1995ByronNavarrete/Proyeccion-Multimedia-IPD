@@ -517,6 +517,8 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('app:quit', () => {
+    const { flushDatabase } = require('./database')
+    flushDatabase()
     app.quit()
   })
 

@@ -79,10 +79,6 @@ export function getBundledDataDbPath(): string | null {
   return null
 }
 
-export function getDbPath(): string {
-  return join(app.getPath('userData'), 'desktopappipd.db')
-}
-
 export const IMAGE_MIME: Record<string, string> = {
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',

@@ -6,29 +6,39 @@ import { getBundledDbPath, getBundledDataDbPath, getBibleBackupPath } from './sh
 
 let db: SqlJsDatabase | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let saveMaxTimeout: ReturnType<typeof setTimeout> | null = null
+const SAVE_MAX_WAIT = 5000
 
 export function getDbPath(): string {
   return join(app.getPath('userData'), 'desktopappipd.db')
 }
 
-export function saveDatabase(): void {
-  if (saveTimeout) clearTimeout(saveTimeout)
-  saveTimeout = setTimeout(() => {
-    if (!db) return
-    const data = db.export()
-    writeFileSync(getDbPath(), Buffer.from(data))
-    saveTimeout = null
-  }, 200)
-}
-
-export function flushDatabase(): void {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
-    saveTimeout = null
-  }
+function flushNow(): void {
+  if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null }
+  if (saveMaxTimeout) { clearTimeout(saveMaxTimeout); saveMaxTimeout = null }
   if (!db) return
   const data = db.export()
   writeFileSync(getDbPath(), Buffer.from(data))
+}
+
+export function saveDatabase(): void {
+  if (saveTimeout) clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(() => {
+    saveTimeout = null
+    if (saveMaxTimeout) { clearTimeout(saveMaxTimeout); saveMaxTimeout = null }
+    flushNow()
+  }, 200)
+  if (!saveMaxTimeout) {
+    saveMaxTimeout = setTimeout(() => {
+      saveMaxTimeout = null
+      if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null }
+      flushNow()
+    }, SAVE_MAX_WAIT)
+  }
+}
+
+export function flushDatabase(): void {
+  flushNow()
 }
 
 export function getDatabase(): SqlJsDatabase {
@@ -159,6 +169,16 @@ export function noAccent(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
+export async function reloadDatabase(): Promise<void> {
+  const SQL = await initSqlJs()
+  const dbPath = getDbPath()
+  const buffer = readFileSync(dbPath)
+  const newDb = new SQL.Database(buffer)
+  newDb.run('PRAGMA foreign_keys = ON')
+  db = newDb
+  registerCustomFunctions()
+}
+
 export function registerCustomFunctions(): void {
   if (!db) return
   db.create_function('noacct', noAccent)
@@ -196,40 +216,33 @@ export async function seedBibleIfEmpty(): Promise<void> {
     return
   }
 
-  try {
-    const backup = getBibleBackupPath()
-    if (backup) {
+  async function replaceDb(srcPath: string): Promise<boolean> {
+    try {
       const dest = getDbPath()
-      const buf = readFileSync(backup)
+      const buf = readFileSync(srcPath)
       writeFileSync(dest, Buffer.from(buf))
-      db = null
       const SQL = await initSqlJs()
-      db = new SQL.Database(readFileSync(dest))
-      db.run('PRAGMA foreign_keys = ON')
+      const newDb = new SQL.Database(readFileSync(dest))
+      newDb.run('PRAGMA foreign_keys = ON')
+      db = newDb
       registerCustomFunctions()
-      console.log('[seed] Bible database replaced from biblia-backup.db')
-      return
+      return true
+    } catch (err) {
+      console.error('[seed] Replace DB error:', err)
+      return false
     }
-  } catch (err) {
-    console.error('[seed] Error restoring from biblia-backup.db:', err)
   }
 
-  try {
-    const bundled = getBundledDataDbPath()
-    if (bundled) {
-      const dest = getDbPath()
-      const buf = readFileSync(bundled)
-      writeFileSync(dest, Buffer.from(buf))
-      db = null
-      const SQL = await initSqlJs()
-      db = new SQL.Database(readFileSync(dest))
-      db.run('PRAGMA foreign_keys = ON')
-      registerCustomFunctions()
-      console.log('[seed] Database replaced with bundled-data.db')
-      return
-    }
-  } catch (err) {
-    console.error('[seed] Error copying bundled-data.db:', err)
+  const backup = getBibleBackupPath()
+  if (backup && await replaceDb(backup)) {
+    console.log('[seed] Bible database replaced from biblia-backup.db')
+    return
+  }
+
+  const bundled = getBundledDataDbPath()
+  if (bundled && await replaceDb(bundled)) {
+    console.log('[seed] Database replaced with bundled-data.db')
+    return
   }
 }
 
