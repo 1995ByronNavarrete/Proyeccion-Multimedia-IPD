@@ -23,7 +23,7 @@ export default function ModuleMenu() {
         <LayoutGrid size={12} /> Vistas
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-1 z-50 w-64 bg-[rgba(10,14,30,0.98)] bg-theme-panel border border-[rgba(120,80,255,0.25)] rounded-xl shadow-2xl shadow-black/50 py-2 overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 z-50 w-64 bg-[rgba(10,14,30,0.98)] bg-theme-panel border border-[rgba(120,80,255,0.25)] rounded-xl shadow-2xl shadow-black/50 py-2 overflow-hidden">
           <div className="px-3 pb-1.5 border-b border-theme mb-1">
             <p className="text-[9px] text-theme-dim font-semibold uppercase tracking-wider">Módulos activos</p>
           </div>
