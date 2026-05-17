@@ -62,6 +62,9 @@ const api = {
     stop: () => ipcRenderer.invoke('video:stop'),
     reportProgress: (data: { currentTime: number; duration: number; paused: boolean; title: string }) => ipcRenderer.invoke('video:reportProgress', data),
   },
+  timer: {
+    update: (data: { time: number; running: boolean }) => ipcRenderer.invoke('timer:update', data),
+  },
   ytdl: {
     search: (query: string, maxResults?: number) => ipcRenderer.invoke('ytdl:search', query, maxResults),
     getStreamUrl: (videoId: string) => ipcRenderer.invoke('ytdl:getStreamUrl', videoId)
@@ -118,7 +121,7 @@ const api = {
     restore: () => ipcRenderer.invoke('backup:restore'),
   },
   on: (channel: string, callback: (...args: unknown[]) => void) => {
-    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'projector:prevVerse', 'projector:nextVerse', 'projector:scrollDocument', 'projector:showAnnouncement', 'projector:hideAnnouncement', 'projector:updateAnnouncement', 'projector:overlay', 'video:progress', 'medialocal:changed', 'bible:downloadProgress', 'update:available', 'update:not-available', 'update:download-progress', 'update:downloaded', 'update:error']
+    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'projector:prevVerse', 'projector:nextVerse', 'projector:scrollDocument', 'projector:showAnnouncement', 'projector:hideAnnouncement', 'projector:updateAnnouncement', 'projector:overlay', 'projector:timer', 'video:progress', 'medialocal:changed', 'bible:downloadProgress', 'update:available', 'update:not-available', 'update:download-progress', 'update:downloaded', 'update:error']
     if (validChannels.includes(channel)) {
       const handler = (_event: unknown, ...args: unknown[]) => callback(...args)
       ipcRenderer.on(channel, handler)

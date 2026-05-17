@@ -50,6 +50,8 @@ export default function ProjectorView() {
   const titleRef = useRef('')
   const verseContainerRef = useRef<HTMLDivElement>(null)
   const [currentTime, setCurrentTime] = useState('')
+  const [timerDisplay, setTimerDisplay] = useState('')
+  const [timerRunning, setTimerRunning] = useState(false)
 
   useEffect(() => {
     const update = () => {
@@ -61,6 +63,18 @@ export default function ProjectorView() {
     update()
     const id = setInterval(update, 30000)
     return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const unsub = window.api.on('projector:timer', (arg: unknown) => {
+      const data = arg as { time: number; running: boolean }
+      setTimerRunning(data.running)
+      const totalSec = Math.max(0, Math.floor(data.time / 1000))
+      const m = Math.floor(totalSec / 60)
+      const s = totalSec % 60
+      setTimerDisplay(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`)
+    })
+    return () => unsub?.()
   }, [])
 
   const stopYtTimer = useCallback(() => {
@@ -373,6 +387,14 @@ export default function ProjectorView() {
     <>
       <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
       <OverlayFX />
+      {timerDisplay && (
+        <div className="fixed bottom-6 right-6 z-50 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+          <div className="flex items-center gap-2">
+            {timerRunning && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
+            <span className="text-3xl font-bold font-mono text-white tabular-nums tracking-wider">{timerDisplay}</span>
+          </div>
+        </div>
+      )}
     </>
   )
 

@@ -185,6 +185,9 @@ interface Window {
       hideAnnouncement: (displayId: number) => Promise<void>
       stopVideo: (displayId: number) => Promise<void>
     }
+    timer: {
+      update: (data: { time: number; running: boolean }) => Promise<void>
+    }
     update: {
       check: () => Promise<void>
       checkNow: () => Promise<void>

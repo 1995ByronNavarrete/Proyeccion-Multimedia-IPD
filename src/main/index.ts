@@ -388,6 +388,13 @@ function registerMainIpcHandlers(): void {
   ipcMain.handle('display:stopVideo', (_event, displayId: number) => {
     sendContentToDisplay(displayId, 'projector:stopVideo', null)
   })
+
+  // Timer broadcast to all projector windows
+  ipcMain.handle('timer:update', (_event, data: { time: number; running: boolean }) => {
+    for (const [, win] of projectorWindows) {
+      if (!win.isDestroyed()) win.webContents.send('projector:timer', data)
+    }
+  })
 }
 
 // Video/GPU compatibility for production builds

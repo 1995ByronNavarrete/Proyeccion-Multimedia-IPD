@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Monitor, MonitorPlay, MonitorOff, X, Check, Laptop, BookOpen, Youtube, Image, Megaphone, Sparkles, Play } from 'lucide-react'
+import { useModules } from '../modules'
 
 interface Display {
   id: number
@@ -8,12 +9,12 @@ interface Display {
   primary: boolean
 }
 
-const CONTENT_TYPES = [
-  { id: 'biblia', label: 'Biblia', icon: BookOpen },
-  { id: 'video', label: 'Video', icon: Play },
-  { id: 'anuncios', label: 'Anuncios', icon: Megaphone },
-  { id: 'fondos', label: 'Fondos', icon: Image },
-  { id: 'efectos', label: 'Efectos', icon: Sparkles }
+const ALL_CONTENT_TYPES = [
+  { id: 'biblia', label: 'Biblia', icon: BookOpen, moduleId: 'biblia' },
+  { id: 'video', label: 'Video', icon: Play, moduleId: 'youtube' },
+  { id: 'anuncios', label: 'Anuncios', icon: Megaphone, moduleId: 'anuncios' },
+  { id: 'fondos', label: 'Fondos', icon: Image, moduleId: 'imagenes' },
+  { id: 'efectos', label: 'Efectos', icon: Sparkles, moduleId: 'efectos' }
 ]
 
 type ContentAssignment = Record<number, string[]>
@@ -25,6 +26,8 @@ function loadAssignments(): ContentAssignment {
 }
 
 export default function ScreensModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { isEnabled } = useModules()
+  const CONTENT_TYPES = ALL_CONTENT_TYPES.filter(ct => isEnabled(ct.moduleId))
   const [displays, setDisplays] = useState<Display[]>([])
   const [assignments, setAssignments] = useState<ContentAssignment>(loadAssignments)
   const [appDisplayId, setAppDisplayId] = useState<number | null>(null)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Youtube, Search, Play, Loader2 } from 'lucide-react'
+import { Youtube, Search, Play, Pause, Loader2 } from 'lucide-react'
 
 interface YTResult {
   id: string
@@ -20,8 +20,17 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const [error, setError] = useState('')
   const [playing, setPlaying] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [playingIds, setPlayingIds] = useState<Set<string>>(new Set())
   const [bgLoading, setBgLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => {
+    const unsub = window.api.on('video:progress', (arg: unknown) => {
+      const data = arg as { title: string; paused: boolean }
+      if (!data.title) setPlayingIds(new Set())
+    })
+    return () => { unsub?.() }
+  }, [])
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -45,6 +54,11 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   }
 
   const handlePlay = async (item: YTResult) => {
+    if (playingIds.has(item.id)) {
+      await window.api.video.stop()
+      setPlayingIds(new Set())
+      return
+    }
     setError('')
     setPlaying(true)
     setActiveId(item.id)
@@ -52,6 +66,7 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       const streamRes = await window.api.ytdl.getStreamUrl(item.id)
       if (streamRes.success && streamRes.data?.url) {
         await window.api.video.play(streamRes.data.url, streamRes.data.title || item.title, streamRes.data.duration)
+        setPlayingIds(new Set([item.id]))
       } else {
         setError('No se pudo obtener el video')
       }
@@ -127,8 +142,8 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
                 <p className="text-[8px] text-theme-dim truncate">{r.channel}</p>
               </div>
               <button onClick={() => handlePlay(r)} disabled={playing}
-                className={`p-1.5 rounded transition-colors shrink-0 self-center disabled:opacity-40 ${activeId === r.id ? 'bg-green-500/30 text-green-400' : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`} title="Proyectar">
-                {playing && activeId === r.id ? <Loader2 size={10} className="animate-spin" /> : <Play size={10} />}
+                className={`p-1.5 rounded transition-all duration-200 shrink-0 self-center disabled:opacity-40 scale-100 active:scale-90 ${playingIds.has(r.id) ? 'bg-green-500/30 text-green-400' : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`} title={playingIds.has(r.id) ? 'Detener' : 'Proyectar'}>
+                {playing && activeId === r.id ? <Loader2 size={10} className="animate-spin" /> : playingIds.has(r.id) ? <Pause size={10} /> : <Play size={10} />}
               </button>
               <button onClick={() => handlePlayBg(r)} disabled={bgLoading}
                 className="p-1.5 bg-emerald-600/20 rounded text-emerald-500 hover:bg-emerald-600/40 transition-colors shrink-0 self-center disabled:opacity-40 text-[7px] font-bold" title="Fondo para pantalla secundaria">

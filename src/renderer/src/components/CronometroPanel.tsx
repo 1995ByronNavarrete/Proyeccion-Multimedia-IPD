@@ -24,6 +24,10 @@ export default function CronometroPanel() {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [])
 
+  const broadcast = (time: number, run: boolean) => {
+    try { window.api.timer.update({ time, running: run }) } catch {}
+  }
+
   const tick = () => {
     if (!runningRef.current) return
     const now = performance.now()
@@ -31,14 +35,17 @@ export default function CronometroPanel() {
     if (modeRef.current === 'countdown') {
       const remaining = Math.max(0, initialRef.current * 1000 - total)
       setDisplay(remaining)
+      broadcast(remaining, true)
       if (remaining <= 0) {
         setRunning(false)
         runningRef.current = false
         setDisplay(0)
+        broadcast(0, false)
         return
       }
     } else {
       setDisplay(total)
+      broadcast(total, true)
     }
     rafRef.current = requestAnimationFrame(tick)
   }
@@ -58,6 +65,7 @@ export default function CronometroPanel() {
     setRunning(false)
     runningRef.current = false
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0 }
+    broadcast(elapsedRef.current, false)
   }
 
   const reset = () => {
@@ -68,6 +76,7 @@ export default function CronometroPanel() {
     startTimeRef.current = 0
     const val = mode === 'countdown' ? initial * 1000 : 0
     setDisplay(val)
+    broadcast(0, false)
   }
 
   const toggleMode = () => {
