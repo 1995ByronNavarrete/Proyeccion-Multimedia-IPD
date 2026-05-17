@@ -9,6 +9,8 @@ export interface ModuleDef {
   defaultEnabled: boolean
 }
 
+export const MAX_ACTIVE_MODULES = 9
+
 export const ALL_MODULES: ModuleDef[] = [
   { id: 'pantallas', label: 'Pantallas', icon: 'Monitor', zone: 'left-bottom', defaultEnabled: true },
   { id: 'youtube', label: 'YouTube', icon: 'Youtube', zone: 'left-bottom', defaultEnabled: true },
@@ -37,28 +39,51 @@ interface ModuleCtx {
   enabled: Set<string>
   toggle: (id: string) => void
   isEnabled: (id: string) => boolean
+  toast: string | null
+  clearToast: () => void
 }
 
-const Ctx = createContext<ModuleCtx>({ enabled: new Set(), toggle: () => {}, isEnabled: () => false })
+const Ctx = createContext<ModuleCtx>({ enabled: new Set(), toggle: () => {}, isEnabled: () => false, toast: null, clearToast: () => {} })
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState<Set<string>>(loadEnabled)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...enabled]))
   }, [enabled])
 
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(null), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [toast])
+
   const toggle = useCallback((id: string) => {
     setEnabled((prev) => {
+      if (prev.has(id)) {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      }
+      if (prev.size >= MAX_ACTIVE_MODULES) {
+        setToast(`Límite de ${MAX_ACTIVE_MODULES} módulos activos. Desactiva uno primero.`)
+        return prev
+      }
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
+      next.add(id)
       return next
     })
   }, [])
 
   const isEnabled = useCallback((id: string) => enabled.has(id), [enabled])
 
-  return <Ctx.Provider value={{ enabled, toggle, isEnabled }}>{children}</Ctx.Provider>
+  return (
+    <Ctx.Provider value={{ enabled, toggle, isEnabled, toast, clearToast: () => setToast(null) }}>
+      {children}
+    </Ctx.Provider>
+  )
 }
 
 export function useModules() {
