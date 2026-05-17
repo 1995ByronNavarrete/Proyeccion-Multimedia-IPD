@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Clock, Play, Pause, RotateCcw, Timer, AlarmCheck } from 'lucide-react'
+import { Clock, Play, Pause, RotateCcw, Timer, AlarmCheck, Monitor } from 'lucide-react'
 
 type Mode = 'crono' | 'countdown'
 
@@ -131,6 +131,11 @@ export default function CronometroPanel() {
           <button onClick={reset}
             className="flex items-center justify-center w-7 h-7 bg-theme-card rounded-lg text-theme-dim hover:text-theme border border-theme transition-colors">
             <RotateCcw size={9} />
+          </button>
+          <div className="w-px h-5 bg-theme-dim/20" />
+          <button onClick={() => broadcast(mode === 'countdown' ? display : elapsedRef.current > 0 ? elapsedRef.current : 0, false)}
+            className="flex items-center justify-center w-7 h-7 bg-[#6c5ce7]/20 rounded-lg text-[#6c5ce7] hover:bg-[#6c5ce7]/30 transition-colors" title="Mostrar en pantalla">
+            <Monitor size={9} />
           </button>
           <button onClick={toggleMode}
             className="flex items-center justify-center w-7 h-7 bg-theme-card rounded-lg text-theme-dim hover:text-theme border border-theme transition-colors" title="Cambiar modo">
