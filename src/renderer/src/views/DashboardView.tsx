@@ -69,6 +69,36 @@ export default function DashboardView() {
 
   const [animBiblia, setAnimBiblia] = useState('anim-fade')
 
+  // Escuchar cambios de pantalla desde ScreensModal
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (!detail?.assignments) return
+      // Open projectors
+      window.api.projector.projectToAll()
+      // Send current content to each display based on assignments
+      setTimeout(() => {
+        const sent: Record<string, boolean> = {}
+        for (const [displayId, types] of Object.entries(detail.assignments) as [string, string[]][]) {
+          if (!detail.displays?.includes(Number(displayId))) continue
+          if (types.includes('biblia') && lastVerse.current && !sent['biblia']) {
+            const content: ProjectedContent = {
+              type: 'verse',
+              text: lastVerse.current.text,
+              reference: lastVerse.current.reference,
+              animation: animBiblia,
+            }
+            if (backgroundUrl) content.backgroundUrl = backgroundUrl
+            window.api.projector.sendContent(content)
+            sent['biblia'] = true
+          }
+        }
+      }, 500)
+    }
+    window.addEventListener('screens:applied', handler)
+    return () => window.removeEventListener('screens:applied', handler)
+  }, [backgroundUrl, animBiblia])
+
   // Escuchar cambios de predicación en tiempo real
   useEffect(() => {
     const handler = (e: Event) => {
