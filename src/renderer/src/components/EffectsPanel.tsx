@@ -18,14 +18,7 @@ const FX_LIST = [
 ]
 
 export default function EffectsPanel() {
-  const [active, setActive] = useState<string | null>('particles')
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      window.api.projector.overlay({ type: 'particles', speed, color: `intensity:${intensity}:count:${count}` })
-    }, 1500)
-    return () => clearTimeout(t)
-  }, [])
+  const [active, setActive] = useState<string | null>(null)
   const [speed, setSpeed] = useState(1)
   const [intensity, setIntensity] = useState(50)
   const [count, setCount] = useState(50)
