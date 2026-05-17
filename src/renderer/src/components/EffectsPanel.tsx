@@ -61,46 +61,39 @@ export default function EffectsPanel() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
         {FX_LIST.map(fx => (
           <button key={fx.id} onClick={() => applyEffect(fx.id)}
-            className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-all text-[9px] ${active === fx.id ? 'bg-[#6c5ce7]/15 ring-1 ring-[#6c5ce7] text-[#6c5ce7]' : 'bg-theme-card text-theme-dim hover:text-theme hover:bg-theme-card/80'}`}>
-            <fx.icon size={12} style={{ color: fx.color }} />
+            className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all text-[8px] ${active === fx.id ? 'bg-[#6c5ce7]/15 ring-1 ring-[#6c5ce7] text-[#6c5ce7]' : 'bg-theme-card text-theme-dim hover:text-theme hover:bg-theme-card/80'}`}>
+            <fx.icon size={10} style={{ color: fx.color }} />
             <span className="font-medium">{fx.label}</span>
-            {active === fx.id && <span className="ml-auto text-[7px] text-green-400">ACTIVO</span>}
+            {active === fx.id && <span className="ml-auto text-[6px] text-green-400">ON</span>}
           </button>
         ))}
       </div>
 
       {active != null && (
-        <div className="px-2 pb-2 space-y-1.5 border-t border-theme pt-1.5">
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-[7px] text-theme-dim">Velocidad</span>
+        <div className="px-2 pb-1.5 space-y-1 border-t border-theme pt-1">
+          <div className="flex items-center gap-1.5 px-1">
+            <span className="text-[6px] text-theme-dim w-10">Velocidad</span>
             <input type="range" min={0.3} max={3} step={0.1} value={speed}
               onChange={e => { const v = Number(e.target.value); setSpeed(v); applyEffect(active) }}
-              className="flex-1 h-1 accent-[#6c5ce7]" />
-            <span className="text-[7px] text-theme-dim w-6 text-right tabular-nums">{speed}x</span>
+              className="flex-1 h-0.5 accent-[#6c5ce7]" />
+            <span className="text-[6px] text-theme-dim w-5 text-right tabular-nums">{speed}x</span>
           </div>
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-[7px] text-theme-dim">Intensidad</span>
+          <div className="flex items-center gap-1.5 px-1">
+            <span className="text-[6px] text-theme-dim w-10">Intensidad</span>
             <input type="range" min={10} max={100} value={intensity}
               onChange={e => { const v = Number(e.target.value); setIntensity(v); applyEffect(active) }}
-              className="flex-1 h-1 accent-[#6c5ce7]" />
-            <span className="text-[7px] text-theme-dim w-6 text-right tabular-nums">{intensity}%</span>
+              className="flex-1 h-0.5 accent-[#6c5ce7]" />
+            <span className="text-[6px] text-theme-dim w-5 text-right tabular-nums">{intensity}%</span>
           </div>
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-[7px] text-theme-dim">Cantidad</span>
+          <div className="flex items-center gap-1.5 px-1">
+            <span className="text-[6px] text-theme-dim w-10">Cantidad</span>
             <input type="range" min={10} max={150} value={count}
               onChange={e => { const v = Number(e.target.value); setCount(v); applyEffect(active) }}
-              className="flex-1 h-1 accent-[#6c5ce7]" />
-            <span className="text-[7px] text-theme-dim w-6 text-right tabular-nums">{count}</span>
-          </div>
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-[7px] text-theme-dim">Tamaño</span>
-            <input type="range" min={10} max={200} value={size}
-              onChange={e => { const v = Number(e.target.value); setSize(v); applyEffect(active) }}
-              className="flex-1 h-1 accent-[#6c5ce7]" />
-            <span className="text-[7px] text-theme-dim w-6 text-right tabular-nums">{size}%</span>
+              className="flex-1 h-0.5 accent-[#6c5ce7]" />
+            <span className="text-[6px] text-theme-dim w-5 text-right tabular-nums">{count}</span>
           </div>
         </div>
       )}

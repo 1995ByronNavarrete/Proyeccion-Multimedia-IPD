@@ -189,27 +189,27 @@ export default function CronometroPanel() {
       </div>
 
       <div className="border-t border-theme shrink-0">
-        <div className="flex items-center gap-1 px-2 py-1">
-          <User size={8} className="text-theme-dim shrink-0" />
+        <div className="flex items-center gap-1.5 px-2 py-1.5">
+          <User size={10} className="text-theme-dim shrink-0" />
           <input type="text" value={persona} onChange={e => setPersona(e.target.value)}
-            placeholder="Nombre..."
-            className="flex-1 min-w-0 bg-transparent text-[8px] text-theme placeholder:text-theme-dim/40 outline-none"
+            placeholder="Nombre de la persona..."
+            className="flex-1 min-w-0 bg-theme-card px-2 py-1 rounded text-[10px] text-theme placeholder:text-theme-dim/40 outline-none border border-theme"
             onKeyDown={e => e.key === 'Enter' && guardarRegistro()} />
           <button onClick={guardarRegistro} disabled={!persona.trim() || (display <= 0 && elapsedRef.current <= 0)}
-            className="p-0.5 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 disabled:opacity-30 transition-colors">
-            <Save size={7} />
+            className="px-2 py-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 disabled:opacity-30 transition-colors text-[9px] flex items-center gap-1">
+            <Save size={9} /> Registrar
           </button>
         </div>
         {registros.length > 0 && (
-          <div className="max-h-20 overflow-y-auto px-2 pb-1 space-y-0.5">
+          <div className="max-h-24 overflow-y-auto px-2 pb-1.5 space-y-1">
             {registros.slice(0, 10).map((r, i) => (
-              <div key={r.timestamp} className="flex items-center gap-1 text-[7px] text-theme-dim">
-                <span className="font-medium text-theme truncate max-w-[60px]">{r.persona}</span>
-                <span className="font-mono tabular-nums">{r.tiempo}</span>
+              <div key={r.timestamp} className="flex items-center gap-1.5 px-2 py-1 bg-theme-card rounded text-[9px] text-theme-dim">
+                <span className="font-medium text-theme truncate max-w-[80px]">{r.persona}</span>
+                <span className="font-mono tabular-nums text-[#6c5ce7]">{r.tiempo}</span>
                 <span className="ml-auto text-theme-dim/50">{new Date(r.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
                 <button onClick={() => setRegistros(prev => prev.filter((_, j) => j !== i))}
                   className="p-0.5 text-theme-dim/30 hover:text-red-400">
-                  <Trash2 size={6} />
+                  <Trash2 size={7} />
                 </button>
               </div>
             ))}
