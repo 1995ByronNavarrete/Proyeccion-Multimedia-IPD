@@ -74,18 +74,15 @@ export default function DashboardView() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (!detail?.assignments) return
-      // Open projectors
+      const hasAnuncios = Object.values(detail.assignments as Record<string, string[]>).some((types: string[]) => types.includes('anuncios'))
+      if (!hasAnuncios) window.api.projector.hideAnnouncement()
       window.api.projector.projectToAll()
-      // Send current content to each display based on assignments
       setTimeout(() => {
         const sent: Record<string, boolean> = {}
-        for (const [displayId, types] of Object.entries(detail.assignments) as [string, string[]][]) {
-          if (!detail.displays?.includes(Number(displayId))) continue
+        for (const types of Object.values(detail.assignments as Record<string, string[]>)) {
           if (types.includes('biblia') && lastVerse.current && !sent['biblia']) {
             const content: ProjectedContent = {
-              type: 'verse',
-              text: lastVerse.current.text,
-              reference: lastVerse.current.reference,
+              type: 'verse', text: lastVerse.current.text, reference: lastVerse.current.reference,
               animation: animBiblia,
             }
             if (backgroundUrl) content.backgroundUrl = backgroundUrl
