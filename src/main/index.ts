@@ -184,7 +184,9 @@ function createProjectorWindow(displayId: number): void {
   win.on('closed', () => projectorWindows.delete(displayId))
   win.webContents.on('did-finish-load', () => {
     win.webContents.setZoomLevel(0)
-    if (lastOverlay) win.webContents.send('projector:overlay', lastOverlay)
+    if (lastOverlay && (!displayAssignments[displayId] || displayAssignments[displayId].includes('efectos'))) {
+      win.webContents.send('projector:overlay', lastOverlay)
+    }
     if (lastVideoPayload) win.webContents.send('projector:playVideo', lastVideoPayload)
   })
   projectorWindows.set(displayId, win)
@@ -354,8 +356,10 @@ function registerMainIpcHandlers(): void {
 
   ipcMain.handle('projector:overlay', (_event, overlay: { type: string; speed: number; color?: string }) => {
     lastOverlay = overlay
-    for (const [, win] of projectorWindows) {
-      if (!win.isDestroyed()) win.webContents.send('projector:overlay', overlay)
+    for (const [displayId, win] of projectorWindows) {
+      if (win.isDestroyed()) continue
+      if (displayAssignments[displayId] && !displayAssignments[displayId].includes('efectos') && overlay.type !== 'none') continue
+      win.webContents.send('projector:overlay', overlay)
     }
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('projector:overlay', overlay)
   })
