@@ -89,9 +89,9 @@ export default function DashboardView() {
           const removed = oldTypes.filter(t => !types.includes(t))
           const added = types.filter(t => !oldTypes.includes(t))
 
-          // Clear removed types
-          if (removed.includes('biblia') || (types.length === 0)) {
-            window.api.display.sendContent(displayId, { type: 'none' })
+          // Clear removed types - show black screen on that display
+          if (removed.includes('biblia') || removed.includes('video') || removed.includes('efectos') || (types.length === 0)) {
+            window.api.display.sendContent(displayId, { type: 'black' })
           }
           if (removed.includes('anuncios')) {
             window.api.display.hideAnnouncement(displayId)

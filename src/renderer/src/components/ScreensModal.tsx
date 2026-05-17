@@ -49,13 +49,22 @@ export default function ScreensModal({ open, onClose }: { open: boolean; onClose
   const toggleContent = (displayId: number, contentType: string) => {
     setAssignments(prev => {
       const current = prev[displayId] || []
-      // If the display is not selected, add it
       if (!selectedDisplays.includes(displayId)) {
         setSelectedDisplays(s => [...s, displayId])
       }
-      const next = current.includes(contentType)
-        ? current.filter(c => c !== contentType)
-        : [...current, contentType]
+      const wasActive = current.includes(contentType)
+      let next: string[]
+      if (wasActive) {
+        next = current.filter(c => c !== contentType)
+        // Linking: removing biblia also removes fondos, and vice versa
+        if (contentType === 'biblia') next = next.filter(c => c !== 'fondos')
+        if (contentType === 'fondos') next = next.filter(c => c !== 'biblia')
+      } else {
+        next = [...current, contentType]
+        // Linking: adding biblia also adds fondos, and vice versa
+        if (contentType === 'biblia' && !next.includes('fondos')) next.push('fondos')
+        if (contentType === 'fondos' && !next.includes('biblia')) next.push('biblia')
+      }
       return { ...prev, [displayId]: next }
     })
   }
