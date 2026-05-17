@@ -31,20 +31,6 @@ export interface ProjectedContent {
 export default function DashboardView() {
   const [projected, setProjected] = useState<ProjectedContent>({ type: 'none' })
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
-  const [logoSrc, setLogoSrc] = useState<string | null>(null)
-  const [headerTitle, setHeaderTitle] = useState('SOFTWARE PREMIUM')
-  const [headerSub, setHeaderSub] = useState('PARA IGLESIAS')
-
-  useEffect(() => {
-    Promise.all([window.api.app.getLogo(), window.api.app.getConfig()]).then(([logoRes, cfgRes]) => {
-      if (logoRes?.success && logoRes.data) setLogoSrc(`file:///${logoRes.data.filePath.replace(/\\/g, '/')}`)
-      if (cfgRes?.success && cfgRes.data) {
-        const cfg = cfgRes.data as Record<string, string>
-        if (cfg.headerTitle) setHeaderTitle(cfg.headerTitle)
-        if (cfg.headerSub) setHeaderSub(cfg.headerSub)
-      }
-    }).catch(() => {})
-  }, [])
 
   useEffect(() => {
     const unsub = window.api.on('video:progress', (arg: unknown) => {
@@ -309,8 +295,7 @@ export default function DashboardView() {
         <div className="flex flex-col gap-3 overflow-hidden min-h-0 max-h-full">
           <div className="flex-[3] min-h-0 overflow-hidden">
             <ProjectionView onBlack={handleShowBlack} backgroundUrl={backgroundUrl} projected={projected} animation={animBiblia} onAnimationChange={saveAnimBiblia}
-              chapterVerses={chapterVerses} verseIdx={verseIdx} onPrevVerse={goPrevVerse} onNextVerse={goNextVerse}
-              logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} />
+              chapterVerses={chapterVerses} verseIdx={verseIdx} onPrevVerse={goPrevVerse} onNextVerse={goNextVerse} />
           </div>
           <div className="flex-[2] grid grid-cols-2 gap-3 min-h-0 overflow-hidden">
             <div className="flex flex-col gap-3 min-h-0 overflow-hidden">

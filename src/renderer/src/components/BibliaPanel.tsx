@@ -203,33 +203,24 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
   useEffect(() => {
     if (!selectedBook) return
     savedChapter.current = selectedChapter
+    savedVerse.current = null
+    setSelectedVerse(null)
     window.api.bible.getVerses(selectedBook.id, selectedChapter).then((res) => {
-      if (res.success && res.data) {
+      if (res.success && res.data && res.data.length > 0) {
         setVerses(res.data)
-        const sv = savedVerse.current
-        if (sv != null) {
-          const match = res.data.find((v: Verse) => v.versiculo === sv)
-          if (match) {
-            setSelectedVerse(sv)
-            savedVerse.current = sv
-            const ref = `${selectedBook.nombre} ${selectedChapter}:${sv}`
-            const text = `${sv}. ${match.texto}`
-            onProject(text, ref)
-            const chapterRef = `${selectedBook.nombre} ${selectedChapter}`
-            const allVerses = res.data.map((vv: Verse) => ({
-              text: `${vv.versiculo}. ${vv.texto}`,
-              reference: `${chapterRef}:${vv.versiculo}`,
-              verseNumber: vv.versiculo
-            }))
-            const idx = res.data.findIndex((vv: Verse) => vv.versiculo === sv)
-            onLoadChapter?.(allVerses, idx >= 0 ? idx : 0)
-          } else {
-            setSelectedVerse(null)
-            savedVerse.current = null
-          }
-        } else {
-          setSelectedVerse(null)
-        }
+        const firstV = res.data[0]
+        setSelectedVerse(firstV.versiculo)
+        savedVerse.current = firstV.versiculo
+        const ref = `${selectedBook.nombre} ${selectedChapter}:${firstV.versiculo}`
+        const text = `${firstV.versiculo}. ${firstV.texto}`
+        onProject(text, ref)
+        const chapterRef = `${selectedBook.nombre} ${selectedChapter}`
+        const allVerses = res.data.map((vv: Verse) => ({
+          text: `${vv.versiculo}. ${vv.texto}`,
+          reference: `${chapterRef}:${vv.versiculo}`,
+          verseNumber: vv.versiculo
+        }))
+        onLoadChapter?.(allVerses, 0)
       }
     })
   }, [selectedBook, selectedChapter])
@@ -468,11 +459,11 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
         </div>
 
         <div className="flex flex-col gap-2 overflow-hidden">
-          <div className="flex-1 grid grid-cols-[1fr_1fr] gap-2 min-h-0 overflow-hidden">
+          <div className="flex-[3] grid grid-cols-[1fr_1fr] gap-2 min-h-0 overflow-hidden">
             {/* ─── Capítulos + Versículos ─── */}
-            <div className="flex flex-col overflow-hidden">
+            <div className="flex flex-col overflow-hidden min-h-0">
               <span className="text-[10px] text-theme-dim font-bold uppercase tracking-wider mb-1 pt-1">Capítulos</span>
-              <div className="flex-1 overflow-y-auto grid grid-cols-6 gap-1 content-start">
+              <div className="flex-1 overflow-y-auto grid grid-cols-6 gap-1 content-start min-h-0">
                 {chapters.map((c) => (
                   <div key={c} onClick={() => setSelectedChapter(c)}
                     className={`text-center py-1.5 rounded cursor-pointer text-[11px] font-medium transition-colors ${
@@ -486,7 +477,7 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
                   <span className="text-[10px] text-theme-dim font-bold uppercase tracking-wider flex items-center gap-1 mb-1">
                     <BookOpen size={11} className="text-[#6c5ce7]" /> Versículos
                   </span>
-                  <div className="flex-[10] grid grid-cols-6 gap-1 content-start">
+                  <div className="flex-[10] overflow-y-auto grid grid-cols-6 gap-1 content-start min-h-0">
                     {currentVerses.map((v: any) => {
                       const isProjected = projectedVerseNumber != null && v.versiculo === projectedVerseNumber
                       const isSel = selectedVerse === v.versiculo
@@ -553,11 +544,11 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
             </div>
 
             {/* ─── Vista previa del texto ─── */}
-            <div className="flex flex-col gap-1.5 overflow-hidden">
-              <span className="text-[9px] text-theme-dim font-semibold uppercase tracking-wider flex items-center gap-1">
+            <div className="flex-[1] min-h-0 flex flex-col gap-1.5 overflow-hidden">
+              <span className="text-[9px] text-theme-dim font-semibold uppercase tracking-wider flex items-center gap-1 shrink-0">
                 <BookOpen size={10} className="text-[#6c5ce7]" /> Vista previa
               </span>
-              <div className="flex-1 overflow-y-auto bg-theme-card rounded-lg p-3">
+              <div className="flex-1 overflow-y-auto bg-theme-card rounded-lg p-3 min-h-0">
                 {search.trim() ? (
                   selectedVerse != null ? (
                     currentVerses.filter((v: any) => v.versiculo === selectedVerse).map((v: any, i: number) => (

@@ -126,6 +126,16 @@ function createMainWindow(): void {
     mainWindow?.show()
     mainWindow?.webContents.setZoomLevel(0)
     autoOpenProjectors()
+    // Detectar cambios de pantalla en tiempo real
+    screen.on('display-added', () => {
+      mainWindow?.webContents.send('projector:layoutChanged')
+    })
+    screen.on('display-removed', () => {
+      mainWindow?.webContents.send('projector:layoutChanged')
+    })
+    screen.on('display-metrics-changed', () => {
+      mainWindow?.webContents.send('projector:layoutChanged')
+    })
   })
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -229,11 +239,26 @@ function registerMainIpcHandlers(): void {
   })
 
   ipcMain.handle('screen:getAll', () => {
-    return screen.getAllDisplays()
+    const primaryId = screen.getPrimaryDisplay().id
+    return screen.getAllDisplays().map(d => ({
+      id: d.id,
+      name: (d as any).label || `Pantalla ${d.id}`,
+      bounds: d.bounds,
+      primary: d.id === primaryId
+    }))
   })
 
   ipcMain.handle('screen:getLayout', () => {
-    return { displays: screen.getAllDisplays(), appDisplayId: getAppDisplayId() }
+    const primaryId = screen.getPrimaryDisplay().id
+    return {
+      displays: screen.getAllDisplays().map(d => ({
+        id: d.id,
+        name: (d as any).label || `Pantalla ${d.id}`,
+        bounds: d.bounds,
+        primary: d.id === primaryId
+      })),
+      appDisplayId: getAppDisplayId()
+    }
   })
 
   ipcMain.handle('projector:open', (_event, displayId?: number) => {

@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Monitor, FileText } from 'lucide-react'
 import AnuncioOverlay from '../components/AnuncioOverlay'
-import { fileUrl } from '../utils'
 
 const YT_CMD = (fn: string) => JSON.stringify({ event: 'command', func: fn, args: [] })
 
@@ -25,9 +24,6 @@ export default function ProjectorView() {
   const [docConverting, setDocConverting] = useState(false)
   const docRef = useRef<HTMLDivElement>(null)
   const [ytPaused, setYtPaused] = useState(false)
-  const [logoSrc, setLogoSrc] = useState<string | null>(null)
-  const [headerTitle, setHeaderTitle] = useState('')
-  const [headerSub, setHeaderSub] = useState('')
   const [anuncioText, setAnuncioText] = useState('')
   const [anuncioAnimIn, setAnuncioAnimIn] = useState('anuncio-slide-up')
   const [anuncioAnimOut, setAnuncioAnimOut] = useState('anim-fade')
@@ -52,6 +48,8 @@ export default function ProjectorView() {
   const [currentTime, setCurrentTime] = useState('')
   const [timerDisplay, setTimerDisplay] = useState('')
   const [timerRunning, setTimerRunning] = useState(false)
+  const verseTextRef = useRef<HTMLParagraphElement>(null)
+  const verseRefRef = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     const update = () => {
@@ -158,10 +156,10 @@ export default function ProjectorView() {
       } else if (e.key === 'ArrowRight') {
         window.api.projector.nextVerse()
       } else if (e.key === 'ArrowUp') {
-        const el = document.querySelector('.doc-scroll-container') as HTMLElement
+        const el = document.querySelector('.doc-scroll-container')
         if (el) { e.preventDefault(); el.scrollTop -= 250 }
       } else if (e.key === 'ArrowDown') {
-        const el = document.querySelector('.doc-scroll-container') as HTMLElement
+        const el = document.querySelector('.doc-scroll-container')
         if (el) { e.preventDefault(); el.scrollTop += 250 }
       } else if (e.key === 'Escape') {
         window.api.projector.close()
@@ -171,24 +169,43 @@ export default function ProjectorView() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
 
+  useEffect(() => {
+    if (!verseText) return
+    const timer = setTimeout(() => {
+      const container = verseContainerRef.current
+      const textEl = verseTextRef.current
+      if (!container || !textEl) return
+      textEl.style.fontSize = ''
+      if (verseRefRef.current) verseRefRef.current.style.fontSize = ''
+      requestAnimationFrame(() => {
+        const maxH = container.clientHeight * 0.92
+        if (textEl.scrollHeight <= maxH) return
+        const textLen = verseText.length
+        let ratio = 1
+        if (textLen > 400) ratio = 0.4
+        else if (textLen > 250) ratio = 0.55
+        else if (textLen > 150) ratio = 0.7
+        else if (textLen > 80) ratio = 0.85
+        textEl.style.fontSize = `${ratio * 5.5}rem`
+        if (verseRefRef.current) verseRefRef.current.style.fontSize = `${ratio * 3}rem`
+        requestAnimationFrame(() => {
+          if (textEl.scrollHeight > maxH) {
+            const factor = maxH / textEl.scrollHeight
+            const newSize = parseFloat(textEl.style.fontSize) * factor * 0.97
+            textEl.style.fontSize = `${newSize}rem`
+            if (verseRefRef.current) verseRefRef.current.style.fontSize = `${newSize * 0.55}rem`
+          }
+        })
+      })
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [verseText, verseRef])
 
   useEffect(() => {
     // Capturar errores de carga del iframe
     const handleLoadError = (e: ErrorEvent) => {
       console.error('[Window error]', e.message, e.error)
     }
-    Promise.all([
-      window.api.app.getVideoLogo(),
-      window.api.app.getConfig()
-    ]).then(([logoRes, cfgRes]) => {
-      if (logoRes?.success && logoRes.data) setLogoSrc(fileUrl(logoRes.data.filePath))
-      if (cfgRes?.success && cfgRes.data) {
-        const cfg = cfgRes.data as Record<string, string>
-        if (cfg.headerTitle) setHeaderTitle(cfg.headerTitle)
-        if (cfg.headerSub) setHeaderSub(cfg.headerSub)
-      }
-    })
-
     window.addEventListener('error', handleLoadError)
     const handleRejection = (e: PromiseRejectionEvent) => {
       console.error('[Unhandled rejection]', e.reason)
@@ -438,24 +455,12 @@ export default function ProjectorView() {
             </div>
           </div>
         )}
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
-          {logoSrc && <img src={logoSrc} alt="Logo" className="h-24 w-auto object-contain pointer-events-none" />}
-          {(headerTitle || headerSub) && (
-            <div><p className="text-3xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-sm text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
-          )}
-        </div>
       </div>
     )
   } else if (isImage && videoUrl) {
     content = (
       <div className="h-screen w-screen bg-black relative flex items-center justify-center">
         <img src={videoUrl} alt={videoTitle} className="max-h-full max-w-full object-contain" />
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
-          {logoSrc && <img src={logoSrc} alt="Logo" className="h-24 w-auto object-contain pointer-events-none" />}
-          {(headerTitle || headerSub) && (
-            <div><p className="text-3xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-sm text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
-          )}
-        </div>
       </div>
     )
   } else if (videoUrl && isYoutube) {
@@ -463,12 +468,6 @@ export default function ProjectorView() {
       <div className="h-screen w-screen bg-black relative">
         <iframe ref={iframeRef} src={videoUrl} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen" allowFullScreen
           onError={(e) => console.error('[YT Iframe error]', e)} />
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
-          {logoSrc && <img src={logoSrc} alt="Logo" className="h-48 w-auto object-contain" onError={() => console.error('[Logo error]')} />}
-          {(headerTitle || headerSub) && (
-            <div><p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
-          )}
-        </div>
       </div>
     )
   } else if (videoUrl) {
@@ -476,21 +475,15 @@ export default function ProjectorView() {
       <div className="h-screen w-screen bg-black relative">
         <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain" controls={false} autoPlay
           onError={(e) => { const v = e.currentTarget; console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message) }} />
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
-          {logoSrc && <img src={logoSrc} alt="Logo" className="h-48 w-auto object-contain" onError={() => console.error('[Logo error]')} />}
-          {(headerTitle || headerSub) && (
-            <div><p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
-          )}
-        </div>
       </div>
     )
   } else if (effect) {
-    content = <EffectRenderer effect={effect.type} speed={effect.speed} logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} anuncioText={anuncioText}
+    content = <EffectRenderer effect={effect.type} speed={effect.speed} anuncioText={anuncioText}
       anuncioAnimIn={anuncioAnimIn} anuncioAnimOut={anuncioAnimOut} anuncioBg={anuncioBg} anuncioBgAnimIn={anuncioBgAnimIn} anuncioBgAnimOut={anuncioBgAnimOut}
       anuncioSize={anuncioSize} anuncioFont={anuncioFont} anuncioColor={anuncioColor} anuncioExiting={anuncioExiting} />
   } else if (verseText) {
     content = (
-      <div key={verseRef} ref={verseContainerRef} className="h-screen w-screen relative flex items-center justify-center p-16 overflow-hidden">
+      <div key={verseRef} ref={verseContainerRef} className="h-screen w-screen relative flex items-center justify-center overflow-hidden">
         {verseBackground ? (
           <>
             <img src={verseBackground} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
@@ -499,27 +492,21 @@ export default function ProjectorView() {
         ) : (
           <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a1a] to-black" />
         )}
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
-          {logoSrc && <img src={logoSrc} alt="Logo" className="h-48 w-auto object-contain" />}
-          {(headerTitle || headerSub) && (
-            <div><p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
-          )}
-        </div>
         {sermonTitle && (
           <div className="absolute top-16 right-8 z-20 text-right pointer-events-none">
             <p className="text-5xl font-bold text-amber-400 drop-shadow-[0_3px_12px_rgba(0,0,0,0.95)]">{sermonTitle}</p>
             {sermonPreacher && <p className="text-2xl text-amber-400/70 mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">{sermonPreacher}</p>}
           </div>
         )}
-        <div className="relative text-center w-[95%] px-8">
+        <div className="relative text-center w-[95%] px-4">
           {verseAnimation.startsWith('anim-letter-') ? (
-            <p className={`text-7xl font-bold leading-[1.3] text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] ${verseAnimation}`}>
+            <p ref={verseTextRef} className={`text-7xl font-bold leading-[1.2] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation}`}>
               {verseText.split('').map((char, i) => (<span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>))}
             </p>
           ) : (
-            <p className={`text-7xl font-bold leading-[1.3] text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-text`}>{verseText}</p>
+            <p ref={verseTextRef} className={`text-7xl font-bold leading-[1.2] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation} anim-delay-text`}>{verseText}</p>
           )}
-          <p className={`text-4xl text-white/80 mt-8 tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-ref`}>— {verseRef}</p>
+          <p ref={verseRefRef} className={`text-4xl text-white/80 mt-6 tracking-wider drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-ref`}>— {verseRef}</p>
         </div>
       </div>
     )
@@ -545,7 +532,7 @@ export default function ProjectorView() {
   )
 }
 
-function EffectRenderer({ effect, speed, logoSrc, headerTitle, headerSub, ...anuncio }: any) {
+function EffectRenderer({ effect, speed, ...anuncio }: any) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const timeRef = useRef(0)
   const animRef = useRef<number>(0)
@@ -630,15 +617,6 @@ function EffectRenderer({ effect, speed, logoSrc, headerTitle, headerSub, ...anu
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-black">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-      <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
-        {logoSrc && <img src={logoSrc} alt="Logo" className="h-48 w-auto object-contain" />}
-        {(headerTitle || headerSub) && (
-          <div>
-            <p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p>
-            <p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p>
-          </div>
-        )}
-      </div>
       <AnuncioOverlay text={anuncio.anuncioText} animIn={anuncio.anuncioAnimIn} animOut={anuncio.anuncioAnimOut}
         bg={anuncio.anuncioBg} bgAnimIn={anuncio.anuncioBgAnimIn} bgAnimOut={anuncio.anuncioBgAnimOut}
         size={anuncio.anuncioSize} font={anuncio.anuncioFont} color={anuncio.anuncioColor} exiting={anuncio.anuncioExiting} />

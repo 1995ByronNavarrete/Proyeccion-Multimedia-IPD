@@ -14,14 +14,11 @@ interface ProjectionViewProps {
   verseIdx?: number
   onPrevVerse?: () => void
   onNextVerse?: () => void
-  logoSrc?: string | null
-  headerTitle?: string
-  headerSub?: string
 }
 
 const allAnimations = ANIM_GROUPS.flatMap((g) => g.items)
 
-export default function ProjectionView({ onBlack, backgroundUrl, projected, animation, onAnimationChange, chapterVerses, verseIdx, onPrevVerse, onNextVerse, logoSrc, headerTitle, headerSub }: ProjectionViewProps) {
+export default function ProjectionView({ onBlack, backgroundUrl, projected, animation, onAnimationChange, chapterVerses, verseIdx, onPrevVerse, onNextVerse }: ProjectionViewProps) {
   const [openAnim, setOpenAnim] = useState(false)
   const [overlay, setOverlay] = useState<{ type: string; speed?: number; color?: string } | null>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
@@ -125,15 +122,6 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
             {backgroundUrl && <img src={backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
             {projected?.backgroundUrl && <img src={projected.backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
             <div className="absolute inset-0 bg-black/50" />
-            <div className="absolute top-1 left-2 z-10 flex items-center gap-1.5 pointer-events-none">
-              {logoSrc && <img src={logoSrc} alt="" className="h-6 w-auto object-contain" />}
-              {(headerTitle || headerSub) && (
-                <div>
-                  <p className="text-[8px] font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p>
-                  {headerSub && <p className="text-[6px] text-white/60 drop-shadow-lg -mt-0.5">{headerSub}</p>}
-                </div>
-              )}
-            </div>
             {projected?.sermonTitle && (
               <div className="absolute top-1 right-2 z-10 text-right pointer-events-none">
                 <p className="text-[10px] font-bold text-amber-400 drop-shadow-lg">{projected.sermonTitle}</p>
