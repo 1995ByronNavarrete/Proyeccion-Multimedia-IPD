@@ -190,20 +190,20 @@ export default function CronometroPanel() {
       </div>
 
       <div className="border-t border-theme shrink-0">
-        <div className="flex items-center gap-1 px-2 py-1">
-          <User size={9} className="text-theme-dim shrink-0" />
+        <div className="flex items-center gap-1.5 px-2 py-1.5">
+          <User size={11} className="text-theme-dim shrink-0" />
           <input type="text" value={persona} onChange={e => setPersona(e.target.value)}
-            placeholder="Nombre..."
-            className="flex-1 min-w-0 bg-transparent text-[8px] text-theme placeholder:text-theme-dim/40 outline-none border-b border-transparent focus:border-theme-dim/30"
+            placeholder="Nombre de la persona..."
+            className="flex-1 min-w-0 bg-theme-card px-2.5 py-1.5 rounded-lg text-xs text-theme placeholder:text-theme-dim/40 outline-none border border-theme focus:border-[#6c5ce7]/50 transition-colors"
             onKeyDown={e => e.key === 'Enter' && guardarRegistro()} />
           <button onClick={guardarRegistro} disabled={!persona.trim() || (display <= 0 && elapsedRef.current <= 0)}
-            className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 disabled:opacity-30 transition-colors">
-            <Save size={8} />
+            className="px-2.5 py-1.5 bg-[#6c5ce7]/20 rounded-lg text-[#6c5ce7] hover:bg-[#6c5ce7]/30 disabled:opacity-30 transition-colors flex items-center gap-1 text-[9px] font-medium">
+            <Save size={10} /> Registrar
           </button>
           {registros.length > 0 && (
             <button onClick={() => setShowRegistros(!showRegistros)}
-              className={`p-1 rounded transition-colors ${showRegistros ? 'bg-[#6c5ce7]/20 text-[#6c5ce7]' : 'text-theme-dim hover:text-theme'}`} title="Ver registros">
-              <List size={8} />
+              className={`p-1.5 rounded-lg transition-colors ${showRegistros ? 'bg-[#6c5ce7]/20 text-[#6c5ce7]' : 'text-theme-dim hover:text-theme'}`} title="Ver registros">
+              <List size={10} />
             </button>
           )}
         </div>
