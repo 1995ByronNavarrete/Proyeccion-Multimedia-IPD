@@ -109,7 +109,7 @@ export default function CronometroPanel() {
 
   return (
     <div className="bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-theme">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-theme shrink-0">
         <h3 className="text-[10px] font-semibold text-theme-muted uppercase tracking-wider flex items-center gap-1.5">
           <Clock size={11} /> {mode === 'crono' ? 'Cronómetro' : 'Cuenta atrás'}
         </h3>
@@ -124,13 +124,13 @@ export default function CronometroPanel() {
             <AlarmCheck size={14} /> ¡TIEMPO!
           </div>
         )}
-        <div className={`text-xl font-bold font-mono tracking-wider tabular-nums ${isFinished ? 'text-green-400' : 'text-theme'}`}
+        <div className={`text-sm font-bold font-mono tracking-wider tabular-nums ${isFinished ? 'text-green-400' : 'text-theme'}`}
           style={{ textShadow: '0 0 20px rgba(108,92,231,0.15)' }}>
           {format(display)}
         </div>
 
         {mode === 'countdown' && !running && display <= 0 && elapsedRef.current === 0 && (
-          <div className="flex items-center gap-1 flex-wrap justify-center">
+          <div className="flex items-center gap-1 flex-wrap justify-center shrink-0">
             {[1, 2, 3, 5, 10, 15, 30].map(m => (
               <button key={m} onClick={() => setPreset(m)}
                 className={`text-[9px] px-2 py-0.5 rounded-full transition-colors ${initial === m * 60 ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
@@ -140,7 +140,7 @@ export default function CronometroPanel() {
           </div>
         )}
 
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1 shrink-0">
           {!running ? (
             <button onClick={start}
               className="flex items-center gap-1 px-4 py-1.5 bg-green-600/80 rounded-lg text-[10px] text-white hover:bg-green-600 transition-colors disabled:opacity-40"

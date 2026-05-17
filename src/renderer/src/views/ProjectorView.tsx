@@ -391,7 +391,7 @@ export default function ProjectorView() {
         <div className="fixed bottom-6 right-6 z-50 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
           <div className="flex items-center gap-2">
             {timerRunning && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
-            <span className="text-3xl font-bold font-mono text-white tabular-nums tracking-wider">{timerDisplay}</span>
+            <span className="text-xl font-bold font-mono text-white tabular-nums tracking-wider">{timerDisplay}</span>
           </div>
         </div>
       )}
