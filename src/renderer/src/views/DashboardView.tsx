@@ -228,17 +228,17 @@ export default function DashboardView() {
       <div className="flex-1 grid grid-cols-3 gap-3 p-3 overflow-hidden">
         {/* ─── LEFT COLUMN ─── */}
         <div className="flex flex-col gap-3 overflow-hidden">
-          {isEnabled('biblia') && (
-            <div className="flex-[3] min-h-0">
+          <div className="flex-[3] min-h-0">
+            {isEnabled('biblia') ? (
               <BibliaPanel onProject={handleProjectVerse} onLoadChapter={handleLoadChapter}
                 projectedVerseNumber={chapterVerses[verseIdx]?.verseNumber ?? null} />
-            </div>
-          )}
+            ) : <div className="h-full" />}
+          </div>
           <div className="flex-[2] flex flex-col gap-2 min-h-0">
             {projected.type === 'media' && <VideoControls />}
             <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
-              {isEnabled('pantallas') && <ProyectorPanel projected={projected} />}
-              {isEnabled('youtube') && <YouTubeSearch onPlayBg={handlePlayBg} />}
+              <div>{isEnabled('pantallas') ? <ProyectorPanel projected={projected} /> : <div className="h-full" />}</div>
+              <div>{isEnabled('youtube') ? <YouTubeSearch onPlayBg={handlePlayBg} /> : <div className="h-full" />}</div>
             </div>
           </div>
         </div>
@@ -252,10 +252,10 @@ export default function DashboardView() {
           </div>
           <div className="flex-[2] grid grid-cols-2 gap-3 min-h-0">
             <div className="flex flex-col gap-3 min-h-0">
-              {isEnabled('imagenes') && <div className="flex-1 min-h-0"><EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} /></div>}
-              {isEnabled('anuncios') && <div className="shrink-0"><AnunciosPanel /></div>}
+              {isEnabled('imagenes') ? <div className="flex-1 min-h-0"><EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} /></div> : <div className="flex-1" />}
+              {isEnabled('anuncios') ? <div className="shrink-0"><AnunciosPanel /></div> : <div />}
             </div>
-            {isEnabled('audio') && <AudioControl />}
+            <div>{isEnabled('audio') ? <AudioControl /> : <div className="h-full" />}</div>
           </div>
         </div>
 
@@ -264,29 +264,23 @@ export default function DashboardView() {
           <div className="flex-[4] min-h-0">
             <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
           </div>
-          {isEnabled('reproductor') && (
-            <div className="shrink-0">
-              <ReproductorPanel onPlayBg={handlePlayBg} />
-            </div>
-          )}
+          <div className="shrink-0">
+            {isEnabled('reproductor') ? <ReproductorPanel onPlayBg={handlePlayBg} /> : <div className="h-8" />}
+          </div>
           <div className="flex-[4] min-h-0 grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-3 min-h-0">
-              {isEnabled('predicacion') && (
+              {isEnabled('predicacion') ? (
                 <div className="shrink-0">
                   <SermonInfo />
                 </div>
-              )}
-              {isEnabled('multimedia') && (
+              ) : <div />}
+              {isEnabled('multimedia') ? (
                 <div className="flex-1 min-h-0">
                   <DirectoryBrowser onPlayBg={handlePlayBg} />
                 </div>
-              )}
+              ) : <div className="flex-1" />}
             </div>
-            {isEnabled('efectos') && (
-              <div className="min-h-0">
-                <EffectsPanel />
-              </div>
-            )}
+            <div>{isEnabled('efectos') ? <EffectsPanel /> : <div className="h-full" />}</div>
           </div>
         </div>
       </div>
