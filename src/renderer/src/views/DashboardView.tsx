@@ -13,6 +13,7 @@ import SermonInfo from '../components/SermonInfo'
 import VideoControls from '../components/VideoControls'
 import AudioControl from '../components/mixer/AudioControl'
 import UpdateNotifier from '../components/UpdateNotifier'
+import { useModules } from '../modules'
 export interface ProjectedContent {
   type: 'verse' | 'black' | 'media' | 'document' | 'none'
   text?: string
@@ -217,6 +218,8 @@ export default function DashboardView() {
     window.api.projector.projectToAll()
   }
 
+  const { isEnabled } = useModules()
+
   return (
     <div className="h-full w-full flex flex-col overflow-hidden bg-theme">
       <Header />
@@ -224,52 +227,66 @@ export default function DashboardView() {
       <div className="flex-1 grid grid-cols-3 gap-3 p-3 overflow-hidden">
         {/* ─── LEFT COLUMN ─── */}
         <div className="flex flex-col gap-3 overflow-hidden">
-          <div className="flex-[3] min-h-0">
-            <BibliaPanel onProject={handleProjectVerse} onLoadChapter={handleLoadChapter}
-              projectedVerseNumber={chapterVerses[verseIdx]?.verseNumber ?? null} />
-          </div>
+          {isEnabled('biblia') && (
+            <div className="flex-[3] min-h-0">
+              <BibliaPanel onProject={handleProjectVerse} onLoadChapter={handleLoadChapter}
+                projectedVerseNumber={chapterVerses[verseIdx]?.verseNumber ?? null} />
+            </div>
+          )}
           <div className="flex-[2] flex flex-col gap-2 min-h-0">
             {projected.type === 'media' && <VideoControls />}
             <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
-              <ProyectorPanel projected={projected} />
-              <YouTubeSearch onPlayBg={handlePlayBg} />
+              {isEnabled('pantallas') && <ProyectorPanel projected={projected} />}
+              {isEnabled('youtube') && <YouTubeSearch onPlayBg={handlePlayBg} />}
             </div>
           </div>
         </div>
 
         {/* ─── CENTER COLUMN ─── */}
         <div className="flex flex-col gap-3 overflow-hidden">
-          <div className="flex-[3] min-h-0">
-            <ProjectionView onBlack={handleShowBlack} backgroundUrl={backgroundUrl} projected={projected} animation={animBiblia} onAnimationChange={saveAnimBiblia}
-              chapterVerses={chapterVerses} verseIdx={verseIdx} onPrevVerse={goPrevVerse} onNextVerse={goNextVerse}
-              logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} />
-          </div>
+          {isEnabled('vista-previa') && (
+            <div className="flex-[3] min-h-0">
+              <ProjectionView onBlack={handleShowBlack} backgroundUrl={backgroundUrl} projected={projected} animation={animBiblia} onAnimationChange={saveAnimBiblia}
+                chapterVerses={chapterVerses} verseIdx={verseIdx} onPrevVerse={goPrevVerse} onNextVerse={goNextVerse}
+                logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} />
+            </div>
+          )}
           <div className="flex-[2] grid grid-cols-2 gap-3 min-h-0">
-            <EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} />
-            <AudioControl />
+            {isEnabled('escenas') && <EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} />}
+            {isEnabled('audio') && <AudioControl />}
           </div>
         </div>
 
         {/* ─── RIGHT COLUMN ─── */}
         <div className="flex flex-col gap-3 overflow-hidden">
-          <div className="flex-[4] min-h-0">
-            <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
-          </div>
-          <div className="shrink-0">
-            <ReproductorPanel onPlayBg={handlePlayBg} />
-          </div>
+          {isEnabled('secundaria') && (
+            <div className="flex-[4] min-h-0">
+              <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
+            </div>
+          )}
+          {isEnabled('reproductor') && (
+            <div className="shrink-0">
+              <ReproductorPanel onPlayBg={handlePlayBg} />
+            </div>
+          )}
           <div className="flex-[4] min-h-0 grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-3 min-h-0">
-              <div className="shrink-0">
-                <SermonInfo />
-              </div>
-              <div className="flex-1 min-h-0">
-                <DirectoryBrowser onPlayBg={handlePlayBg} />
-              </div>
+              {isEnabled('predicacion') && (
+                <div className="shrink-0">
+                  <SermonInfo />
+                </div>
+              )}
+              {isEnabled('multimedia') && (
+                <div className="flex-1 min-h-0">
+                  <DirectoryBrowser onPlayBg={handlePlayBg} />
+                </div>
+              )}
             </div>
-            <div className="min-h-0">
-              <EffectsPanel />
-            </div>
+            {isEnabled('efectos') && (
+              <div className="min-h-0">
+                <EffectsPanel />
+              </div>
+            )}
           </div>
         </div>
       </div>

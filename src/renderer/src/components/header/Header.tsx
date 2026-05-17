@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Radio, Minus, Square, X, Settings, Image, Trash2, Download, Upload, Keyboard, Info, Github, User, Lightbulb, Sparkles, RefreshCw } from 'lucide-react'
 import ThemeToggle from '../theme/ThemeToggle'
+import ModuleMenu from '../ModuleMenu'
 import { fileUrl } from '../../utils'
 
 export default function Header() {
@@ -145,6 +146,7 @@ export default function Header() {
           <p className="text-[10px] text-gray-500 text-theme-muted">{dateStr}</p>
         </div>
         <div className="flex items-center gap-1 ml-2 pl-4 border-l border-[rgba(120,80,255,0.2)]">
+          <ModuleMenu />
           <button onClick={openSettings} className="p-1.5 hover:bg-white/5 rounded transition-colors" title="Configuración">
             <Settings size={12} className="text-gray-500 text-theme-muted" />
           </button>
