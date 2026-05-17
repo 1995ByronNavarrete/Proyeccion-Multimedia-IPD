@@ -115,7 +115,7 @@ export default function CronometroPanel() {
       </div>
 
       <div className="flex items-center gap-2 py-3 px-3 min-h-0 overflow-hidden">
-        <div className="flex flex-col gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {!running ? (
             <button onClick={start}
               className="flex items-center justify-center w-7 h-7 bg-green-600/80 rounded-lg text-white hover:bg-green-600 transition-colors disabled:opacity-40"
