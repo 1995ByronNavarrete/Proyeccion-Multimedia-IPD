@@ -115,8 +115,8 @@ export default function CronometroPanel() {
             <AlarmCheck size={14} /> ¡TIEMPO!
           </div>
         )}
-        <div className={`text-4xl font-bold font-mono tracking-wider tabular-nums ${isFinished ? 'text-green-400' : 'text-theme'}`}
-          style={{ textShadow: '0 0 30px rgba(108,92,231,0.2)' }}>
+        <div className={`text-xl font-bold font-mono tracking-wider tabular-nums ${isFinished ? 'text-green-400' : 'text-theme'}`}
+          style={{ textShadow: '0 0 20px rgba(108,92,231,0.15)' }}>
           {format(display)}
         </div>
 
