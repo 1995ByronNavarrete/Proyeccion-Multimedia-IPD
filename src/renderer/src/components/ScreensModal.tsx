@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Monitor, MonitorPlay, MonitorOff, X, Check, Laptop, BookOpen, Youtube, Image, Megaphone, Sparkles, Play } from 'lucide-react'
+import { Monitor, MonitorPlay, MonitorOff, X, Check, Laptop, BookOpen, Youtube, Image, Megaphone, Sparkles, Play, Clock } from 'lucide-react'
 import { useModules } from '../modules'
 
 interface Display {
@@ -14,6 +14,7 @@ const ALL_CONTENT_TYPES = [
   { id: 'video', label: 'Video', icon: Play, moduleId: 'youtube' },
   { id: 'anuncios', label: 'Anuncios', icon: Megaphone, moduleId: 'anuncios' },
   { id: 'fondos', label: 'Fondos', icon: Image, moduleId: 'imagenes' },
+  { id: 'cronometro', label: 'Cronómetro', icon: Clock, moduleId: 'cronometro' },
   { id: 'efectos', label: 'Efectos', icon: Sparkles, moduleId: 'efectos' }
 ]
 

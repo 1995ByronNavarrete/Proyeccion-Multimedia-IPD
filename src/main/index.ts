@@ -389,10 +389,12 @@ function registerMainIpcHandlers(): void {
     sendContentToDisplay(displayId, 'projector:stopVideo', null)
   })
 
-  // Timer broadcast to all projector windows
+  // Timer broadcast filtered by assignments
   ipcMain.handle('timer:update', (_event, data: { time: number; running: boolean }) => {
-    for (const [, win] of projectorWindows) {
-      if (!win.isDestroyed()) win.webContents.send('projector:timer', data)
+    for (const [displayId, win] of projectorWindows) {
+      if (win.isDestroyed()) continue
+      if (displayAssignments[displayId] && !displayAssignments[displayId].includes('cronometro')) continue
+      win.webContents.send('projector:timer', data)
     }
   })
 }
