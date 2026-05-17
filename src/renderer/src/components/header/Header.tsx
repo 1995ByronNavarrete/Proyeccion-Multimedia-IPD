@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Radio, Minus, Square, X, Settings, Image, Trash2, Download, Upload, Keyboard, Info, Github, User, Lightbulb, Sparkles, RefreshCw } from 'lucide-react'
+import { Radio, Minus, Square, X, Settings, Image, Trash2, Download, Upload, Keyboard, Info, Github, User, Lightbulb, Sparkles, RefreshCw, Monitor } from 'lucide-react'
 import ThemeToggle from '../theme/ThemeToggle'
 import ModuleMenu from '../ModuleMenu'
+import ScreensModal from '../ScreensModal'
 import { fileUrl } from '../../utils'
 
 export default function Header() {
+  const [showScreens, setShowScreens] = useState(false)
   const [isLive, setIsLive] = useState(true)
   const [time, setTime] = useState(new Date())
   const [showSettings, setShowSettings] = useState(false)
@@ -154,13 +156,19 @@ export default function Header() {
         </div>
       </div>
 
+      return (
       {/* Nav bar */}
       <div className="flex items-center gap-1 px-4 pb-1.5 no-drag">
         <ModuleMenu />
+        <button onClick={() => setShowScreens(true)}
+          className="flex items-center gap-1 px-2 py-1 hover:bg-white/5 rounded transition-colors text-[10px] text-gray-500 text-theme-muted hover:text-theme">
+          <Monitor size={12} /> Pantalla
+        </button>
         <button onClick={openSettings}
           className="flex items-center gap-1 px-2 py-1 hover:bg-white/5 rounded transition-colors text-[10px] text-gray-500 text-theme-muted hover:text-theme">
           <Settings size={12} /> Configuración
         </button>
+        <ScreensModal open={showScreens} onClose={() => setShowScreens(false)} />
         <div className="flex-1" />
         <button onClick={() => window.api.update.checkNow()} className="p-1 hover:bg-white/5 rounded transition-colors" title="Buscar actualizaciones">
           <RefreshCw size={10} className="text-gray-500 text-theme-muted" />
