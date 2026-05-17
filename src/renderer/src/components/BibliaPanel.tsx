@@ -22,7 +22,6 @@ const TRANS_COLORS: Record<string, string> = {
   DHH: '#ec4899', NBV: '#14b8a6', BLP: '#f97316',
 }
 
-// LOCKED: No modificar este archivo sin autorización explícita
 export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNumber }: BibliaPanelProps) {
   const [view, setView] = useState<View>('loading')
   const [progress, setProgress] = useState<DownloadProgress | null>(null)
@@ -138,67 +137,67 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
     setDownloading(false)
   }
 
-  const buildChapterVerses = useCallback((data: Verse[], bookName: string, chapter: number) =>
-    data.map((vv: Verse) => ({
-      text: `${vv.versiculo}. ${vv.texto}`,
-      reference: `${bookName} ${chapter}:${vv.versiculo}`,
-      verseNumber: vv.versiculo
-    })), [])
-
-  const projectVerse = useCallback((verseNum: number, text: string, ref: string) => {
-    onProject(text, ref)
-  }, [onProject])
-
   useEffect(() => {
     if (!selectedTrans || view !== 'ready') return
     let cancelled = false
     const nameToFind = savedBookName.current
     const chapterToLoad = savedChapter.current
     const verseToSelect = savedVerse.current
-    ;(async () => {
-      const res = await window.api.bible.getBooks(selectedTrans)
-      if (cancelled || !res.success || !res.data?.length) return
-      setBooks(res.data)
-      const match = nameToFind ? res.data.find((b: Book) => b.nombre === nameToFind) : null
-      const book = match || res.data[0]
-      setSelectedBook(book)
-      if (!match || !chapterToLoad) return
-      const [cRes, vRes] = await Promise.all([
-        window.api.bible.getChapters(book.id),
-        window.api.bible.getVerses(book.id, chapterToLoad)
-      ])
-      if (cRes.success && cRes.data) setChapters(cRes.data.map((r: { capitulo: number }) => r.capitulo))
-      if (!vRes.success || !vRes.data) return
-      setVerses(vRes.data)
-      setSelectedChapter(chapterToLoad)
-      if (verseToSelect == null) return
-      const matchV = vRes.data.find((v: Verse) => v.versiculo === verseToSelect)
-      if (!matchV) return
-      const ref = `${book.nombre} ${chapterToLoad}:${verseToSelect}`
-      const text = `${verseToSelect}. ${matchV.texto}`
-      setSelectedVerse(verseToSelect)
-      savedVerse.current = verseToSelect
-      projectVerse(verseToSelect, text, ref)
-      if (onLoadChapter) {
-        const allVerses = buildChapterVerses(vRes.data, book.nombre, chapterToLoad)
-        const idx = vRes.data.findIndex((vv: Verse) => vv.versiculo === verseToSelect)
-        onLoadChapter(allVerses, idx >= 0 ? idx : 0)
+    window.api.bible.getBooks(selectedTrans).then((res) => { if (cancelled) return
+      if (res.success && res.data) {
+        setBooks(res.data)
+        if (res.data.length) {
+          const match = nameToFind ? res.data.find((b: Book) => b.nombre === nameToFind) : null
+          const book = match || res.data[0]
+          setSelectedBook(book)
+          if (match && chapterToLoad) {
+            window.api.bible.getChapters(book.id).then((cRes) => {
+              if (cRes.success && cRes.data) setChapters(cRes.data.map((r: { capitulo: number }) => r.capitulo))
+            })
+            window.api.bible.getVerses(book.id, chapterToLoad).then((vRes) => {
+              if (vRes.success && vRes.data) {
+                setVerses(vRes.data)
+                setSelectedChapter(chapterToLoad)
+                if (verseToSelect != null) {
+                  const matchV = vRes.data.find((v: Verse) => v.versiculo === verseToSelect)
+                  if (matchV) {
+                    const ref = `${book.nombre} ${chapterToLoad}:${verseToSelect}`
+                    const text = `${verseToSelect}. ${matchV.texto}`
+                    setSelectedVerse(verseToSelect)
+                    savedVerse.current = verseToSelect
+                    onProject(text, ref)
+                    if (onLoadChapter) {
+                      const chapterRef = `${book.nombre} ${chapterToLoad}`
+                      const allVerses = vRes.data.map((vv: Verse) => ({
+                        text: `${vv.versiculo}. ${vv.texto}`,
+                        reference: `${chapterRef}:${vv.versiculo}`,
+                        verseNumber: vv.versiculo
+                      }))
+                      const idx = vRes.data.findIndex((vv: Verse) => vv.versiculo === verseToSelect)
+                      onLoadChapter(allVerses, idx >= 0 ? idx : 0)
+                    }
+                  }
+                }
+              }
+            })
+          }
+        }
       }
-    })()
+    }).catch(() => {})
     return () => { cancelled = true }
-  }, [selectedTrans, view, buildChapterVerses, projectVerse])
+  }, [selectedTrans, view])
 
   useEffect(() => {
     if (!selectedBook) return
     savedBookName.current = selectedBook.nombre
-    ;(async () => {
-      const res = await window.api.bible.getChapters(selectedBook.id)
-      if (!res.success || !res.data) return
-      const caps = res.data.map((r: { capitulo: number }) => r.capitulo)
-      setChapters(caps)
-      const ch = savedChapter.current
-      setSelectedChapter(caps.includes(ch) ? ch : caps[0] || 1)
-    })()
+    window.api.bible.getChapters(selectedBook.id).then((res) => {
+      if (res.success && res.data) {
+        const caps = res.data.map((r: { capitulo: number }) => r.capitulo)
+        setChapters(caps)
+        const ch = savedChapter.current
+        setSelectedChapter(caps.includes(ch) ? ch : caps[0] || 1)
+      }
+    })
   }, [selectedBook])
 
   useEffect(() => {
@@ -206,30 +205,36 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
     savedChapter.current = selectedChapter
     savedVerse.current = null
     setSelectedVerse(null)
-    ;(async () => {
-      const res = await window.api.bible.getVerses(selectedBook.id, selectedChapter)
-      if (!res.success || !res.data?.length) return
-      setVerses(res.data)
-      const firstV = res.data[0]
-      setSelectedVerse(firstV.versiculo)
-      savedVerse.current = firstV.versiculo
-      const ref = `${selectedBook.nombre} ${selectedChapter}:${firstV.versiculo}`
-      const text = `${firstV.versiculo}. ${firstV.texto}`
-      projectVerse(firstV.versiculo, text, ref)
-      if (onLoadChapter) {
-        const allVerses = buildChapterVerses(res.data, selectedBook.nombre, selectedChapter)
-        onLoadChapter(allVerses, 0)
+    window.api.bible.getVerses(selectedBook.id, selectedChapter).then((res) => {
+      if (res.success && res.data && res.data.length > 0) {
+        setVerses(res.data)
+        const firstV = res.data[0]
+        setSelectedVerse(firstV.versiculo)
+        savedVerse.current = firstV.versiculo
+        const ref = `${selectedBook.nombre} ${selectedChapter}:${firstV.versiculo}`
+        const text = `${firstV.versiculo}. ${firstV.texto}`
+        onProject(text, ref)
+        const chapterRef = `${selectedBook.nombre} ${selectedChapter}`
+        const allVerses = res.data.map((vv: Verse) => ({
+          text: `${vv.versiculo}. ${vv.texto}`,
+          reference: `${chapterRef}:${vv.versiculo}`,
+          verseNumber: vv.versiculo
+        }))
+        onLoadChapter?.(allVerses, 0)
       }
-    })()
-  }, [selectedBook, selectedChapter, buildChapterVerses, projectVerse])
+    })
+  }, [selectedBook, selectedChapter])
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) { setSearchResults([]); return }
     setSearching(true)
     const isRef = /^\d?\s*[a-z\u00E0-\u00FC]+\s+\d+(\s*[.:,]\s*\d+)?$/i.test(q)
+
     const refPromise = isRef ? window.api.bible.searchReference(q) : Promise.resolve(null)
     const textPromise = window.api.bible.search(q)
+
     const [refRes, textRes] = await Promise.all([refPromise, textPromise])
+
     let results: Verse[] = []
     if (refRes?.success && refRes.data) results = refRes.data
     if (textRes.success && textRes.data) {
@@ -257,66 +262,19 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
     })
   }, [])
 
-  const getReference = useCallback(() => {
+  const getReference = () => {
     if (!selectedBook || !selectedVerse) return ''
     return `${selectedBook.nombre} ${selectedChapter}:${selectedVerse}`
-  }, [selectedBook, selectedChapter, selectedVerse])
+  }
 
-  const getSelectedText = useCallback(() => {
+  const getSelectedText = () => {
     if (!selectedBook || !selectedVerse) return ''
     const v = verses.find((v) => v.versiculo === selectedVerse)
-    return v ? `${v.versiculo}. ${v.texto}` : ''
-  }, [selectedBook, selectedChapter, selectedVerse, verses])
+    if (!v) return ''
+    return `${v.versiculo}. ${v.texto}`
+  }
 
-  const handleVerseClick = useCallback((v: any) => {
-    toggleVerse(v.versiculo)
-    const ref = `${selectedBook?.nombre} ${selectedChapter}:${v.versiculo}`
-    const text = `${v.versiculo}. ${v.texto}`
-    onProject(text, ref)
-    if (onLoadChapter && verses.length > 0) {
-      const chapterRef = `${selectedBook?.nombre} ${selectedChapter}`
-      const allVerses = verses.map((vv: any) => ({
-        text: `${vv.versiculo}. ${vv.texto}`,
-        reference: `${chapterRef}:${vv.versiculo}`,
-        verseNumber: vv.versiculo
-      }))
-      const idx = verses.findIndex((vv: any) => vv.versiculo === v.versiculo)
-      onLoadChapter(allVerses, idx >= 0 ? idx : 0)
-    }
-  }, [selectedBook, selectedChapter, verses, onProject, onLoadChapter, toggleVerse])
-
-  const handleSearchResultClick = useCallback((v: any) => {
-    if (v.traduccion) {
-      const matchTrans = translations.find((t: Translation) => t.abreviatura === v.traduccion)
-      if (matchTrans) setSelectedTrans(matchTrans.id)
-    }
-    setSelectedVerse(v.versiculo)
-    savedVerse.current = v.versiculo
-    const ref = `${v.libro || selectedBook?.nombre} ${v.capitulo || selectedChapter}:${v.versiculo}`
-    const text = `${v.versiculo}. ${v.texto}`
-    onProject(text, ref)
-    setSearch('')
-    setSearchResults([])
-  }, [translations, selectedBook?.nombre, selectedChapter, onProject])
-
-  const handleTranslationChange = useCallback((t: Translation) => {
-    const curBook = selectedBook?.nombre
-    const curChapter = selectedChapter
-    const curVerse = selectedVerse
-    setSelectedTrans(t.id)
-    setSelectedBook(null)
-    setSelectedChapter(1)
-    setSelectedVerse(null)
-    setVerses([])
-    setChapters([])
-    setSearchResults([])
-    setSearch('')
-    savedBookName.current = curBook || null
-    savedChapter.current = curChapter || 1
-    savedVerse.current = curVerse
-  }, [selectedBook?.nombre, selectedChapter, selectedVerse])
-
-  const handleProject = useCallback(() => {
+  const handleProject = () => {
     const text = getSelectedText()
     if (text) {
       onProject(text, getReference())
@@ -331,7 +289,13 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
         onLoadChapter(allVerses, idx >= 0 ? idx : 0)
       }
     }
-  }, [getSelectedText, getReference, selectedBook, selectedChapter, selectedVerse, verses, onProject, onLoadChapter])
+  }
+
+  const handleProjectResult = (v: Verse) => {
+    const ref = `${v.libro} ${v.capitulo}:${v.versiculo}`
+    const text = `${v.versiculo}. ${v.texto}\n\n— ${ref}`
+    onProject(text, ref)
+  }
 
   if (view === 'loading') {
     return (
@@ -463,7 +427,22 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
         <div className="flex flex-col gap-1.5 overflow-hidden">
           <div className="flex gap-1">
             {translations.map((t) => (
-              <button key={t.id} onClick={() => handleTranslationChange(t)}
+              <button key={t.id} onClick={() => {
+                const curBook = selectedBook?.nombre
+                const curChapter = selectedChapter
+                const curVerse = selectedVerse
+                setSelectedTrans(t.id)
+                setSelectedBook(null)
+                setSelectedChapter(1)
+                setSelectedVerse(null)
+                setVerses([])
+                setChapters([])
+                setSearchResults([])
+                setSearch('')
+                savedBookName.current = curBook || null
+                savedChapter.current = curChapter || 1
+                savedVerse.current = curVerse
+              }}
                 className={`text-[9px] px-2 py-0.5 rounded-full font-medium transition-colors ${
                   selectedTrans === t.id ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'
                 }`}>{t.abreviatura}</button>
@@ -506,7 +485,22 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
                       if (isSel) cls = 'bg-[#6c5ce7] text-white shadow-sm'
                       else if (isProjected) cls = 'ring-2 ring-[#00d4ff] bg-theme-card text-[#00d4ff]'
                       return (
-                        <div key={v.versiculo} onClick={() => handleVerseClick(v)}
+                        <div key={v.versiculo} onClick={() => {
+                          toggleVerse(v.versiculo)
+                          const ref = `${selectedBook?.nombre} ${selectedChapter}:${v.versiculo}`
+                          const text = `${v.versiculo}. ${v.texto}`
+                          onProject(text, ref)
+                          if (onLoadChapter && verses.length > 0) {
+                            const chapterRef = `${selectedBook?.nombre} ${selectedChapter}`
+                            const allVerses = verses.map((vv: any) => ({
+                              text: `${vv.versiculo}. ${vv.texto}`,
+                              reference: `${chapterRef}:${vv.versiculo}`,
+                              verseNumber: vv.versiculo
+                            }))
+                            const idx = verses.findIndex((vv: any) => vv.versiculo === v.versiculo)
+                            onLoadChapter(allVerses, idx >= 0 ? idx : 0)
+                          }
+                        }}
                           className={`text-center py-1.5 rounded cursor-pointer text-[12px] font-medium transition-colors ${cls}`}>{v.versiculo}</div>
                       )
                     })}
@@ -522,7 +516,19 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
                     {currentVerses.map((v: any, i: number) => {
                       const isSel = selectedVerse === v.versiculo
                       return (
-                        <div key={i} onClick={() => handleSearchResultClick(v)}
+                        <div key={i} onClick={() => {
+                          if (v.traduccion) {
+                            const matchTrans = translations.find((t: Translation) => t.abreviatura === v.traduccion)
+                            if (matchTrans) setSelectedTrans(matchTrans.id)
+                          }
+                          setSelectedVerse(v.versiculo)
+                          savedVerse.current = v.versiculo
+                          const ref = `${v.libro || selectedBook?.nombre} ${v.capitulo || selectedChapter}:${v.versiculo}`
+                          const text = `${v.versiculo}. ${v.texto}`
+                          onProject(text, ref)
+                          setSearch('')
+                          setSearchResults([])
+                        }}
                           className={`p-2 rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-[#6c5ce7]/20 ring-1 ring-[#6c5ce7]' : 'bg-theme-card hover:bg-[#6c5ce7]/10'}`}>
                           <p className="text-[9px] text-[#6c5ce7] font-semibold mb-0.5 flex items-center gap-1.5">
                             {v.libro || selectedBook?.nombre} {v.capitulo || selectedChapter}:{v.versiculo}
