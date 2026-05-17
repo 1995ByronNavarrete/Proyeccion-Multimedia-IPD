@@ -114,16 +114,16 @@ export function registerVideoHandlers(): void {
   })
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
-    const formats = ['best[height<=720]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
-    // Primeros 2 formatos en paralelo + fallbacks secuenciales
-    const [a, b] = await Promise.all([
-      ytDlpGetUrl(videoId, formats[0], 20000),
-      ytDlpGetUrl(videoId, formats[1], 10000)
+    // Calidad adaptativa: intenta 1080p con timeout corto, luego 720p, luego fallback
+    const [hd, sd] = await Promise.all([
+      ytDlpGetUrl(videoId, 'best[height<=1080]', 5000),
+      ytDlpGetUrl(videoId, 'best[height<=720]', 12000)
     ])
-    if (a) return a
-    if (b) return b
-    for (let i = 2; i < formats.length; i++) {
-      const url = await ytDlpGetUrl(videoId, formats[i], 10000)
+    if (hd) return hd
+    if (sd) return sd
+    const fallbacks = ['best[ext=mp4]', 'best', 'worst[ext=mp4]']
+    for (const fmt of fallbacks) {
+      const url = await ytDlpGetUrl(videoId, fmt, 10000)
       if (url) return url
     }
     return null

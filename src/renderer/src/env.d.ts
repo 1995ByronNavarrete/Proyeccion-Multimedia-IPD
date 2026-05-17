@@ -142,8 +142,8 @@ interface Window {
       maximize: () => Promise<void>
       selectAndSaveLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
       getLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
-      selectAndSaveVideoLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
-      getVideoLogo: () => Promise<IpcResponse<{ filePath: string; nombre: string } | null>>
+
+      reloadDatabase: () => Promise<IpcResponse<{ status: string }>>
       getConfig: () => Promise<IpcResponse<Record<string, unknown>>>
       saveConfig: (config: Record<string, unknown>) => Promise<IpcResponse<null>>
       pickImage: () => Promise<IpcResponse<{ filePath: string; nombre: string }[] | null>>

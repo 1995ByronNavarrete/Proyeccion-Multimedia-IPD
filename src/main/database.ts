@@ -169,19 +169,24 @@ export function noAccent(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
-export async function reloadDatabase(): Promise<void> {
+export async function reloadDatabase(): Promise<string> {
   const SQL = await initSqlJs()
   const dbPath = getDbPath()
+  if (!existsSync(dbPath)) return 'NO_FILE'
   const buffer = readFileSync(dbPath)
   const newDb = new SQL.Database(buffer)
   newDb.run('PRAGMA foreign_keys = ON')
   db = newDb
   registerCustomFunctions()
+  try {
+    const row = queryOne('SELECT COUNT(*) as c FROM traducciones')
+    return (row && Number(row.c) > 0) ? 'OK' : 'NO_BIBLE'
+  } catch { return 'ERROR' }
 }
 
 export function registerCustomFunctions(): void {
   if (!db) return
-  db.create_function('noacct', noAccent)
+  try { db.create_function('noacct', noAccent) } catch {}
 }
 
 export function queryAll(sql: string, params?: SqlValue[]): Record<string, unknown>[] {

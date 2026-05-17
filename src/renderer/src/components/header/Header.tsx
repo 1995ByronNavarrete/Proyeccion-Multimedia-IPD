@@ -17,8 +17,7 @@ export default function Header() {
   const [editSub, setEditSub] = useState('')
   const [logoSrc, setLogoSrc] = useState<string | null>(null)
   const [loadingLogo, setLoadingLogo] = useState(false)
-  const [videoLogoSrc, setVideoLogoSrc] = useState<string | null>(null)
-  const [loadingVideoLogo, setLoadingVideoLogo] = useState(false)
+
   const [showInfo, setShowInfo] = useState(false)
   const [shortcuts, setShortcuts] = useState<{ key: string; desc: string }[]>(() => {
     try {
@@ -32,16 +31,14 @@ export default function Header() {
     window.api.app.getVersion().then(v => { if (v) setVersion(v) })
     Promise.all([
       window.api.app.getConfig(),
-      window.api.app.getLogo(),
-      window.api.app.getVideoLogo()
-    ]).then(([configRes, logoRes, videoLogoRes]) => {
+      window.api.app.getLogo()
+    ]).then(([configRes, logoRes]) => {
       if (configRes.success && configRes.data) {
         const cfg = configRes.data as Record<string, string>
         if (cfg.headerTitle) setAppName(cfg.headerTitle)
         if (cfg.headerSub) setSubName(cfg.headerSub)
       }
       if (logoRes.success && logoRes.data) setLogoSrc(fileUrl(logoRes.data.filePath))
-      if (videoLogoRes?.success && videoLogoRes.data) setVideoLogoSrc(fileUrl(videoLogoRes.data.filePath))
     })
   }, [])
 
@@ -87,25 +84,7 @@ export default function Header() {
     }
   }
 
-  const handleRemoveLogo = () => {
-    setLogoSrc(null)
-  }
-
-  const handleSelectVideoLogo = async () => {
-    setLoadingVideoLogo(true)
-    try {
-      const res = await window.api.app.selectAndSaveVideoLogo()
-      if (res.success && res.data) setVideoLogoSrc(fileUrl(res.data.filePath))
-    } catch (err) {
-      console.error('Error al cargar logo de video:', err)
-    } finally {
-      setLoadingVideoLogo(false)
-    }
-  }
-
-  const handleRemoveVideoLogo = async () => {
-    setVideoLogoSrc(null)
-  }
+  const handleRemoveLogo = () => setLogoSrc(null)
 
   const pad = (n: number) => n.toString().padStart(2, '0')
   const h = time.getHours()
@@ -188,37 +167,20 @@ export default function Header() {
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
               <div>
-                <p className="text-[10px] text-[#6c5ce7] font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5"><Image size={12} /> Logotipos</p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs text-theme-muted block mb-1">Logotipo principal</label>
-                    <div className="flex items-center gap-2">
-                      {logoSrc && <img src={logoSrc} alt="Logo" className="h-12 w-12 rounded-lg object-cover border border-theme" />}
-                      <button onClick={handleSelectLogo} disabled={loadingLogo}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-theme-card rounded-lg text-xs text-theme-muted hover:text-theme transition-colors border border-theme">
-                        <Image size={14} /> {loadingLogo ? 'Cargando...' : logoSrc ? 'Cambiar' : 'Seleccionar'}
+                <p className="text-[10px] text-[#6c5ce7] font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5"><Image size={12} /> Logotipo</p>
+                <div>
+                  <label className="text-xs text-theme-muted block mb-1">Logotipo principal</label>
+                  <div className="flex items-center gap-2">
+                    {logoSrc && <img src={logoSrc} alt="Logo" className="h-12 w-12 rounded-lg object-cover border border-theme" />}
+                    <button onClick={handleSelectLogo} disabled={loadingLogo}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-theme-card rounded-lg text-xs text-theme-muted hover:text-theme transition-colors border border-theme">
+                      <Image size={14} /> {loadingLogo ? 'Cargando...' : logoSrc ? 'Cambiar' : 'Seleccionar'}
+                    </button>
+                    {logoSrc && (
+                      <button onClick={handleRemoveLogo} className="p-2 hover:bg-red-500/20 rounded-lg transition-colors">
+                        <Trash2 size={14} className="text-gray-500 hover:text-red-400" />
                       </button>
-                      {logoSrc && (
-                        <button onClick={handleRemoveLogo} className="p-2 hover:bg-red-500/20 rounded-lg transition-colors">
-                          <Trash2 size={14} className="text-gray-500 hover:text-red-400" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs text-theme-muted block mb-1">Logo para proyección</label>
-                    <div className="flex items-center gap-2">
-                      {videoLogoSrc && <img src={videoLogoSrc} alt="Logo Proy." className="h-12 w-12 rounded-lg object-cover border border-theme" />}
-                      <button onClick={handleSelectVideoLogo} disabled={loadingVideoLogo}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-theme-card rounded-lg text-xs text-theme-muted hover:text-theme transition-colors border border-theme">
-                        <Image size={14} /> {loadingVideoLogo ? 'Cargando...' : videoLogoSrc ? 'Cambiar' : 'Seleccionar'}
-                      </button>
-                      {videoLogoSrc && (
-                        <button onClick={handleRemoveVideoLogo} className="p-2 hover:bg-red-500/20 rounded-lg transition-colors">
-                          <Trash2 size={14} className="text-gray-500 hover:text-red-400" />
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -319,7 +281,7 @@ export default function Header() {
                     <p>✓ Atajos de teclado configurables</p>
                     <p>✓ Backup y restauración de base de datos</p>
                     <p>✓ Tema oscuro/claro y color de acento</p>
-                    <p>✓ Logo personalizado (app y proyección)</p>
+                    <p>✓ Logo personalizado</p>
                     <p>✓ Actualizaciones automáticas vía GitHub</p>
                     <p>✓ Importar y eliminar archivos multimedia</p>
                     <p>✓ Balance estéreo con paneo en tiempo real</p>

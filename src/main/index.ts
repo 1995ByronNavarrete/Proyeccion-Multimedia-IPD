@@ -451,9 +451,8 @@ app.whenReady().then(async () => {
   const musicFolder = join(appFolder, 'Música')
   const videosFolder = join(appFolder, 'Videos')
   const fondosFolder = join(appFolder, 'Fondos')
-  const logoEnVideoFolder = join(appFolder, 'logoEnVideo')
   const documentosFolder = join(appFolder, 'Documentos')
-  const folders = [appFolder, musicFolder, videosFolder, fondosFolder, logoEnVideoFolder, documentosFolder]
+  const folders = [appFolder, musicFolder, videosFolder, fondosFolder, documentosFolder]
   for (const folder of folders) {
     if (!existsSync(folder)) mkdirSync(folder, { recursive: true })
   }

@@ -3,7 +3,7 @@ import { statSync, readdirSync, existsSync, readFileSync, writeFileSync, mkdirSy
 import { extname, parse, join, basename } from 'path'
 import mammoth from 'mammoth'
 import pdfjs from 'pdfjs-dist'
-import { queryAll, queryOne, execute, noAccent, flushDatabase } from './database'
+import { queryAll, queryOne, execute, noAccent, flushDatabase, reloadDatabase } from './database'
 import { downloadAndSeedBible } from './bible-seed'
 import { getBibleApiTranslations, getApiBibleTranslations } from './bible-source'
 import { ok, fail, appDocsPath, getBundledResourcesPath, getMime, IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS, DOCUMENT_EXTS, getMediaType } from './shared'
@@ -118,12 +118,29 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('bible:hasData', () => {
+  ipcMain.handle('bible:hasData', async () => {
     try {
       const row = queryOne('SELECT COUNT(*) as count FROM traducciones')
-      return ok({ hasData: (row?.count as number) > 0 })
+      const hasData = (row?.count as number) > 0
+      if (!hasData) {
+        const status = await reloadDatabase()
+        if (status === 'OK') {
+          console.log('[bible] Auto-recovered data via reloadDatabase')
+          return ok({ hasData: true })
+        }
+      }
+      return ok({ hasData })
     } catch {
       return ok({ hasData: false })
+    }
+  })
+
+  ipcMain.handle('database:reload', async () => {
+    try {
+      const status = await reloadDatabase()
+      return ok({ status })
+    } catch (err) {
+      return fail(String(err))
     }
   })
 
@@ -519,40 +536,6 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('app:quit', () => {
     flushDatabase()
     app.quit()
-  })
-
-  // ── Video Logo (logoEnVideo) ──
-  ipcMain.handle('app:selectAndSaveVideoLogo', async () => {
-    try {
-      const result = await dialog.showOpenDialog({
-        properties: ['openFile'],
-        filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] }]
-      })
-      if (result.canceled || !result.filePaths.length) return ok(null)
-      const filePath = result.filePaths[0]
-      const buffer = readFileSync(filePath)
-      const ext = extname(filePath).toLowerCase()
-      const logoFolder = join(appDocsPath(), 'logoEnVideo')
-      if (!existsSync(logoFolder)) mkdirSync(logoFolder, { recursive: true })
-      const logoPath = join(logoFolder, `logo${ext}`)
-      writeFileSync(logoPath, buffer)
-      return ok({ filePath: logoPath, nombre: basename(filePath) })
-    } catch (err) {
-      return fail(`Error al guardar logo de video: ${err}`)
-    }
-  })
-
-  ipcMain.handle('app:getVideoLogo', () => {
-    try {
-      const logoFolder = join(appDocsPath(), 'logoEnVideo')
-      if (!existsSync(logoFolder)) return ok(null)
-      const files = readdirSync(logoFolder).filter((f) => /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(f))
-      if (!files.length) return ok(null)
-      const logoPath = join(logoFolder, files[0])
-      return ok({ filePath: logoPath, nombre: files[0] })
-    } catch {
-      return ok(null)
-    }
   })
 
   // ── Tareas de imágenes ──

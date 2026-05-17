@@ -86,8 +86,8 @@ const api = {
     maximize: () => ipcRenderer.invoke('app:maximize'),
     selectAndSaveLogo: () => ipcRenderer.invoke('app:selectAndSaveLogo'),
     getLogo: () => ipcRenderer.invoke('app:getLogo'),
-    selectAndSaveVideoLogo: () => ipcRenderer.invoke('app:selectAndSaveVideoLogo'),
-    getVideoLogo: () => ipcRenderer.invoke('app:getVideoLogo'),
+
+    reloadDatabase: () => ipcRenderer.invoke('database:reload'),
     getConfig: () => ipcRenderer.invoke('app:getConfig'),
     saveConfig: (config: Record<string, unknown>) => ipcRenderer.invoke('app:saveConfig', config),
     pickImage: () => ipcRenderer.invoke('app:pickImage'),
