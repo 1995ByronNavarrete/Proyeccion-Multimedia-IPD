@@ -1,73 +1,102 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Clock, Play, Pause, RotateCcw, Timer, AlarmCheck } from 'lucide-react'
 
 type Mode = 'crono' | 'countdown'
 
 export default function CronometroPanel() {
   const [mode, setMode] = useState<Mode>('crono')
-  const [time, setTime] = useState(0)
+  const [display, setDisplay] = useState(0)
   const [running, setRunning] = useState(false)
   const [initial, setInitial] = useState(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval>>()
-  const startRef = useRef(0)
+
+  const modeRef = useRef(mode)
+  const initialRef = useRef(initial)
+  const runningRef = useRef(false)
+  const startTimeRef = useRef(0)
   const elapsedRef = useRef(0)
+  const rafRef = useRef(0)
+
+  useEffect(() => { modeRef.current = mode }, [mode])
+  useEffect(() => { initialRef.current = initial }, [initial])
+  useEffect(() => { runningRef.current = running }, [running])
 
   useEffect(() => {
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [])
 
-  const tick = useCallback(() => {
-    const now = Date.now()
-    const elapsed = elapsedRef.current + (now - startRef.current)
-    if (mode === 'countdown') {
-      const remaining = Math.max(0, initial * 1000 - elapsed)
-      setTime(remaining)
+  const tick = () => {
+    if (!runningRef.current) return
+    const now = performance.now()
+    const total = elapsedRef.current + (now - startTimeRef.current)
+    if (modeRef.current === 'countdown') {
+      const remaining = Math.max(0, initialRef.current * 1000 - total)
+      setDisplay(remaining)
       if (remaining <= 0) {
         setRunning(false)
-        if (intervalRef.current) clearInterval(intervalRef.current)
-        setTime(0)
+        runningRef.current = false
+        setDisplay(0)
+        return
       }
     } else {
-      setTime(elapsed)
+      setDisplay(total)
     }
-  }, [mode, initial])
+    rafRef.current = requestAnimationFrame(tick)
+  }
 
   const start = () => {
-    if (mode === 'countdown' && time <= 0 && initial <= 0) return
-    startRef.current = Date.now()
+    if (runningRef.current) return
+    if (mode === 'countdown' && initial <= 0 && display <= 0) return
+    startTimeRef.current = performance.now()
     setRunning(true)
-    intervalRef.current = setInterval(tick, 50)
+    runningRef.current = true
+    rafRef.current = requestAnimationFrame(tick)
   }
 
   const pause = () => {
-    elapsedRef.current += Date.now() - startRef.current
+    if (!runningRef.current) return
+    elapsedRef.current += performance.now() - startTimeRef.current
     setRunning(false)
-    if (intervalRef.current) clearInterval(intervalRef.current)
+    runningRef.current = false
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0 }
   }
 
   const reset = () => {
-    pause()
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0 }
     elapsedRef.current = 0
-    setTime(mode === 'countdown' ? initial * 1000 : 0)
+    setRunning(false)
+    runningRef.current = false
+    startTimeRef.current = 0
+    const val = mode === 'countdown' ? initial * 1000 : 0
+    setDisplay(val)
   }
 
   const toggleMode = () => {
-    reset()
-    setMode(m => m === 'crono' ? 'countdown' : 'crono')
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0 }
+    elapsedRef.current = 0
+    setRunning(false)
+    runningRef.current = false
+    startTimeRef.current = 0
+    const next = mode === 'crono' ? 'countdown' : 'crono'
+    setMode(next)
+    setDisplay(next === 'countdown' ? initial * 1000 : 0)
+  }
+
+  const setPreset = (min: number) => {
+    setInitial(min * 60)
+    setDisplay(min * 60 * 1000)
   }
 
   const format = (ms: number) => {
-    const totalSec = Math.floor(ms / 1000)
+    const totalSec = Math.max(0, Math.floor(ms / 1000))
     const h = Math.floor(totalSec / 3600)
     const m = Math.floor((totalSec % 3600) / 60)
     const s = totalSec % 60
-    const cs = Math.floor((ms % 1000) / 10)
+    const cs = Math.max(0, Math.floor((ms % 1000) / 10))
     if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`
   }
 
-  const displayTime = mode === 'countdown' && time <= 0 && !running && initial > 0 ? 0 : time
-  const isFinished = mode === 'countdown' && time <= 0 && !running && initial > 0 && elapsedRef.current > 0
+  const isFinished = mode === 'countdown' && !running && elapsedRef.current > 0 && initial > 0 && display <= 0
 
   return (
     <div className="bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden">
@@ -88,13 +117,13 @@ export default function CronometroPanel() {
         )}
         <div className={`text-4xl font-bold font-mono tracking-wider tabular-nums ${isFinished ? 'text-green-400' : 'text-theme'}`}
           style={{ textShadow: '0 0 30px rgba(108,92,231,0.2)' }}>
-          {format(displayTime)}
+          {format(display)}
         </div>
 
-        {mode === 'countdown' && !running && time <= 0 && elapsedRef.current === 0 && (
-          <div className="flex items-center gap-1">
+        {mode === 'countdown' && !running && display <= 0 && elapsedRef.current === 0 && (
+          <div className="flex items-center gap-1 flex-wrap justify-center">
             {[1, 2, 3, 5, 10, 15, 30].map(m => (
-              <button key={m} onClick={() => { setInitial(m * 60); setTime(m * 60 * 1000) }}
+              <button key={m} onClick={() => setPreset(m)}
                 className={`text-[9px] px-2 py-0.5 rounded-full transition-colors ${initial === m * 60 ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
                 {m >= 60 ? `${m / 60}h` : `${m}m`}
               </button>
