@@ -12,6 +12,7 @@ import EffectsPanel from '../components/EffectsPanel'
 import SermonInfo from '../components/SermonInfo'
 import VideoControls from '../components/VideoControls'
 import AudioControl from '../components/mixer/AudioControl'
+import AnunciosPanel from '../components/AnunciosPanel'
 import UpdateNotifier from '../components/UpdateNotifier'
 import { useModules } from '../modules'
 export interface ProjectedContent {
@@ -244,13 +245,11 @@ export default function DashboardView() {
 
         {/* ─── CENTER COLUMN ─── */}
         <div className="flex flex-col gap-3 overflow-hidden">
-          {isEnabled('vista-previa') && (
-            <div className="flex-[3] min-h-0">
-              <ProjectionView onBlack={handleShowBlack} backgroundUrl={backgroundUrl} projected={projected} animation={animBiblia} onAnimationChange={saveAnimBiblia}
-                chapterVerses={chapterVerses} verseIdx={verseIdx} onPrevVerse={goPrevVerse} onNextVerse={goNextVerse}
-                logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} />
-            </div>
-          )}
+          <div className="flex-[3] min-h-0">
+            <ProjectionView onBlack={handleShowBlack} backgroundUrl={backgroundUrl} projected={projected} animation={animBiblia} onAnimationChange={saveAnimBiblia}
+              chapterVerses={chapterVerses} verseIdx={verseIdx} onPrevVerse={goPrevVerse} onNextVerse={goNextVerse}
+              logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} />
+          </div>
           <div className="flex-[2] grid grid-cols-2 gap-3 min-h-0">
             {isEnabled('imagenes') && <EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} />}
             {isEnabled('audio') && <AudioControl />}
@@ -259,11 +258,9 @@ export default function DashboardView() {
 
         {/* ─── RIGHT COLUMN ─── */}
         <div className="flex flex-col gap-3 overflow-hidden">
-          {isEnabled('secundaria') && (
-            <div className="flex-[4] min-h-0">
-              <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
-            </div>
-          )}
+          <div className="flex-[4] min-h-0">
+            <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
+          </div>
           {isEnabled('reproductor') && (
             <div className="shrink-0">
               <ReproductorPanel onPlayBg={handlePlayBg} />
@@ -279,6 +276,11 @@ export default function DashboardView() {
               {isEnabled('multimedia') && (
                 <div className="flex-1 min-h-0">
                   <DirectoryBrowser onPlayBg={handlePlayBg} />
+                </div>
+              )}
+              {isEnabled('anuncios') && (
+                <div className="flex-1 min-h-0">
+                  <AnunciosPanel />
                 </div>
               )}
             </div>
