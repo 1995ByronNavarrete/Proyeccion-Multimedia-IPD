@@ -159,6 +159,7 @@ export default function DashboardView() {
     const content: ProjectedContent = { type: 'verse', text, reference, animation: animBiblia, sermonTitle, sermonPreacher }
     if (backgroundUrl) content.backgroundUrl = backgroundUrl
     setProjected(content)
+    window.api.video.stop()
     window.api.projector.sendContent(content)
     window.api.projector.projectToAll()
   }
