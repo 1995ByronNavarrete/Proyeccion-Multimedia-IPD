@@ -165,8 +165,8 @@ export default function CronometroPanel() {
             <Monitor size={9} />
           </button>
           {proyectado && (
-            <button onClick={() => { broadcast(0, false); setProyectado(false) }}
-              className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors" title="Quitar de pantalla">
+            <button onClick={() => { reset(); setProyectado(false) }}
+              className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors" title="Detener y quitar">
               <X size={9} />
             </button>
           )}

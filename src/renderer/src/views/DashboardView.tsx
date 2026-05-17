@@ -124,8 +124,8 @@ export default function DashboardView() {
       const content: ProjectedContent = { type: 'verse', text: lastVerse.current.text, reference: lastVerse.current.reference, animation: animBiblia, sermonTitle: sTitle, sermonPreacher: sPreacher }
       if (backgroundUrl) content.backgroundUrl = backgroundUrl
       setProjected(content)
-      window.api.projector.projectToAll()
       window.api.projector.sendContent(content)
+      window.api.projector.projectToAll()
     }
     window.addEventListener('sermon:update', handler)
     return () => window.removeEventListener('sermon:update', handler)
@@ -159,7 +159,6 @@ export default function DashboardView() {
     const content: ProjectedContent = { type: 'verse', text, reference, animation: animBiblia, sermonTitle, sermonPreacher }
     if (backgroundUrl) content.backgroundUrl = backgroundUrl
     setProjected(content)
-    window.api.video.stop()
     window.api.projector.sendContent(content)
     window.api.projector.projectToAll()
   }
