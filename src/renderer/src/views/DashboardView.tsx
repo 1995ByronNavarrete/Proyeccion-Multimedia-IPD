@@ -301,11 +301,11 @@ export default function DashboardView() {
           <div className="flex-[4] min-h-0 overflow-hidden">
             <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
           </div>
-          <div className="flex gap-3 min-h-0">
+          <div className="flex-[2] flex gap-3 min-h-0 overflow-hidden">
             <div className="flex-1 min-w-0"><ReproductorPanel onPlayBg={handlePlayBg} /></div>
             {isEnabled('cronometro') && <div className="flex-1 min-w-0"><CronometroPanel /></div>}
           </div>
-          <div className="flex-[4] min-h-0 grid grid-cols-2 gap-3 overflow-hidden">
+          <div className="flex-[3] min-h-0 grid grid-cols-2 gap-3 overflow-hidden">
             <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
               {isEnabled('predicacion') ? <div className="shrink-0"><SermonInfo /></div> : <div />}
               {isEnabled('multimedia') ? <div className="flex-1 min-h-0 overflow-hidden"><DirectoryBrowser onPlayBg={handlePlayBg} /></div> : <div className="flex-1" />}
