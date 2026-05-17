@@ -9,7 +9,7 @@ import { initDatabase, seedBibleIfEmpty } from './database'
 import { registerIpcHandlers } from './ipc-handlers'
 import { registerVideoHandlers, setOpenProjector, setOnVideoPlay } from './video-handlers'
 import { registerBackupHandlers } from './backup-handler'
-import { appDocsPath, getMime } from './shared'
+import { appDocsPath, getBundledResourcesPath, getMime } from './shared'
 let mainWindow: BrowserWindow | null = null
 const projectorWindows: Map<number, BrowserWindow> = new Map()
 let devServerPort: number | null = null
@@ -22,17 +22,27 @@ const MIME: Record<string, string> = {
   '.js': 'application/javascript',
   '.css': 'text/css',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.json': 'application/json',
-  '.woff2': 'font/woff2'
+  '.woff2': 'font/woff2',
+  '.mp3': 'audio/mpeg',
+  '.mp4': 'video/mp4'
 }
 
 function startLocalServer(): Promise<number> {
   return new Promise((resolve, reject) => {
     const rendererDir = join(__dirname, '../renderer')
+    const docsDir = join(appDocsPath(), 'Fondos')
+    const bundledDocsDir = (() => { try { return getBundledResourcesPath() ? join(getBundledResourcesPath()!, 'Fondos') : null } catch { return null } })()
     const server = createServer(async (req, res) => {
-      let filePath = join(rendererDir, req.url === '/' ? 'index.html' : req.url!)
+      const urlPath = req.url === '/' ? 'index.html' : req.url!
+      let filePath = join(rendererDir, urlPath)
       if (!extname(filePath)) filePath = join(rendererDir, 'index.html')
       try {
         const { readFile } = await import('fs/promises')
@@ -41,6 +51,21 @@ function startLocalServer(): Promise<number> {
         res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
         res.end(data)
       } catch {
+        // Try serving from Fondos directories
+        const fileName = urlPath.replace('/fondos/', '')
+        if (fileName && fileName !== urlPath) {
+          const paths = [join(docsDir, fileName), bundledDocsDir ? join(bundledDocsDir, fileName) : null].filter(Boolean)
+          for (const p of paths) {
+            try {
+              const { readFile } = await import('fs/promises')
+              const data = await readFile(p!)
+              const ext = extname(p!)
+              res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
+              res.end(data)
+              return
+            } catch {}
+          }
+        }
         try {
           const { readFile } = await import('fs/promises')
           const data = await readFile(join(rendererDir, 'index.html'))
