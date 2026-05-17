@@ -163,6 +163,8 @@ export default function ProjectorView() {
       } else if (e.key === 'ArrowDown') {
         const el = document.querySelector('.doc-scroll-container') as HTMLElement
         if (el) { e.preventDefault(); el.scrollTop += 250 }
+      } else if (e.key === 'Escape') {
+        window.api.projector.close()
       }
     }
     window.addEventListener('keydown', handleKey)
