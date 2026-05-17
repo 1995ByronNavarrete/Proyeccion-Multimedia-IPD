@@ -302,8 +302,8 @@ export default function DashboardView() {
             <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
           </div>
           <div className="flex gap-3 min-h-0">
-            <div className="flex-1 min-h-0"><ReproductorPanel onPlayBg={handlePlayBg} /></div>
-            {isEnabled('cronometro') && <div className="w-52 shrink-0"><CronometroPanel /></div>}
+            <div className="flex-1 min-w-0"><ReproductorPanel onPlayBg={handlePlayBg} /></div>
+            {isEnabled('cronometro') && <div className="flex-1 min-w-0"><CronometroPanel /></div>}
           </div>
           <div className="flex-[4] min-h-0 grid grid-cols-2 gap-3 overflow-hidden">
             <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
