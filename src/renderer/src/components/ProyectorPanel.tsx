@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Monitor, MonitorPlay, MonitorOff, Square, FileVideo, FileText, Laptop } from 'lucide-react'
 import type { ProjectedContent } from '../views/DashboardView'
 
@@ -11,8 +11,6 @@ interface ProyectorPanelProps {
 export default function ProyectorPanel({ projected }: ProyectorPanelProps) {
   const [displays, setDisplays] = useState<Display[]>([])
   const [appDisplayId, setAppDisplayId] = useState<number | null>(null)
-  const [captures, setCaptures] = useState<Record<number, string>>({})
-  const captureTimer = useRef<ReturnType<typeof setInterval>>()
 
   const loadLayout = () => {
     window.api.screen.getLayout().then((res) => {
@@ -26,32 +24,6 @@ export default function ProyectorPanel({ projected }: ProyectorPanelProps) {
     const unsub = window.api.on('projector:layoutChanged', loadLayout)
     return () => { unsub?.() }
   }, [])
-
-  useEffect(() => {
-    const projDisplays = displays.filter((d) => d.id !== appDisplayId)
-    if (projDisplays.length === 0) {
-      if (captureTimer.current) { clearInterval(captureTimer.current); captureTimer.current = undefined }
-      setCaptures({})
-      return
-    }
-    const capture = async () => {
-      const results = await Promise.all(projDisplays.map(async (d) => {
-        try {
-          const capRes = await window.api.capture.projectorByDisplay(d.id)
-          if (capRes?.success && capRes.data) {
-            return { id: d.id, dataUrl: `data:image/png;base64,${capRes.data.base64}` }
-          }
-        } catch {}
-        return null
-      }))
-      const updates: Record<number, string> = {}
-      for (const r of results) { if (r) updates[r.id] = r.dataUrl }
-      if (Object.keys(updates).length > 0) setCaptures((prev) => ({ ...prev, ...updates }))
-    }
-    capture()
-    captureTimer.current = setInterval(capture, 1000)
-    return () => { if (captureTimer.current) { clearInterval(captureTimer.current); captureTimer.current = undefined } }
-  }, [displays, appDisplayId])
 
   const renderPreview = () => {
     if (!projected || projected.type === 'none') {
@@ -161,11 +133,7 @@ export default function ProyectorPanel({ projected }: ProyectorPanelProps) {
               </div>
               <div className="px-2 pb-2">
                 <div className="h-16 bg-gradient-to-b from-[#050816] to-black/80 rounded border border-theme-light flex items-center justify-center overflow-hidden relative">
-                  {captures[d.id] ? (
-                    <img src={captures[d.id]} alt={`Vista ${d.name}`} className="w-full h-full object-contain" />
-                  ) : (
-                    renderPreview()
-                  )}
+                  {renderPreview()}
                 </div>
               </div>
             </div>
