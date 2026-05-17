@@ -308,7 +308,7 @@ export default function DashboardView() {
             <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
           </div>
           <div className="shrink-0">
-            {isEnabled('reproductor') ? <ReproductorPanel onPlayBg={handlePlayBg} /> : <div className="h-8" />}
+            <ReproductorPanel onPlayBg={handlePlayBg} />
           </div>
           <div className="flex-[4] min-h-0 grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-3 min-h-0">
