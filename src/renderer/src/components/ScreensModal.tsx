@@ -13,7 +13,7 @@ const ALL_CONTENT_TYPES = [
   { id: 'biblia', label: 'Biblia', icon: BookOpen, moduleId: 'biblia' },
   { id: 'video', label: 'Video', icon: Play, moduleId: 'youtube' },
   { id: 'anuncios', label: 'Anuncios', icon: Megaphone, moduleId: 'anuncios' },
-  { id: 'fondos', label: 'Fondos', icon: Image, moduleId: 'imagenes' },
+  { id: 'fondos', label: 'Fondos + Biblia', icon: Image, moduleId: 'imagenes' },
   { id: 'cronometro', label: 'Cronómetro', icon: Clock, moduleId: 'cronometro' },
   { id: 'efectos', label: 'Efectos', icon: Sparkles, moduleId: 'efectos' }
 ]
