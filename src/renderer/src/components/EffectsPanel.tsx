@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Sparkles, Snowflake, Bug, PartyPopper, CircleDot, Droplets, Heart, Cloud, Zap, Star, Square, Diamond, Globe, Settings, X, Ban } from 'lucide-react'
+import { Sparkles, Snowflake, Bug, PartyPopper, CircleDot, Droplets, Heart, Cloud, Zap, Star, Square, Diamond, Globe, Settings, X, Ban, Waves, Radio, Sun, Rows } from 'lucide-react'
 
 const FX_LIST = [
   { id: 'particles', label: 'Partículas', icon: Sparkles, color: '#ffffff' },
@@ -15,6 +15,11 @@ const FX_LIST = [
   { id: 'matrix', label: 'Matrix', icon: Square, color: '#22c55e' },
   { id: 'neon', label: 'Neón', icon: Diamond, color: '#00d4ff' },
   { id: 'rings', label: 'Anillos', icon: Globe, color: '#a855f7' },
+  { id: 'waves', label: 'Olas', icon: Waves, color: '#3b82f6' },
+  { id: 'pulse', label: 'Pulso', icon: Radio, color: '#6c5ce7' },
+  { id: 'stars', label: 'Estrellas', icon: Sun, color: '#fbbf24' },
+  { id: 'ripple', label: 'Ondas', icon: Rows, color: '#22c55e' },
+  { id: 'combi', label: 'Combinado', icon: CircleDot, color: '#a855f7' },
 ]
 
 export default function EffectsPanel() {
