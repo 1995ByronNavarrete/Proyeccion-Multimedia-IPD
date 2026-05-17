@@ -15,7 +15,7 @@ export const ALL_MODULES: ModuleDef[] = [
   { id: 'youtube', label: 'YouTube', icon: 'Youtube', zone: 'left-bottom', defaultEnabled: true },
   { id: 'imagenes', label: 'Imágenes', icon: 'Image', zone: 'center-bottom', defaultEnabled: true },
   { id: 'audio', label: 'Consola Audio', icon: 'Music', zone: 'center-bottom', defaultEnabled: true },
-  { id: 'anuncios', label: 'Anuncios', icon: 'Megaphone', zone: 'right-bottom', defaultEnabled: true },
+  { id: 'anuncios', label: 'Anuncios', icon: 'Megaphone', zone: 'center-bottom', defaultEnabled: true },
   { id: 'reproductor', label: 'Reproductor', icon: 'FileVideo', zone: 'right-mid', defaultEnabled: true },
   { id: 'predicacion', label: 'Predicación', icon: 'Mic', zone: 'right-bottom', defaultEnabled: true },
   { id: 'multimedia', label: 'Multimedia', icon: 'FileText', zone: 'right-bottom', defaultEnabled: true },

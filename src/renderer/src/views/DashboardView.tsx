@@ -251,7 +251,10 @@ export default function DashboardView() {
               logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} />
           </div>
           <div className="flex-[2] grid grid-cols-2 gap-3 min-h-0">
-            {isEnabled('imagenes') && <EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} />}
+            <div className="flex flex-col gap-3 min-h-0">
+              {isEnabled('imagenes') && <div className="flex-1 min-h-0"><EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} /></div>}
+              {isEnabled('anuncios') && <div className="shrink-0"><AnunciosPanel /></div>}
+            </div>
             {isEnabled('audio') && <AudioControl />}
           </div>
         </div>
@@ -276,11 +279,6 @@ export default function DashboardView() {
               {isEnabled('multimedia') && (
                 <div className="flex-1 min-h-0">
                   <DirectoryBrowser onPlayBg={handlePlayBg} />
-                </div>
-              )}
-              {isEnabled('anuncios') && (
-                <div className="flex-1 min-h-0">
-                  <AnunciosPanel />
                 </div>
               )}
             </div>
