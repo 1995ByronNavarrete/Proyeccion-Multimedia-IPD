@@ -69,10 +69,14 @@ export default function ProjectorView() {
     const unsub = window.api.on('projector:timer', (arg: unknown) => {
       const data = arg as { time: number; running: boolean }
       setTimerRunning(data.running)
-      const totalSec = Math.max(0, Math.floor(data.time / 1000))
-      const m = Math.floor(totalSec / 60)
-      const s = totalSec % 60
-      setTimerDisplay(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`)
+      if (data.time <= 0 && !data.running) {
+        setTimerDisplay('')
+      } else {
+        const totalSec = Math.max(0, Math.floor(data.time / 1000))
+        const m = Math.floor(totalSec / 60)
+        const s = totalSec % 60
+        setTimerDisplay(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`)
+      }
     })
     return () => unsub?.()
   }, [])

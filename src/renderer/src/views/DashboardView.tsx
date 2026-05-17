@@ -160,8 +160,8 @@ export default function DashboardView() {
     if (backgroundUrl) content.backgroundUrl = backgroundUrl
     setProjected(content)
     window.api.video.stop()
-    window.api.projector.projectToAll()
     window.api.projector.sendContent(content)
+    window.api.projector.projectToAll()
   }
 
   const handleLoadChapter = (verses: { text: string; reference: string; verseNumber: number }[], idx: number) => {
