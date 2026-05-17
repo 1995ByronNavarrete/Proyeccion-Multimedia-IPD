@@ -82,14 +82,14 @@ export default function ScreensModal({ open, onClose }: { open: boolean; onClose
     for (const id of selectedDisplays) {
       window.api.projector.projectToDisplay(id)
     }
-    // Store and dispatch
+    // Dispatch first (handler reads OLD localStorage), then save new
+    window.dispatchEvent(new CustomEvent('screens:applied', {
+      detail: { displays: selectedDisplays, assignments }
+    }))
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments))
       localStorage.setItem('ipd-active-assignments', JSON.stringify({ displays: selectedDisplays, assignments }))
     } catch {}
-    window.dispatchEvent(new CustomEvent('screens:applied', {
-      detail: { displays: selectedDisplays, assignments }
-    }))
     onClose()
   }
 
