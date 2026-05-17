@@ -139,6 +139,9 @@ export default function Header() {
             className="p-1.5 hover:bg-[#6c5ce7]/20 rounded-lg transition-colors" title="Acerca de">
             <Info size={12} className="text-[#6c5ce7]" />
           </button>
+          <button onClick={() => window.api.update.checkNow()} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="Buscar actualizaciones">
+            <RefreshCw size={11} className="text-gray-400" />
+          </button>
           <div className="text-right">
             <p className="text-lg font-bold text-white text-theme tabular-nums leading-tight">{timeStr}</p>
             <p className="text-[10px] text-gray-500 text-theme-muted">{dateStr}</p>
@@ -169,9 +172,6 @@ export default function Header() {
         </button>
         <ScreensModal open={showScreens} onClose={() => setShowScreens(false)} />
         <div className="flex-1" />
-        <button onClick={() => window.api.update.checkNow()} className="p-1 hover:bg-white/5 rounded transition-colors" title="Buscar actualizaciones">
-          <RefreshCw size={10} className="text-gray-500 text-theme-muted" />
-        </button>
       </div>
 
       {showSettings && (
