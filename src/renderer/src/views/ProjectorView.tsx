@@ -483,7 +483,7 @@ export default function ProjectorView() {
   } else if (videoUrl) {
     content = (
       <div className="h-screen w-screen bg-black relative">
-        <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain" controls={false} autoPlay playsInline muted preload="metadata"
+        <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain" controls={false} autoPlay playsInline preload="metadata"
           onError={(e) => { const v = e.currentTarget; console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message) }} />
       </div>
     )

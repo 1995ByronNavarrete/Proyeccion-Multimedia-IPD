@@ -74,7 +74,7 @@ export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }:
         {isYoutube ? (
           <iframe ref={iframeRef} key={ytKey} src={bgVideo.url} className="w-full h-full pointer-events-none" data-volume="bg" allow="autoplay; fullscreen" allowFullScreen loading="lazy" />
         ) : (
-          <video ref={videoRef} className="w-full h-full object-contain pointer-events-none" data-volume="bg" autoPlay playsInline muted preload="metadata"
+          <video ref={videoRef} className="w-full h-full object-contain pointer-events-none" data-volume="bg" autoPlay playsInline preload="metadata"
             onError={(e) => console.error('[SecondaryDisplay] error:', (e.target as HTMLVideoElement).error?.message)} />
         )}
 
