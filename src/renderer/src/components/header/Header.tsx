@@ -116,44 +116,32 @@ export default function Header() {
     .replace(/^\w/, (c) => c.toUpperCase())
 
   return (
-    <header className="h-[90px] bg-[#050816] bg-theme border-b border-[rgba(120,80,255,0.2)] border-theme flex items-center justify-between px-4 shrink-0 drag relative">
-      {/* Left */}
-      <div className="flex items-center gap-5">
-        <div className="relative group flex items-center gap-3">
+    <header className="shrink-0 bg-[#050816] bg-theme border-b border-[rgba(120,80,255,0.2)] border-theme drag relative">
+      {/* Top row */}
+      <div className="flex items-center justify-between px-4 h-[60px]">
+        <div className="flex items-center gap-3">
           {logoSrc && (
-            <img src={logoSrc} alt="Logo" className="h-[75px] w-auto rounded-lg object-contain" />
+            <img src={logoSrc} alt="Logo" className="h-10 w-auto rounded-lg object-contain" />
           )}
           <div>
             <h1 className="text-sm font-bold text-white text-theme tracking-wide">{appName}</h1>
             <p className="text-[10px] text-[#6b7280] -mt-0.5">{subName}</p>
           </div>
         </div>
-
-      </div>
-
-      {/* Right */}
-      <div className="flex items-center gap-4 no-drag">
-        <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${isLive ? 'bg-green-600/15 border border-green-500/30' : 'bg-red-600/15 border border-red-500/30'}`}>
-          <Radio size={12} className={`${isLive ? 'text-green-500' : 'text-red-500'} animate-pulse`} />
-          <span className={`text-[10px] font-bold tracking-widest ${isLive ? 'text-green-400' : 'text-red-400'}`}>EN VIVO</span>
-        </div>
-        <button onClick={() => setShowInfo(true)}
-          className="p-1.5 hover:bg-[#6c5ce7]/20 rounded-lg transition-colors" title="Acerca de">
-          <Info size={12} className="text-[#6c5ce7]" />
-        </button>
-        <div className="text-right">
-          <p className="text-lg font-bold text-white text-theme tabular-nums leading-tight">{timeStr}</p>
-          <p className="text-[10px] text-gray-500 text-theme-muted">{dateStr}</p>
-        </div>
-        <div className="flex items-center gap-1 ml-2 pl-4 border-l border-[rgba(120,80,255,0.2)]">
-          <ModuleMenu />
-          <button onClick={openSettings} className="p-1.5 hover:bg-white/5 rounded transition-colors" title="Configuración">
-            <Settings size={12} className="text-gray-500 text-theme-muted" />
+        <div className="flex items-center gap-4 no-drag">
+          <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${isLive ? 'bg-green-600/15 border border-green-500/30' : 'bg-red-600/15 border border-red-500/30'}`}>
+            <Radio size={12} className={`${isLive ? 'text-green-500' : 'text-red-500'} animate-pulse`} />
+            <span className={`text-[10px] font-bold tracking-widest ${isLive ? 'text-green-400' : 'text-red-400'}`}>EN VIVO</span>
+          </div>
+          <button onClick={() => setShowInfo(true)}
+            className="p-1.5 hover:bg-[#6c5ce7]/20 rounded-lg transition-colors" title="Acerca de">
+            <Info size={12} className="text-[#6c5ce7]" />
           </button>
+          <div className="text-right">
+            <p className="text-lg font-bold text-white text-theme tabular-nums leading-tight">{timeStr}</p>
+            <p className="text-[10px] text-gray-500 text-theme-muted">{dateStr}</p>
+          </div>
           <ThemeToggle />
-          <button onClick={() => window.api.update.checkNow()} className="p-1.5 hover:bg-white/5 rounded transition-colors" title="Buscar actualizaciones">
-            <RefreshCw size={12} className="text-gray-500 text-theme-muted" />
-          </button>
           <button onClick={() => window.api.app.minimize()} className="p-1.5 hover:bg-white/5 rounded transition-colors">
             <Minus size={12} className="text-gray-500 text-theme-muted" />
           </button>
@@ -164,6 +152,19 @@ export default function Header() {
             <X size={12} className="text-gray-500 text-theme-muted" />
           </button>
         </div>
+      </div>
+
+      {/* Nav bar */}
+      <div className="flex items-center gap-1 px-4 pb-1.5 no-drag">
+        <ModuleMenu />
+        <button onClick={openSettings}
+          className="flex items-center gap-1 px-2 py-1 hover:bg-white/5 rounded transition-colors text-[10px] text-gray-500 text-theme-muted hover:text-theme">
+          <Settings size={12} /> Configuración
+        </button>
+        <div className="flex-1" />
+        <button onClick={() => window.api.update.checkNow()} className="p-1 hover:bg-white/5 rounded transition-colors" title="Buscar actualizaciones">
+          <RefreshCw size={10} className="text-gray-500 text-theme-muted" />
+        </button>
       </div>
 
       {showSettings && (

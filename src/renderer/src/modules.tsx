@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, ListTodo } from 'lucide-react'
+import { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone } from 'lucide-react'
 
 export interface ModuleDef {
   id: string
@@ -14,14 +14,14 @@ export const ALL_MODULES: ModuleDef[] = [
   { id: 'pantallas', label: 'Pantallas', icon: 'Monitor', zone: 'left-bottom', defaultEnabled: true },
   { id: 'youtube', label: 'YouTube', icon: 'Youtube', zone: 'left-bottom', defaultEnabled: true },
   { id: 'vista-previa', label: 'Vista Previa', icon: 'Layout', zone: 'center-top', defaultEnabled: true },
-  { id: 'escenas', label: 'Fondos e Imágenes', icon: 'Image', zone: 'center-bottom', defaultEnabled: true },
+  { id: 'imagenes', label: 'Imágenes', icon: 'Image', zone: 'center-bottom', defaultEnabled: true },
   { id: 'audio', label: 'Consola Audio', icon: 'Music', zone: 'center-bottom', defaultEnabled: true },
+  { id: 'anuncios', label: 'Anuncios', icon: 'Megaphone', zone: 'right-bottom', defaultEnabled: true },
   { id: 'secundaria', label: 'Vista Secundaria', icon: 'Play', zone: 'right-top', defaultEnabled: true },
   { id: 'reproductor', label: 'Reproductor', icon: 'FileVideo', zone: 'right-mid', defaultEnabled: true },
   { id: 'predicacion', label: 'Predicación', icon: 'Mic', zone: 'right-bottom', defaultEnabled: true },
   { id: 'multimedia', label: 'Multimedia', icon: 'FileText', zone: 'right-bottom', defaultEnabled: true },
   { id: 'efectos', label: 'Efectos Visuales', icon: 'Sparkles', zone: 'right-bottom', defaultEnabled: true },
-  { id: 'tareas', label: 'Tareas Imágenes', icon: 'ListTodo', zone: 'center-bottom', defaultEnabled: true },
   { id: 'cronometro', label: 'Cronómetro', icon: 'Clock', zone: 'right-bottom', defaultEnabled: false }
 ]
 
@@ -68,6 +68,6 @@ export function useModules() {
 }
 
 export function getModuleIcon(name: string) {
-  const icons: Record<string, any> = { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, ListTodo }
+  const icons: Record<string, any> = { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone }
   return icons[name] || Layout
 }

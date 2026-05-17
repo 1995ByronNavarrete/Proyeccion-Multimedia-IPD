@@ -252,7 +252,7 @@ export default function DashboardView() {
             </div>
           )}
           <div className="flex-[2] grid grid-cols-2 gap-3 min-h-0">
-            {isEnabled('escenas') && <EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} />}
+            {isEnabled('imagenes') && <EscenasPanel backgroundUrl={backgroundUrl} onSelectBackground={setBackgroundUrl} onProjectVerse={handleProjectVerse} onProjectImage={handleProjectImage} />}
             {isEnabled('audio') && <AudioControl />}
           </div>
         </div>
