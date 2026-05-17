@@ -67,6 +67,7 @@ function setCachedStream(videoId: string, url: string): void {
 
 let openProjector: (() => void) | null = null
 let onVideoPlay: ((url: string, title: string, duration: number) => void) | null = null
+let getDisplayAssignments: (() => Record<number, string[]>) | null = null
 
 export function setOpenProjector(fn: () => void): void {
   openProjector = fn
@@ -76,9 +77,14 @@ export function setOnVideoPlay(fn: (url: string, title: string, duration: number
   onVideoPlay = fn
 }
 
+export function setGetDisplayAssignments(fn: () => Record<number, string[]>): void {
+  getDisplayAssignments = fn
+}
+
 const WINS = () => BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed())
 const MAIN = () => WINS().find((w) => w.webContents?.getURL() && !w.webContents.getURL().includes('projector'))
 const ALL = (channel: string, data?: unknown) => WINS().forEach((w) => w.webContents?.send(channel, data))
+const PROJECTOR_WINS = () => WINS().filter((w) => w.webContents?.getURL()?.includes('projector'))
 
 export function registerVideoHandlers(): void {
   ipcMain.handle('ytdl:search', async (_event, query: string, maxResults = 10) => {
@@ -165,7 +171,15 @@ export function registerVideoHandlers(): void {
 
       if (onVideoPlay) onVideoPlay(url, title || 'Video', duration || 0)
 
-      ALL('projector:playVideo', { url, title: title || 'Video', duration: duration || 0 })
+      const assignments = getDisplayAssignments?.() || {}
+      const allProjWins = PROJECTOR_WINS()
+      for (const win of allProjWins) {
+        const url2 = win.webContents?.getURL() || ''
+        const match = url2.match(/displayId=(\d+)/)
+        const displayId = match ? Number(match[1]) : null
+        if (displayId && assignments[displayId] && !assignments[displayId].includes('video')) continue
+        win.webContents.send('projector:playVideo', { url, title: title || 'Video', duration: duration || 0 })
+      }
 
       const mw = MAIN()
       if (mw) {

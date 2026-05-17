@@ -7,7 +7,7 @@ import { initDatabase, seedBibleIfEmpty } from './database'
 
 
 import { registerIpcHandlers } from './ipc-handlers'
-import { registerVideoHandlers, setOpenProjector, setOnVideoPlay } from './video-handlers'
+import { registerVideoHandlers, setOpenProjector, setOnVideoPlay, setGetDisplayAssignments } from './video-handlers'
 import { registerBackupHandlers } from './backup-handler'
 import { appDocsPath, getBundledResourcesPath, getMime } from './shared'
 let mainWindow: BrowserWindow | null = null
@@ -405,6 +405,7 @@ app.whenReady().then(async () => {
   setOnVideoPlay((url: string, title: string, duration: number) => {
     lastVideoPayload = { url, title, duration }
   })
+  setGetDisplayAssignments(() => displayAssignments)
 
   // Create default media folders
   const appFolder = appDocsPath()
