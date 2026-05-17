@@ -16,6 +16,7 @@ export default function CronometroPanel() {
   const [initial, setInitial] = useState(0)
   const [persona, setPersona] = useState('')
   const [showRegistros, setShowRegistros] = useState(false)
+  const [proyectado, setProyectado] = useState(false)
   const [registros, setRegistros] = useState<Registro[]>(() => {
     try { return JSON.parse(localStorage.getItem('cronometro-registros') || '[]') } catch { return [] }
   })
@@ -156,9 +157,17 @@ export default function CronometroPanel() {
             <RotateCcw size={9} />
           </button>
           <div className="w-px h-5 bg-theme-dim/20" />
-          <button onClick={() => broadcast(mode === 'countdown' ? display : elapsedRef.current > 0 ? elapsedRef.current : 0, false)}
-            className="flex items-center justify-center w-7 h-7 bg-[#6c5ce7]/20 rounded-lg text-[#6c5ce7] hover:bg-[#6c5ce7]/30 transition-colors" title="Mostrar en pantalla">
-            <Monitor size={9} />
+          <button onClick={() => {
+            if (proyectado) {
+              broadcast(0, false)
+              setProyectado(false)
+            } else {
+              broadcast(mode === 'countdown' ? display : elapsedRef.current > 0 ? elapsedRef.current : 0, false)
+              setProyectado(true)
+            }
+          }}
+            className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors ${proyectado ? 'bg-green-600/30 text-green-400' : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/30'}`} title={proyectado ? 'Quitar de pantalla' : 'Proyectar'}>
+            {proyectado ? <span className="text-[8px] font-bold">✓</span> : <Monitor size={9} />}
           </button>
           <button onClick={toggleMode}
             className="flex items-center justify-center w-7 h-7 bg-theme-card rounded-lg text-theme-dim hover:text-theme border border-theme transition-colors" title="Cambiar modo">
