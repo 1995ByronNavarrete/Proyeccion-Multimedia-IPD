@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Clock, Play, Pause, RotateCcw, Timer, AlarmCheck, Monitor, User, Save, Trash2, List } from 'lucide-react'
+import { Clock, Play, Pause, RotateCcw, Timer, AlarmCheck, Monitor, User, Save, Trash2, List, X } from 'lucide-react'
 
 interface Registro {
   persona: string
@@ -158,17 +158,18 @@ export default function CronometroPanel() {
           </button>
           <div className="w-px h-5 bg-theme-dim/20" />
           <button onClick={() => {
-            if (proyectado) {
-              broadcast(0, false)
-              setProyectado(false)
-            } else {
-              broadcast(mode === 'countdown' ? display : elapsedRef.current > 0 ? elapsedRef.current : 0, false)
-              setProyectado(true)
-            }
+            broadcast(mode === 'countdown' ? display : elapsedRef.current > 0 ? elapsedRef.current : 0, false)
+            setProyectado(true)
           }}
-            className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors ${proyectado ? 'bg-green-600/30 text-green-400' : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/30'}`} title={proyectado ? 'Quitar de pantalla' : 'Proyectar'}>
-            {proyectado ? <span className="text-[8px] font-bold">✓</span> : <Monitor size={9} />}
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/30 transition-colors" title="Proyectar">
+            <Monitor size={9} />
           </button>
+          {proyectado && (
+            <button onClick={() => { broadcast(0, false); setProyectado(false) }}
+              className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors" title="Quitar de pantalla">
+              <X size={9} />
+            </button>
+          )}
           <button onClick={toggleMode}
             className="flex items-center justify-center w-7 h-7 bg-theme-card rounded-lg text-theme-dim hover:text-theme border border-theme transition-colors" title="Cambiar modo">
             <Timer size={9} />
