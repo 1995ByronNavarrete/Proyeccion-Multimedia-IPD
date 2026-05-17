@@ -125,7 +125,7 @@ export default function DashboardView() {
       if (backgroundUrl) content.backgroundUrl = backgroundUrl
       setProjected(content)
       window.api.projector.projectToAll()
-      setTimeout(() => window.api.projector.sendContent(content), 500)
+      window.api.projector.sendContent(content)
     }
     window.addEventListener('sermon:update', handler)
     return () => window.removeEventListener('sermon:update', handler)
@@ -161,7 +161,7 @@ export default function DashboardView() {
     setProjected(content)
     window.api.video.stop()
     window.api.projector.projectToAll()
-    setTimeout(() => window.api.projector.sendContent(content), 500)
+    window.api.projector.sendContent(content)
   }
 
   const handleLoadChapter = (verses: { text: string; reference: string; verseNumber: number }[], idx: number) => {
