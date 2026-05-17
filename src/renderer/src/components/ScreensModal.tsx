@@ -63,10 +63,20 @@ export default function ScreensModal({ open, onClose }: { open: boolean; onClose
   const getContentForDisplay = (id: number) => assignments[id] || []
 
   const applyToSelected = () => {
-    // Open projector windows for selected displays
-    for (const id of selectedDisplays) {
-      window.api.projector.projectToDisplay(id)
-    }
+    // Open projector windows for selected displays and send content
+    window.api.projector.projectToAll()
+    // Store assignments in window for other components to read
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments))
+      localStorage.setItem('ipd-active-assignments', JSON.stringify({
+        displays: selectedDisplays,
+        assignments
+      }))
+    } catch {}
+    // Dispatch event so DashboardView can react
+    window.dispatchEvent(new CustomEvent('screens:applied', {
+      detail: { displays: selectedDisplays, assignments }
+    }))
     onClose()
   }
 
