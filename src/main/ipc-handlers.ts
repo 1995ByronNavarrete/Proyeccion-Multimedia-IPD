@@ -3,7 +3,7 @@ import { statSync, readdirSync, existsSync, readFileSync, writeFileSync, mkdirSy
 import { extname, parse, join, basename } from 'path'
 import mammoth from 'mammoth'
 import pdfjs from 'pdfjs-dist'
-import { queryAll, queryOne, execute, noAccent } from './database'
+import { queryAll, queryOne, execute, noAccent, flushDatabase } from './database'
 import { downloadAndSeedBible } from './bible-seed'
 import { getBibleApiTranslations, getApiBibleTranslations } from './bible-source'
 import { ok, fail, appDocsPath, getBundledResourcesPath, getMime, IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS, DOCUMENT_EXTS, getMediaType } from './shared'
@@ -517,7 +517,6 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('app:quit', () => {
-    const { flushDatabase } = require('./database')
     flushDatabase()
     app.quit()
   })

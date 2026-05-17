@@ -3,7 +3,7 @@ import { join, extname } from 'path'
 import { existsSync, mkdirSync, readFileSync, watch, FSWatcher } from 'fs'
 import { createServer } from 'http'
 import { autoUpdater } from 'electron-updater'
-import { initDatabase, seedBibleIfEmpty } from './database'
+import { initDatabase, seedBibleIfEmpty, flushDatabase } from './database'
 
 
 import { registerIpcHandlers } from './ipc-handlers'
@@ -567,7 +567,7 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', () => {
-  try { const { flushDatabase } = require('./database'); flushDatabase() } catch {}
+  try { flushDatabase() } catch {}
   for (const w of fileWatchers) { try { w.close() } catch {} }
 })
 
