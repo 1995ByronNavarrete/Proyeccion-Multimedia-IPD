@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Sparkles, Snowflake, Bug, PartyPopper, CircleDot, Waves, Wind, Ban, Droplets, Heart, Cloud, Zap, Star, Diamond, Square, Globe } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Sparkles, Snowflake, Bug, PartyPopper, CircleDot, Droplets, Heart, Cloud, Zap, Star, Square, Diamond, Globe, Settings, X, Ban } from 'lucide-react'
 
 const FX_LIST = [
   { id: 'particles', label: 'Partículas', icon: Sparkles, color: '#ffffff' },
@@ -19,11 +19,12 @@ const FX_LIST = [
 
 export default function EffectsPanel() {
   const [active, setActive] = useState<string | null>(null)
+  const [showConfig, setShowConfig] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [intensity, setIntensity] = useState(50)
   const [count, setCount] = useState(50)
-  const [size, setSize] = useState(50)
   const updateTimer = useRef<ReturnType<typeof setTimeout>>()
+  const configRef = useRef<HTMLDivElement>(null)
 
   const sendOverlay = (id: string, sp: number, col: string) => {
     if (updateTimer.current) clearTimeout(updateTimer.current)
@@ -33,8 +34,10 @@ export default function EffectsPanel() {
   }
 
   const applyEffect = (id: string) => {
-    setActive(id)
-    sendOverlay(id, speed, `intensity:${intensity}:count:${count}:size:${size}`)
+    const next = active === id ? null : id
+    setActive(next)
+    if (next) sendOverlay(next, speed, `intensity:${intensity}:count:${count}`)
+    else window.api.projector.overlay({ type: 'none' })
   }
 
   const clearEffect = () => {
@@ -44,62 +47,73 @@ export default function EffectsPanel() {
 
   return (
     <div className="h-full bg-gradient-to-b from-theme-panel to-[rgba(8,12,30,0.9)] border border-theme rounded-xl flex flex-col overflow-hidden shadow-lg shadow-black/20">
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-theme shrink-0 bg-gradient-to-r from-[#6c5ce7]/10 via-[#6c5ce7]/5 to-transparent">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-theme shrink-0 bg-gradient-to-r from-[#6c5ce7]/10 via-[#6c5ce7]/5 to-transparent">
         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#6c5ce7] to-[#a855f7] flex items-center justify-center shadow-lg shadow-[#6c5ce7]/20">
           <Sparkles size={11} className="text-white" />
         </div>
         <h3 className="text-[10px] font-bold text-theme flex-1 tracking-wide">Efectos</h3>
-        {active != null && (
-          <button onClick={clearEffect} className="text-[8px] px-2 py-1 bg-red-500/15 text-red-400 rounded-lg hover:bg-red-500/25 transition-all flex items-center gap-1">
-            <Ban size={9} /> Quitar
+        <div className="relative" ref={configRef}>
+          <button onClick={() => setShowConfig(!showConfig)}
+            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="Configurar efectos">
+            <Settings size={11} className="text-theme-dim hover:text-theme" />
           </button>
-        )}
+          {showConfig && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setShowConfig(false)} />
+              <div className="absolute top-full right-0 mt-1 z-40 w-56 bg-[rgba(10,14,30,0.98)] border border-[rgba(120,80,255,0.25)] rounded-xl shadow-2xl shadow-black/50 p-3 space-y-2.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[9px] text-theme-dim font-semibold">Configuración global</span>
+                  <button onClick={() => setShowConfig(false)}><X size={10} className="text-theme-dim" /></button>
+                </div>
+                <div>
+                  <span className="text-[8px] text-theme-dim">Velocidad: {speed}x</span>
+                  <input type="range" min={0.3} max={3} step={0.1} value={speed}
+                    onChange={e => { const v = Number(e.target.value); setSpeed(v); if (active) sendOverlay(active, v, `intensity:${intensity}:count:${count}`) }}
+                    className="w-full h-1 rounded-full appearance-none bg-white/10 accent-[#6c5ce7] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6c5ce7]" />
+                </div>
+                <div>
+                  <span className="text-[8px] text-theme-dim">Intensidad: {intensity}%</span>
+                  <input type="range" min={10} max={100} value={intensity}
+                    onChange={e => { const v = Number(e.target.value); setIntensity(v); if (active) sendOverlay(active, speed, `intensity:${v}:count:${count}`) }}
+                    className="w-full h-1 rounded-full appearance-none bg-white/10 accent-[#6c5ce7] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6c5ce7]" />
+                </div>
+                <div>
+                  <span className="text-[8px] text-theme-dim">Cantidad: {count}</span>
+                  <input type="range" min={10} max={150} value={count}
+                    onChange={e => { const v = Number(e.target.value); setCount(v); if (active) sendOverlay(active, speed, `intensity:${intensity}:count:${v}`) }}
+                    className="w-full h-1 rounded-full appearance-none bg-white/10 accent-[#6c5ce7] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6c5ce7]" />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {FX_LIST.map(fx => (
-          <button key={fx.id} onClick={() => applyEffect(fx.id)}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 text-[10px] ${
-              active === fx.id
-                ? 'bg-gradient-to-r from-[#6c5ce7]/20 to-[#a855f7]/10 ring-1 ring-[#6c5ce7]/50 text-white shadow-lg shadow-[#6c5ce7]/10'
-                : 'bg-white/5 text-theme-dim hover:bg-white/10 hover:text-theme hover:shadow-sm'
-            }`}>
-            <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${active === fx.id ? 'bg-[#6c5ce7]/30' : 'bg-white/5'}`}>
-              <fx.icon size={11} style={{ color: fx.color }} />
-            </div>
-            <span className="font-medium tracking-wide">{fx.label}</span>
-            {active === fx.id && (
-              <span className="ml-auto flex items-center gap-1 text-[8px] text-green-400 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> ACTIVO
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="flex-1 overflow-y-auto p-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
+          {FX_LIST.map(fx => (
+            <button key={fx.id} onClick={() => applyEffect(fx.id)}
+              className={`flex flex-col items-center gap-1 px-1 py-2 rounded-xl transition-all duration-200 ${
+                active === fx.id
+                  ? 'bg-gradient-to-b from-[#6c5ce7]/25 to-[#a855f7]/10 ring-1 ring-[#6c5ce7]/50 text-white shadow-lg shadow-[#6c5ce7]/10 scale-[1.02]'
+                  : 'bg-white/5 text-theme-dim hover:bg-white/10 hover:text-theme'
+              }`}>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${active === fx.id ? 'bg-[#6c5ce7]/30' : 'bg-white/5'}`}>
+                <fx.icon size={11} style={{ color: fx.color }} />
+              </div>
+              <span className="text-[7px] font-medium text-center leading-tight">{fx.label}</span>
+              {active === fx.id && <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {active != null && (
-        <div className="px-3 pb-3 space-y-2 border-t border-theme pt-2 bg-white/[0.02]">
-          <div className="flex items-center gap-2">
-            <span className="text-[8px] text-theme-dim font-medium w-12">Velocidad</span>
-            <input type="range" min={0.3} max={3} step={0.1} value={speed}
-              onChange={e => { const v = Number(e.target.value); setSpeed(v); applyEffect(active) }}
-              className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-[#6c5ce7] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6c5ce7] [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-[#6c5ce7]/50" />
-            <span className="text-[8px] text-theme-dim font-mono w-6 text-right">{speed}x</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[8px] text-theme-dim font-medium w-12">Intensidad</span>
-            <input type="range" min={10} max={100} value={intensity}
-              onChange={e => { const v = Number(e.target.value); setIntensity(v); applyEffect(active) }}
-              className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-[#6c5ce7] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6c5ce7] [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-[#6c5ce7]/50" />
-            <span className="text-[8px] text-theme-dim font-mono w-6 text-right">{intensity}%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[8px] text-theme-dim font-medium w-12">Cantidad</span>
-            <input type="range" min={10} max={150} value={count}
-              onChange={e => { const v = Number(e.target.value); setCount(v); applyEffect(active) }}
-              className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-[#6c5ce7] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#6c5ce7] [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-[#6c5ce7]/50" />
-            <span className="text-[8px] text-theme-dim font-mono w-6 text-right">{count}</span>
-          </div>
+      {active && (
+        <div className="px-2 pb-1.5 shrink-0">
+          <button onClick={clearEffect}
+            className="w-full flex items-center justify-center gap-1 py-1 text-[7px] bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all">
+            <Ban size={8} /> Quitar efecto
+          </button>
         </div>
       )}
     </div>
