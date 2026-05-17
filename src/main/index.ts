@@ -270,14 +270,18 @@ function registerMainIpcHandlers(): void {
   })
 
   ipcMain.handle('projector:showAnnouncement', (_event, data: { text: string; animation: string }) => {
-    for (const [, win] of projectorWindows) {
-      if (!win.isDestroyed()) win.webContents.send('projector:showAnnouncement', data)
+    for (const [displayId, win] of projectorWindows) {
+      if (win.isDestroyed()) continue
+      if (displayAssignments[displayId] && !displayAssignments[displayId].includes('anuncios')) continue
+      win.webContents.send('projector:showAnnouncement', data)
     }
   })
 
   ipcMain.handle('projector:hideAnnouncement', () => {
-    for (const [, win] of projectorWindows) {
-      if (!win.isDestroyed()) win.webContents.send('projector:hideAnnouncement')
+    for (const [displayId, win] of projectorWindows) {
+      if (win.isDestroyed()) continue
+      if (displayAssignments[displayId] && !displayAssignments[displayId].includes('anuncios')) continue
+      win.webContents.send('projector:hideAnnouncement')
     }
   })
 
@@ -324,6 +328,10 @@ function registerMainIpcHandlers(): void {
     } catch { return null }
   }
 
+  const moduleTypeToContentType: Record<string, string> = {
+    verse: 'biblia', media: 'video', document: 'video'
+  }
+
   ipcMain.handle('projector:sendContent', async (_event, content: any) => {
     if (content?.mediaUrl?.startsWith('file://')) {
       const dataUrl = fileUrlToDataUrl(content.mediaUrl)
@@ -333,8 +341,11 @@ function registerMainIpcHandlers(): void {
       const dataUrl = fileUrlToDataUrl(content.backgroundUrl)
       if (dataUrl) content.backgroundUrl = dataUrl
     }
-    for (const [, win] of projectorWindows) {
-      if (!win.isDestroyed()) win.webContents.send('projector:content', content)
+    const moduleType = moduleTypeToContentType[content?.type] || null
+    for (const [displayId, win] of projectorWindows) {
+      if (win.isDestroyed()) continue
+      if (moduleType && displayAssignments[displayId] && !displayAssignments[displayId].includes(moduleType)) continue
+      win.webContents.send('projector:content', content)
     }
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('projector:content', content)
