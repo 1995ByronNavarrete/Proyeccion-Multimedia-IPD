@@ -229,10 +229,8 @@ export default function DashboardView() {
         {/* ─── LEFT COLUMN ─── */}
         <div className="flex flex-col gap-3 overflow-hidden">
           <div className="flex-[3] min-h-0">
-            {isEnabled('biblia') ? (
-              <BibliaPanel onProject={handleProjectVerse} onLoadChapter={handleLoadChapter}
-                projectedVerseNumber={chapterVerses[verseIdx]?.verseNumber ?? null} />
-            ) : <div className="h-full" />}
+            <BibliaPanel onProject={handleProjectVerse} onLoadChapter={handleLoadChapter}
+              projectedVerseNumber={chapterVerses[verseIdx]?.verseNumber ?? null} />
           </div>
           <div className="flex-[2] flex flex-col gap-2 min-h-0">
             {projected.type === 'media' && <VideoControls />}
