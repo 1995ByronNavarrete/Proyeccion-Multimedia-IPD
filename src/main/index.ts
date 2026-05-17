@@ -15,6 +15,12 @@ const projectorWindows: Map<number, BrowserWindow> = new Map()
 let devServerPort: number | null = null
 let lastOverlay: unknown = null
 let lastVideoPayload: { url: string; title: string; duration: number } | null = null
+let displayAssignments: Record<number, string[]> = {}
+
+function sendContentToDisplay(displayId: number, channel: string, data: unknown): void {
+  const win = projectorWindows.get(displayId)
+  if (win && !win.isDestroyed()) win.webContents.send(channel, data)
+}
 
 // ── Servidor HTTP local para producción ──
 const MIME: Record<string, string> = {
@@ -183,12 +189,13 @@ function createProjectorWindow(displayId: number): void {
   })
   projectorWindows.set(displayId, win)
 
+  const hash = `/projector?displayId=${displayId}`
   if (process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(`${process.env.ELECTRON_RENDERER_URL}#/projector`)
+    win.loadURL(`${process.env.ELECTRON_RENDERER_URL}#${hash}`)
   } else if (devServerPort) {
-    win.loadURL(`http://127.0.0.1:${devServerPort}#/projector`)
+    win.loadURL(`http://127.0.0.1:${devServerPort}#${hash}`)
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/projector' })
+    win.loadFile(join(__dirname, '../renderer/index.html'), { hash })
   }
 }
 
@@ -340,6 +347,35 @@ function registerMainIpcHandlers(): void {
       if (!win.isDestroyed()) win.webContents.send('projector:overlay', overlay)
     }
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('projector:overlay', overlay)
+  })
+
+  // Per-display content control
+  ipcMain.handle('display:setAssignments', (_event, assignments: Record<number, string[]>) => {
+    displayAssignments = assignments
+  })
+
+  ipcMain.handle('display:sendContent', async (_event, displayId: number, content: any) => {
+    if (content?.mediaUrl?.startsWith('file://')) {
+      const dataUrl = fileUrlToDataUrl(content.mediaUrl)
+      if (dataUrl) content.mediaUrl = dataUrl
+    }
+    if (content?.backgroundUrl?.startsWith('file://')) {
+      const dataUrl = fileUrlToDataUrl(content.backgroundUrl)
+      if (dataUrl) content.backgroundUrl = dataUrl
+    }
+    sendContentToDisplay(displayId, 'projector:content', content)
+  })
+
+  ipcMain.handle('display:showAnnouncement', (_event, displayId: number, data: any) => {
+    sendContentToDisplay(displayId, 'projector:showAnnouncement', data)
+  })
+
+  ipcMain.handle('display:hideAnnouncement', (_event, displayId: number) => {
+    sendContentToDisplay(displayId, 'projector:hideAnnouncement', null)
+  })
+
+  ipcMain.handle('display:stopVideo', (_event, displayId: number) => {
+    sendContentToDisplay(displayId, 'projector:stopVideo', null)
   })
 }
 

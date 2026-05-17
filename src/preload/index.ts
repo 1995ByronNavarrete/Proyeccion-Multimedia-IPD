@@ -29,6 +29,13 @@ const api = {
     overlay: (data: { type: string; speed?: number; color?: string }) => ipcRenderer.invoke('projector:overlay', data),
     scrollDocument: (direction: 'up' | 'down') => ipcRenderer.invoke('projector:scrollDocument', direction)
   },
+  display: {
+    setAssignments: (assignments: Record<number, string[]>) => ipcRenderer.invoke('display:setAssignments', assignments),
+    sendContent: (displayId: number, content: unknown) => ipcRenderer.invoke('display:sendContent', displayId, content),
+    showAnnouncement: (displayId: number, data: any) => ipcRenderer.invoke('display:showAnnouncement', displayId, data),
+    hideAnnouncement: (displayId: number) => ipcRenderer.invoke('display:hideAnnouncement', displayId),
+    stopVideo: (displayId: number) => ipcRenderer.invoke('display:stopVideo', displayId)
+  },
   medialocal: {
     importFile: () => ipcRenderer.invoke('medialocal:importFile'),
     importFiles: () => ipcRenderer.invoke('medialocal:importFiles'),

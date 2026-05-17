@@ -178,6 +178,13 @@ interface Window {
       create: () => Promise<{ success: boolean; data?: { path: string }; error?: string }>
       restore: () => Promise<{ success: boolean; data?: { path: string }; error?: string }>
     }
+    display: {
+      setAssignments: (assignments: Record<number, string[]>) => Promise<void>
+      sendContent: (displayId: number, content: unknown) => Promise<void>
+      showAnnouncement: (displayId: number, data: any) => Promise<void>
+      hideAnnouncement: (displayId: number) => Promise<void>
+      stopVideo: (displayId: number) => Promise<void>
+    }
     update: {
       check: () => Promise<void>
       checkNow: () => Promise<void>

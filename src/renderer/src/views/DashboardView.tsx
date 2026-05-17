@@ -74,23 +74,33 @@ export default function DashboardView() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (!detail?.assignments) return
-      const hasAnuncios = Object.values(detail.assignments as Record<string, string[]>).some((types: string[]) => types.includes('anuncios'))
-      if (!hasAnuncios) window.api.projector.hideAnnouncement()
-      window.api.projector.projectToAll()
-      setTimeout(() => {
-        const sent: Record<string, boolean> = {}
-        for (const types of Object.values(detail.assignments as Record<string, string[]>)) {
-          if (types.includes('biblia') && lastVerse.current && !sent['biblia']) {
+      const assignments = detail.assignments as Record<string, string[]>
+      const selectedDisplays = (detail.displays as number[]) || []
+      // Process each display individually
+      for (const displayId of selectedDisplays) {
+        const types = assignments[displayId] || []
+        // Open projector for this display
+        window.api.projector.projectToDisplay(displayId)
+        // Send content based on types
+        setTimeout(() => {
+          if (types.includes('biblia') && lastVerse.current) {
             const content: ProjectedContent = {
               type: 'verse', text: lastVerse.current.text, reference: lastVerse.current.reference,
               animation: animBiblia,
             }
             if (backgroundUrl) content.backgroundUrl = backgroundUrl
-            window.api.projector.sendContent(content)
-            sent['biblia'] = true
+            window.api.display.sendContent(displayId, content)
+          } else {
+            // If no specific content, just show background
+            if (backgroundUrl) {
+              window.api.display.sendContent(displayId, { type: 'media', text: 'Fondo', mediaUrl: '', backgroundUrl })
+            }
           }
-        }
-      }, 500)
+          if (!types.includes('anuncios')) {
+            window.api.display.hideAnnouncement(displayId)
+          }
+        }, 300)
+      }
     }
     window.addEventListener('screens:applied', handler)
     return () => window.removeEventListener('screens:applied', handler)
