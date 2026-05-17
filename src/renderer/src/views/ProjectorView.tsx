@@ -388,10 +388,10 @@ export default function ProjectorView() {
       <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
       <OverlayFX />
       {timerDisplay && (
-        <div className="fixed bottom-6 right-6 z-50 bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
-          <div className="flex items-center gap-2">
-            {timerRunning && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
-            <span className="text-xl font-bold font-mono text-white tabular-nums tracking-wider">{timerDisplay}</span>
+        <div className="fixed bottom-8 right-8 z-50 bg-black/70 backdrop-blur-md px-8 py-5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
+          <div className="flex items-center gap-4">
+            {timerRunning && <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />}
+            <span className="text-7xl font-bold font-mono text-white tabular-nums tracking-wider drop-shadow-[0_0_40px_rgba(0,0,0,0.9)]">{timerDisplay}</span>
           </div>
         </div>
       )}
