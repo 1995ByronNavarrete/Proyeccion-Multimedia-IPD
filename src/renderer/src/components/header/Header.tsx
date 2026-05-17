@@ -156,7 +156,6 @@ export default function Header() {
         </div>
       </div>
 
-      return (
       {/* Nav bar */}
       <div className="flex items-center gap-1 px-4 pb-1.5 no-drag">
         <ModuleMenu />
