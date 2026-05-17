@@ -142,7 +142,7 @@ export function registerVideoHandlers(): void {
     }
 
     // ── INTENTO: yt-dlp directo (child_process) con múltiples formatos ──
-    const formats = ['best[ext=mp4]', 'best[height<=1080]', 'worst[ext=mp4]', 'best[height<=720]']
+    const formats = ['bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]', 'best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
     for (const fmt of formats) {
       const url = await ytDlpGetUrl(videoId, fmt)
       if (url) {

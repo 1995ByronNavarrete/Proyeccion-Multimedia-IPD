@@ -35,18 +35,21 @@ export default function ProyectorPanel({ projected }: ProyectorPanelProps) {
       return
     }
     const capture = async () => {
-      for (const d of projDisplays) {
+      const results = await Promise.all(projDisplays.map(async (d) => {
         try {
           const capRes = await window.api.capture.projectorByDisplay(d.id)
           if (capRes?.success && capRes.data) {
-            const b64 = capRes.data.base64
-            setCaptures((prev) => ({ ...prev, [d.id]: `data:image/png;base64,${b64}` }))
+            return { id: d.id, dataUrl: `data:image/png;base64,${capRes.data.base64}` }
           }
         } catch {}
-      }
+        return null
+      }))
+      const updates: Record<number, string> = {}
+      for (const r of results) { if (r) updates[r.id] = r.dataUrl }
+      if (Object.keys(updates).length > 0) setCaptures((prev) => ({ ...prev, ...updates }))
     }
     capture()
-    captureTimer.current = setInterval(capture, 2000)
+    captureTimer.current = setInterval(capture, 1000)
     return () => { if (captureTimer.current) { clearInterval(captureTimer.current); captureTimer.current = undefined } }
   }, [displays, appDisplayId])
 
