@@ -369,19 +369,25 @@ export default function ProjectorView() {
 
   const OverlayFX = () => overlay ? <OverlayEffect type={overlay.type} speed={overlay.speed} color={overlay.color} /> : null
 
+  const GlobalOverlays = () => (
+    <>
+      <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
+      <OverlayFX />
+    </>
+  )
+
+  let content: JSX.Element | null = null
+
   if (isBlack) {
-    return (
+    content = (
       <div className="h-screen w-screen bg-black flex items-center justify-center relative">
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/40 px-6 py-2 rounded-full">
           <p className="text-xs text-white/30 tracking-widest uppercase">Pantalla en negro</p>
         </div>
-        <OverlayFX />
       </div>
     )
-  }
-
-  if (docUrl) {
-    return (
+  } else if (docUrl) {
+    content = (
       <div className="h-screen w-screen bg-white relative">
         {docHtmlContent ? (
           <div ref={docRef} tabIndex={-1} className="doc-scroll-container absolute inset-0 overflow-auto outline-none">
@@ -398,10 +404,7 @@ export default function ProjectorView() {
               ) : (
                 <>
                   <p className="text-sm text-gray-400 mb-4">Vista previa no disponible. Abrir con aplicación externa.</p>
-                  <button onClick={() => window.api.app.openDocument(docUrl)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm font-medium">
-                    Abrir documento
-                  </button>
+                  <button onClick={() => window.api.app.openDocument(docUrl)} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm font-medium">Abrir documento</button>
                 </>
               )}
             </div>
@@ -410,97 +413,55 @@ export default function ProjectorView() {
         <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
           {logoSrc && <img src={logoSrc} alt="Logo" className="h-24 w-auto object-contain pointer-events-none" />}
           {(headerTitle || headerSub) && (
-            <div>
-              <p className="text-3xl font-bold text-white drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{headerTitle || 'SOFTWARE PREMIUM'}</p>
-              <p className="text-sm text-white/70 drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>{headerSub || 'PARA IGLESIAS'}</p>
-            </div>
+            <div><p className="text-3xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-sm text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
           )}
         </div>
-        <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
-        <OverlayFX />
       </div>
     )
-  }
-
-  if (isImage && videoUrl) {
-    return (
+  } else if (isImage && videoUrl) {
+    content = (
       <div className="h-screen w-screen bg-black relative flex items-center justify-center">
         <img src={videoUrl} alt={videoTitle} className="max-h-full max-w-full object-contain" />
-        <div className="absolute inset-0 z-10" />
         <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
           {logoSrc && <img src={logoSrc} alt="Logo" className="h-24 w-auto object-contain pointer-events-none" />}
           {(headerTitle || headerSub) && (
-            <div>
-              <p className="text-3xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p>
-              <p className="text-sm text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p>
-            </div>
+            <div><p className="text-3xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-sm text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
           )}
         </div>
-        <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
-        <OverlayFX />
       </div>
     )
-  }
-
-  if (videoUrl && isYoutube) {
-    return (
+  } else if (videoUrl && isYoutube) {
+    content = (
       <div className="h-screen w-screen bg-black relative">
-        <iframe ref={iframeRef}
-          src={videoUrl}
-          className="absolute inset-0 w-full h-full"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-          onError={(e) => console.error('[YT Iframe error]', e)}
-        />
-        <div className="absolute inset-0 z-10" />
+        <iframe ref={iframeRef} src={videoUrl} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen" allowFullScreen
+          onError={(e) => console.error('[YT Iframe error]', e)} />
         <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
           {logoSrc && <img src={logoSrc} alt="Logo" className="h-48 w-auto object-contain" onError={() => console.error('[Logo error]')} />}
           {(headerTitle || headerSub) && (
-            <div>
-              <p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p>
-              <p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p>
-            </div>
+            <div><p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
           )}
         </div>
-        <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
-        <OverlayFX />
       </div>
     )
-  }
-
-  if (videoUrl) {
-    return (
+  } else if (videoUrl) {
+    content = (
       <div className="h-screen w-screen bg-black relative">
         <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain" controls={false} autoPlay
-          onError={(e) => {
-            const v = e.currentTarget
-            console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message)
-          }}
-        />
-        <div className="absolute inset-0 z-10" />
+          onError={(e) => { const v = e.currentTarget; console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message) }} />
         <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
           {logoSrc && <img src={logoSrc} alt="Logo" className="h-48 w-auto object-contain" onError={() => console.error('[Logo error]')} />}
           {(headerTitle || headerSub) && (
-            <div>
-              <p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p>
-              <p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p>
-            </div>
+            <div><p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
           )}
         </div>
-        <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
-        <OverlayFX />
       </div>
     )
-  }
-
-  if (effect) {
-    return <EffectRenderer effect={effect.type} speed={effect.speed} logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} anuncioText={anuncioText}
+  } else if (effect) {
+    content = <EffectRenderer effect={effect.type} speed={effect.speed} logoSrc={logoSrc} headerTitle={headerTitle} headerSub={headerSub} anuncioText={anuncioText}
       anuncioAnimIn={anuncioAnimIn} anuncioAnimOut={anuncioAnimOut} anuncioBg={anuncioBg} anuncioBgAnimIn={anuncioBgAnimIn} anuncioBgAnimOut={anuncioBgAnimOut}
       anuncioSize={anuncioSize} anuncioFont={anuncioFont} anuncioColor={anuncioColor} anuncioExiting={anuncioExiting} />
-  }
-
-  if (verseText) {
-    return (
+  } else if (verseText) {
+    content = (
       <div key={verseRef} ref={verseContainerRef} className="h-screen w-screen relative flex items-center justify-center p-16 overflow-hidden">
         {verseBackground ? (
           <>
@@ -513,10 +474,7 @@ export default function ProjectorView() {
         <div className="absolute top-6 left-6 z-20 flex items-center gap-4 pointer-events-none">
           {logoSrc && <img src={logoSrc} alt="Logo" className="h-48 w-auto object-contain" />}
           {(headerTitle || headerSub) && (
-            <div>
-              <p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p>
-              <p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p>
-            </div>
+            <div><p className="text-4xl font-bold text-white drop-shadow-lg">{headerTitle || 'SOFTWARE PREMIUM'}</p><p className="text-xl text-white/70 drop-shadow-lg">{headerSub || 'PARA IGLESIAS'}</p></div>
           )}
         </div>
         {sermonTitle && (
@@ -528,28 +486,33 @@ export default function ProjectorView() {
         <div className="relative text-center w-[95%] px-8">
           {verseAnimation.startsWith('anim-letter-') ? (
             <p className={`text-7xl font-bold leading-[1.3] text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] ${verseAnimation}`}>
-              {verseText.split('').map((char, i) => (
-                <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
-              ))}
+              {verseText.split('').map((char, i) => (<span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>))}
             </p>
           ) : (
             <p className={`text-7xl font-bold leading-[1.3] text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-text`}>{verseText}</p>
           )}
           <p className={`text-4xl text-white/80 mt-8 tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-ref`}>— {verseRef}</p>
         </div>
-        <OverlayFX />
+      </div>
+    )
+  } else {
+    content = (
+      <div className="h-screen w-screen bg-black flex items-center justify-center relative">
+        <div className="text-center">
+          <Monitor size={48} className="text-gray-800 mx-auto mb-3" />
+          <p className="text-sm text-gray-700">Sin contenido</p>
+          <p className="text-[10px] text-gray-800 mt-2">Esperando contenido para proyectar...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen w-screen bg-black flex items-center justify-center relative">
-      <div className="text-center">
-        <Monitor size={48} className="text-gray-800 mx-auto mb-3" />
-        <p className="text-sm text-gray-700">Sin contenido</p>
-        <p className="text-[10px] text-gray-800 mt-2">Esperando contenido para proyectar...</p>
+    <div className="h-screen w-screen relative">
+      {content}
+      <div className="fixed inset-0 z-50 pointer-events-none">
+        <GlobalOverlays />
       </div>
-      <OverlayFX />
     </div>
   )
 }
