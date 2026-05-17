@@ -10,7 +10,6 @@ export interface ModuleDef {
 }
 
 export const ALL_MODULES: ModuleDef[] = [
-  { id: 'biblia', label: 'Biblia', icon: 'BookOpen', zone: 'left-top', defaultEnabled: true },
   { id: 'pantallas', label: 'Pantallas', icon: 'Monitor', zone: 'left-bottom', defaultEnabled: true },
   { id: 'youtube', label: 'YouTube', icon: 'Youtube', zone: 'left-bottom', defaultEnabled: true },
   { id: 'imagenes', label: 'Imágenes', icon: 'Image', zone: 'center-bottom', defaultEnabled: true },
