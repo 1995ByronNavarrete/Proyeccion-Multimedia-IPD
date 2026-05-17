@@ -64,12 +64,12 @@ export default function CronometroPanel() {
         setRunning(false)
         runningRef.current = false
         setDisplay(0)
-        broadcast(0, false)
+        if (proyectado) broadcast(0, false)
         return
       }
     } else {
       setDisplay(total)
-      broadcast(total, true)
+      if (proyectado) broadcast(total, true)
     }
     rafRef.current = requestAnimationFrame(tick)
   }
