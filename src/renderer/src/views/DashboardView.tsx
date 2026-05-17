@@ -74,30 +74,37 @@ export default function DashboardView() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (!detail?.assignments) return
-      const assignments = detail.assignments as Record<string, string[]>
+      const newAssign = detail.assignments as Record<string, string[]>
       const selectedDisplays = (detail.displays as number[]) || []
-      // Process each display individually
+      let oldAssign: Record<string, string[]> = {}
+      try { const saved = localStorage.getItem('ipd-active-assignments'); if (saved) { const p = JSON.parse(saved); if (p.assignments) oldAssign = p.assignments } } catch {}
+
       for (const displayId of selectedDisplays) {
-        const types = assignments[displayId] || []
-        // Open projector for this display
+        const types = newAssign[displayId] || []
+        const oldTypes: string[] = oldAssign[displayId] || []
+
         window.api.projector.projectToDisplay(displayId)
-        // Send content based on types
+
         setTimeout(() => {
-          if (types.includes('biblia') && lastVerse.current) {
-            const content: ProjectedContent = {
-              type: 'verse', text: lastVerse.current.text, reference: lastVerse.current.reference,
-              animation: animBiblia,
-            }
-            if (backgroundUrl) content.backgroundUrl = backgroundUrl
-            window.api.display.sendContent(displayId, content)
-          } else {
-            // If no specific content, just show background
-            if (backgroundUrl) {
-              window.api.display.sendContent(displayId, { type: 'media', text: 'Fondo', mediaUrl: '', backgroundUrl })
-            }
+          const removed = oldTypes.filter(t => !types.includes(t))
+          const added = types.filter(t => !oldTypes.includes(t))
+
+          // Clear removed types
+          if (removed.includes('biblia') || (types.length === 0)) {
+            window.api.display.sendContent(displayId, { type: 'none' })
           }
-          if (!types.includes('anuncios')) {
+          if (removed.includes('anuncios')) {
             window.api.display.hideAnnouncement(displayId)
+          }
+
+          // Send new content for added types
+          if (added.includes('biblia') || (types.includes('biblia') && !removed.includes('biblia'))) {
+            if (types.includes('biblia') && lastVerse.current) {
+              window.api.display.sendContent(displayId, {
+                type: 'verse', text: lastVerse.current.text, reference: lastVerse.current.reference,
+                animation: animBiblia, backgroundUrl: backgroundUrl || undefined
+              })
+            }
           }
         }, 300)
       }
