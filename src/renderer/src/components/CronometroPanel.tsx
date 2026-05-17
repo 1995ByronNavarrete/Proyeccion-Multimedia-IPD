@@ -109,54 +109,55 @@ export default function CronometroPanel() {
 
   return (
     <div className="bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-theme shrink-0">
-        <h3 className="text-[10px] font-semibold text-theme-muted uppercase tracking-wider flex items-center gap-1.5">
-          <Clock size={11} /> {mode === 'crono' ? 'Cronómetro' : 'Cuenta atrás'}
-        </h3>
-        <button onClick={toggleMode} className="text-[8px] text-theme-dim hover:text-theme px-1.5 py-0.5 bg-theme-card rounded" title="Cambiar modo">
-          <Timer size={10} />
-        </button>
+      <div className="flex items-center gap-1.5 px-3 py-1 border-b border-theme shrink-0">
+        <Clock size={10} className="text-theme-dim" />
+        <span className="text-[9px] text-theme-dim font-medium">{mode === 'crono' ? 'Cronómetro' : 'Cuenta atrás'}</span>
       </div>
 
-      <div className="flex flex-col items-center justify-center py-4 px-3 gap-2">
-        {isFinished && (
-          <div className="flex items-center gap-1 text-[10px] text-green-400 font-bold animate-pulse">
-            <AlarmCheck size={14} /> ¡TIEMPO!
-          </div>
-        )}
-        <div className={`text-sm font-bold font-mono tracking-wider tabular-nums ${isFinished ? 'text-green-400' : 'text-theme'}`}
-          style={{ textShadow: '0 0 20px rgba(108,92,231,0.15)' }}>
-          {format(display)}
-        </div>
-
-        {mode === 'countdown' && !running && display <= 0 && elapsedRef.current === 0 && (
-          <div className="flex items-center gap-1 flex-wrap justify-center shrink-0">
-            {[1, 2, 3, 5, 10, 15, 30].map(m => (
-              <button key={m} onClick={() => setPreset(m)}
-                className={`text-[9px] px-2 py-0.5 rounded-full transition-colors ${initial === m * 60 ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
-                {m >= 60 ? `${m / 60}h` : `${m}m`}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 mt-1 shrink-0">
+      <div className="flex items-center gap-2 py-3 px-3 min-h-0 overflow-hidden">
+        <div className="flex flex-col gap-1 shrink-0">
           {!running ? (
             <button onClick={start}
-              className="flex items-center gap-1 px-4 py-1.5 bg-green-600/80 rounded-lg text-[10px] text-white hover:bg-green-600 transition-colors disabled:opacity-40"
+              className="flex items-center justify-center w-7 h-7 bg-green-600/80 rounded-lg text-white hover:bg-green-600 transition-colors disabled:opacity-40"
               disabled={mode === 'countdown' && initial === 0}>
-              <Play size={12} /> Iniciar
+              <Play size={10} />
             </button>
           ) : (
             <button onClick={pause}
-              className="flex items-center gap-1 px-4 py-1.5 bg-amber-600/80 rounded-lg text-[10px] text-white hover:bg-amber-600 transition-colors">
-              <Pause size={12} /> Pausar
+              className="flex items-center justify-center w-7 h-7 bg-amber-600/80 rounded-lg text-white hover:bg-amber-600 transition-colors">
+              <Pause size={10} />
             </button>
           )}
           <button onClick={reset}
-            className="flex items-center gap-1 px-3 py-1.5 bg-theme-card rounded-lg text-[10px] text-theme-dim hover:text-theme border border-theme transition-colors">
-            <RotateCcw size={11} /> Reiniciar
+            className="flex items-center justify-center w-7 h-7 bg-theme-card rounded-lg text-theme-dim hover:text-theme border border-theme transition-colors">
+            <RotateCcw size={9} />
           </button>
+          <button onClick={toggleMode}
+            className="flex items-center justify-center w-7 h-7 bg-theme-card rounded-lg text-theme-dim hover:text-theme border border-theme transition-colors" title="Cambiar modo">
+            <Timer size={9} />
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center flex-1 min-w-0">
+          {isFinished && (
+            <div className="flex items-center gap-1 text-[8px] text-green-400 font-bold animate-pulse">
+              <AlarmCheck size={10} /> ¡TIEMPO!
+            </div>
+          )}
+          <div className={`text-lg font-bold font-mono tracking-wider tabular-nums ${isFinished ? 'text-green-400' : 'text-theme'}`}
+            style={{ textShadow: '0 0 20px rgba(108,92,231,0.15)' }}>
+            {format(display)}
+          </div>
+          {mode === 'countdown' && !running && display <= 0 && elapsedRef.current === 0 && (
+            <div className="flex items-center gap-1 flex-wrap justify-center shrink-0 mt-1">
+              {[1, 2, 3, 5, 10, 15, 30].map(m => (
+                <button key={m} onClick={() => setPreset(m)}
+                  className={`text-[7px] px-1.5 py-0.5 rounded-full transition-colors ${initial === m * 60 ? 'bg-[#6c5ce7] text-white' : 'bg-theme-card text-theme-dim hover:text-theme'}`}>
+                  {m >= 60 ? `${m / 60}h` : `${m}m`}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
