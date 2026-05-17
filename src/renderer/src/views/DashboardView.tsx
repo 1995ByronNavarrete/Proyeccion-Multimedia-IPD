@@ -13,6 +13,7 @@ import SermonInfo from '../components/SermonInfo'
 import VideoControls from '../components/VideoControls'
 import AudioControl from '../components/mixer/AudioControl'
 import AnunciosPanel from '../components/AnunciosPanel'
+import CronometroPanel from '../components/CronometroPanel'
 import UpdateNotifier from '../components/UpdateNotifier'
 import { useModules } from '../modules'
 export interface ProjectedContent {
@@ -278,7 +279,10 @@ export default function DashboardView() {
                 </div>
               ) : <div className="flex-1" />}
             </div>
-            <div>{isEnabled('efectos') ? <EffectsPanel /> : <div className="h-full" />}</div>
+            <div className="flex flex-col gap-3">
+              {isEnabled('cronometro') ? <CronometroPanel /> : <div />}
+              {isEnabled('efectos') ? <EffectsPanel /> : <div className="h-full" />}
+            </div>
           </div>
         </div>
       </div>

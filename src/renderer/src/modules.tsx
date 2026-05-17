@@ -20,7 +20,7 @@ export const ALL_MODULES: ModuleDef[] = [
   { id: 'predicacion', label: 'Predicación', icon: 'Mic', zone: 'right-bottom', defaultEnabled: true },
   { id: 'multimedia', label: 'Multimedia', icon: 'FileText', zone: 'right-bottom', defaultEnabled: true },
   { id: 'efectos', label: 'Efectos Visuales', icon: 'Sparkles', zone: 'right-bottom', defaultEnabled: true },
-  { id: 'cronometro', label: 'Cronómetro', icon: 'Clock', zone: 'right-bottom', defaultEnabled: false }
+  { id: 'cronometro', label: 'Cronómetro', icon: 'Clock', zone: 'right-bottom', defaultEnabled: true }
 ]
 
 const STORAGE_KEY = 'ipd-modules'
