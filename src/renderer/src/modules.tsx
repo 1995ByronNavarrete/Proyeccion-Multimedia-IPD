@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone } from 'lucide-react'
+import { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone, Clapperboard } from 'lucide-react'
 
 export interface ModuleDef {
   id: string
@@ -19,7 +19,8 @@ export const ALL_MODULES: ModuleDef[] = [
   { id: 'predicacion', label: 'Predicación', icon: 'Mic', zone: 'right-bottom', defaultEnabled: true },
   { id: 'multimedia', label: 'Multimedia', icon: 'FileText', zone: 'right-bottom', defaultEnabled: true },
   { id: 'efectos', label: 'Efectos Visuales', icon: 'Sparkles', zone: 'right-bottom', defaultEnabled: true },
-  { id: 'cronometro', label: 'Cronómetro', icon: 'Clock', zone: 'right-bottom', defaultEnabled: true }
+  { id: 'cronometro', label: 'Cronómetro', icon: 'Clock', zone: 'right-bottom', defaultEnabled: true },
+  { id: 'escenas', label: 'Escenas', icon: 'Clapperboard', zone: 'right-bottom', defaultEnabled: true }
 ]
 
 const STORAGE_KEY = 'ipd-modules'
@@ -65,6 +66,6 @@ export function useModules() {
 }
 
 export function getModuleIcon(name: string) {
-  const icons: Record<string, any> = { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone }
+  const icons: Record<string, any> = { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone, Clapperboard }
   return icons[name] || Layout
 }

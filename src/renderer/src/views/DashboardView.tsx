@@ -14,6 +14,7 @@ import VideoControls from '../components/VideoControls'
 import AudioControl from '../components/mixer/AudioControl'
 import AnunciosPanel from '../components/AnunciosPanel'
 import CronometroPanel from '../components/CronometroPanel'
+import ScenesPanel from '../components/ScenesPanel'
 import UpdateNotifier from '../components/UpdateNotifier'
 import { useModules } from '../modules'
 export interface ProjectedContent {
@@ -130,6 +131,21 @@ export default function DashboardView() {
     window.addEventListener('sermon:update', handler)
     return () => window.removeEventListener('sermon:update', handler)
   }, [backgroundUrl, animBiblia])
+
+  // Escuchar carga de escenas
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const scene = (e as CustomEvent).detail
+      if (!scene) return
+      if (scene.backgroundUrl) setBackgroundUrl(scene.backgroundUrl)
+      if (scene.animBiblia) saveAnimBiblia(scene.animBiblia)
+      if (scene.verse && scene.verse.text) {
+        handleProjectVerse(scene.verse.text, scene.verse.reference || '')
+      }
+    }
+    window.addEventListener('scene:load', handler)
+    return () => window.removeEventListener('scene:load', handler)
+  }, [backgroundUrl, animBiblia])
   const [chapterVerses, setChapterVerses] = useState<{ text: string; reference: string; verseNumber: number }[]>([])
   const [verseIdx, setVerseIdx] = useState(0)
   const lastVerse = useRef<{ text: string; reference: string } | null>(null)
@@ -152,6 +168,12 @@ export default function DashboardView() {
     })
   }
 
+  const saveStateToStorage = () => {
+    if (lastVerse.current) localStorage.setItem('ipd-last-verse', JSON.stringify(lastVerse.current))
+    if (backgroundUrl) localStorage.setItem('ipd-bg-url', backgroundUrl)
+    localStorage.setItem('ipd-anim-biblia', animBiblia)
+  }
+
   const handleProjectVerse = (text: string, reference: string) => {
     lastVerse.current = { text, reference }
     let sermonTitle = '', sermonPreacher = ''
@@ -159,6 +181,7 @@ export default function DashboardView() {
     const content: ProjectedContent = { type: 'verse', text, reference, animation: animBiblia, sermonTitle, sermonPreacher }
     if (backgroundUrl) content.backgroundUrl = backgroundUrl
     setProjected(content)
+    saveStateToStorage()
     window.api.projector.sendContent(content)
     window.api.projector.projectToAll()
   }
@@ -310,7 +333,10 @@ export default function DashboardView() {
               {isEnabled('predicacion') ? <div className="shrink-0"><SermonInfo /></div> : <div />}
               {isEnabled('multimedia') ? <div className="flex-1 min-h-0 overflow-hidden"><DirectoryBrowser onPlayBg={handlePlayBg} /></div> : <div className="flex-1" />}
             </div>
-            {isEnabled('efectos') ? <EffectsPanel /> : <div />}
+            <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
+              {isEnabled('efectos') ? <EffectsPanel /> : <div />}
+              {isEnabled('escenas') ? <ScenesPanel /> : <div />}
+            </div>
           </div>
         </div>
       </div>
