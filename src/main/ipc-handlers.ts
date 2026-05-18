@@ -410,6 +410,15 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  ipcMain.handle('anuncios:update', (_event, id: number, texto: string, animacion: string) => {
+    try {
+      execute('UPDATE anuncios SET texto = ?, animacion = ? WHERE id = ?', [texto, animacion, id])
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al actualizar anuncio: ${err}`)
+    }
+  })
+
   ipcMain.handle('anuncios:delete', (_event, id: number) => {
     try {
       execute('DELETE FROM anuncios WHERE id = ?', [id])
@@ -526,6 +535,56 @@ export function registerIpcHandlers(): void {
       return ok(images)
     } catch (err) {
       return fail(`Error al leer Fondos: ${err}`)
+    }
+  })
+
+  ipcMain.handle('app:getDefaultBg', () => {
+    try {
+      const paths = [
+        join(appDocsPath(), 'default', 'default-bg.svg'),
+        join(appDocsPath(), 'Fondos', 'default-bg.svg'),
+      ]
+      if (getBundledResourcesPath()) {
+        paths.push(join(getBundledResourcesPath()!, 'default', 'default-bg.svg'))
+        paths.push(join(getBundledResourcesPath()!, 'Fondos', 'default-bg.svg'))
+      }
+      for (const p of paths) {
+        if (existsSync(p)) return ok({ filePath: p })
+      }
+      return ok(null)
+    } catch { return ok(null) }
+  })
+
+  // ── Config: translations management ──
+  ipcMain.handle('bible:getAllTranslations', () => {
+    try {
+      const rows = queryAll('SELECT * FROM traducciones ORDER BY nombre')
+      return ok(rows)
+    } catch (err) {
+      return fail(`Error al obtener traducciones: ${err}`)
+    }
+  })
+
+  ipcMain.handle('bible:setTranslationActive', (_event, id: number, active: boolean) => {
+    try {
+      execute('UPDATE traducciones SET activa = ? WHERE id = ?', [active ? 1 : 0, id])
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al actualizar traducción: ${err}`)
+    }
+  })
+
+  ipcMain.handle('bible:deleteTranslation', (_event, id: number) => {
+    try {
+      const row = queryOne('SELECT id FROM libros WHERE traduccion_id = ? LIMIT 1', [id]) as { id: number } | undefined
+      if (row) {
+        execute('DELETE FROM versiculos WHERE libro_id IN (SELECT id FROM libros WHERE traduccion_id = ?)', [id])
+        execute('DELETE FROM libros WHERE traduccion_id = ?', [id])
+      }
+      execute('DELETE FROM traducciones WHERE id = ?', [id])
+      return ok(null)
+    } catch (err) {
+      return fail(`Error al eliminar traducción: ${err}`)
     }
   })
 

@@ -4,10 +4,11 @@ import {
   Monitor, Disc, Headphones, Mic,
   AudioLines, RotateCcw, Undo2
 } from 'lucide-react'
+import { useLang } from '../../i18n'
 
 interface Channel {
   id: string
-  label: string
+  labelKey: string
   icon: typeof Volume2
   volume: number
   muted: boolean
@@ -17,13 +18,14 @@ interface Channel {
 }
 
 const defaultChannels: Channel[] = [
-  { id: 'proj', label: 'PROYECCIÓN', icon: Monitor, volume: 80, muted: false, solo: false, color: '#6c5ce7', source: 'YouTube / Videos' },
-  { id: 'bg', label: 'FONDO', icon: Disc, volume: 55, muted: false, solo: false, color: '#00d4ff', source: 'Video Fondo' },
-  { id: 'player', label: 'REPRODUCTOR', icon: Headphones, volume: 75, muted: false, solo: false, color: '#a855f7', source: 'Audio Local' },
-  { id: 'mic', label: 'MICRÓFONO', icon: Mic, volume: 65, muted: false, solo: false, color: '#ef4444', source: 'Entrada Micro' },
+  { id: 'proj', labelKey: 'audio.channelProj', icon: Monitor, volume: 80, muted: false, solo: false, color: '#6c5ce7', source: 'YouTube / Videos' },
+  { id: 'bg', labelKey: 'audio.channelBg', icon: Disc, volume: 55, muted: false, solo: false, color: '#00d4ff', source: 'Video Fondo' },
+  { id: 'player', labelKey: 'audio.channelPlayer', icon: Headphones, volume: 75, muted: false, solo: false, color: '#a855f7', source: 'Audio Local' },
+  { id: 'mic', labelKey: 'audio.channelMic', icon: Mic, volume: 65, muted: false, solo: false, color: '#ef4444', source: 'Entrada Micro' },
 ]
 
 export default function AudioControl() {
+  const { t } = useLang()
   const [channels, setChannels] = useState<Channel[]>(defaultChannels)
   const [masterFader, setMasterFader] = useState(80)
   const [balance, setBalance] = useState(0)
@@ -147,18 +149,18 @@ export default function AudioControl() {
           <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-[#6c5ce7] to-[#a855f7] flex items-center justify-center">
             <AudioLines size={10} className="text-white" />
           </div>
-          <h3 className="text-[9px] font-bold text-theme tracking-wider uppercase">Console</h3>
-          {allMuted && <span className="text-[7px] bg-red-500/20 text-red-400 px-1.5 rounded font-bold">MUTED</span>}
-          {soloActive && <span className="text-[7px] bg-amber-500/20 text-amber-400 px-1.5 rounded font-bold">SOLO</span>}
+          <h3 className="text-[9px] font-bold text-theme tracking-wider uppercase">{t('audio.console')}</h3>
+          {allMuted && <span className="text-[7px] bg-red-500/20 text-red-400 px-1.5 rounded font-bold">{t('audio.mutedLabel')}</span>}
+          {soloActive && <span className="text-[7px] bg-amber-500/20 text-amber-400 px-1.5 rounded font-bold">{t('audio.soloLabel')}</span>}
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-theme shrink-0">
-        {(['mixer', 'effects', 'eq'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 text-[7px] py-1.5 font-semibold uppercase tracking-wider transition-colors ${tab === t ? 'text-[#6c5ce7] border-b-2 border-[#6c5ce7] bg-[#6c5ce7]/5' : 'text-theme-dim hover:text-theme'}`}>
-            {t === 'mixer' ? '🎚 Mixer' : t === 'effects' ? '✨ FX' : '📊 EQ'}
+        {(['mixer', 'effects', 'eq'] as const).map(tk => (
+          <button key={tk} onClick={() => setTab(tk)}
+            className={`flex-1 text-[7px] py-1.5 font-semibold uppercase tracking-wider transition-colors ${tab === tk ? 'text-[#6c5ce7] border-b-2 border-[#6c5ce7] bg-[#6c5ce7]/5' : 'text-theme-dim hover:text-theme'}`}>
+            {tk === 'mixer' ? `🎚 ${t('audio.mixer')}` : tk === 'effects' ? `✨ ${t('audio.fx')}` : `📊 ${t('audio.eq')}`}
           </button>
         ))}
       </div>
@@ -176,16 +178,16 @@ export default function AudioControl() {
               className="p-1 hover:bg-white/5 rounded shrink-0">
               {allMuted ? <VolumeX size={14} className="text-red-400" /> : <Volume2 size={14} className="text-[#6c5ce7]" />}
             </button>
-            <span className="text-[7px] text-theme-dim font-bold w-8 shrink-0">MASTER</span>
+            <span className="text-[7px] text-theme-dim font-bold w-8 shrink-0">{t('audio.master')}</span>
             <input type="range" min={0} max={100} value={allMuted ? 0 : masterFader}
               onChange={e => setMaster(Number(e.target.value))}
               className="flex-1 h-1 accent-[#6c5ce7]" />
             <span className="text-[8px] text-theme-dim w-8 text-right tabular-nums font-mono">{masterFader}%</span>
             <div className="flex gap-0.5">
               <button onClick={fadeOut} disabled={fadeActive}
-                className="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded text-[7px] hover:bg-red-500/20 disabled:opacity-30 font-bold">OUT</button>
+                className="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded text-[7px] hover:bg-red-500/20 disabled:opacity-30 font-bold">{t('audio.fadeOut')}</button>
               <button onClick={fadeIn} disabled={fadeActive}
-                className="px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded text-[7px] hover:bg-green-500/20 disabled:opacity-30 font-bold">IN</button>
+                className="px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded text-[7px] hover:bg-green-500/20 disabled:opacity-30 font-bold">{t('audio.fadeIn')}</button>
             </div>
           </div>
 
@@ -195,7 +197,7 @@ export default function AudioControl() {
               <div key={ch.id} className={`flex-1 min-w-[60px] bg-theme-card/30 rounded-lg border flex flex-col ${ch.muted ? 'border-red-500/20' : ch.solo ? 'border-amber-500/50' : 'border-theme'}`}>
                 <div className={`px-1 py-1 text-center border-b ${ch.muted ? 'border-red-500/20 bg-red-500/5' : ch.solo ? 'border-amber-500/30 bg-amber-500/10' : 'border-theme'}`}>
                   <ch.icon size={10} style={{ color: ch.color }} className="mx-auto" />
-                  <p className="text-[6px] font-bold truncate text-theme">{ch.label}</p>
+                  <p className="text-[6px] font-bold truncate text-theme">{t(ch.labelKey)}</p>
                 </div>
                 <div className="flex-1 flex flex-col items-center justify-center px-1 py-1 gap-0.5">
                   <input type="range" min={0} max={100} value={ch.muted ? 0 : ch.volume}
@@ -206,9 +208,9 @@ export default function AudioControl() {
                 </div>
                 <div className="flex border-t border-theme">
                   <button onClick={() => toggleMute(ch.id)}
-                    className={`flex-1 text-[6px] py-1 font-bold transition-colors ${ch.muted ? 'bg-red-500/20 text-red-400' : 'text-theme-dim hover:text-theme'}`}>M</button>
+                    className={`flex-1 text-[6px] py-1 font-bold transition-colors ${ch.muted ? 'bg-red-500/20 text-red-400' : 'text-theme-dim hover:text-theme'}`}>{t('audio.mute')}</button>
                   <button onClick={() => toggleSolo(ch.id)}
-                    className={`flex-1 text-[6px] py-1 font-bold transition-colors ${ch.solo ? 'bg-amber-500/20 text-amber-400' : 'text-theme-dim hover:text-theme'}`}>S</button>
+                    className={`flex-1 text-[6px] py-1 font-bold transition-colors ${ch.solo ? 'bg-amber-500/20 text-amber-400' : 'text-theme-dim hover:text-theme'}`}>{t('audio.solo')}</button>
                 </div>
               </div>
             ))}
@@ -216,11 +218,11 @@ export default function AudioControl() {
 
           {/* Balance */}
           <div className="flex items-center gap-2 px-1 py-1 bg-theme-card/30 rounded-lg border border-theme">
-            <span className="text-[7px] text-theme-dim font-bold w-8">BAL</span>
-            <span className="text-[7px] text-theme-dim w-6 text-right">L</span>
+            <span className="text-[7px] text-theme-dim font-bold w-8">{t('audio.balance')}</span>
+            <span className="text-[7px] text-theme-dim w-6 text-right">{t('audio.left')}</span>
             <input type="range" min={-100} max={100} value={balance} onChange={e => { const v = Number(e.target.value); setBalance(v); window.dispatchEvent(new CustomEvent('audio:balance', { detail: v })) }} className="flex-1 h-1 accent-[#6c5ce7]" />
-            <span className="text-[7px] text-theme-dim w-6">R</span>
-            <span className="text-[7px] text-theme-dim w-8 text-right tabular-nums">{balance > 0 ? `${balance}R` : balance < 0 ? `${Math.abs(balance)}L` : 'C'}</span>
+            <span className="text-[7px] text-theme-dim w-6">{t('audio.right')}</span>
+            <span className="text-[7px] text-theme-dim w-8 text-right tabular-nums">{balance > 0 ? `${balance}R` : balance < 0 ? `${Math.abs(balance)}L` : t('audio.center')}</span>
             <button onClick={() => { setBalance(0); window.dispatchEvent(new CustomEvent('audio:balance', { detail: 0 })) }} className="p-0.5 hover:bg-white/5 rounded"><RotateCcw size={8} className="text-theme-dim" /></button>
           </div>
         </div>
@@ -232,7 +234,7 @@ export default function AudioControl() {
             {fxValues.map((fx, i) => (
               <div key={fx.id} className="flex items-center gap-2 px-2 py-1.5 bg-theme-card/30 rounded-lg border border-theme">
                 <span className="text-[10px]">{fx.icon}</span>
-                <span className="text-[8px] text-theme w-14 shrink-0">{fx.label}</span>
+                <span className="text-[8px] text-theme w-14 shrink-0">{t('audio.fx.' + fx.id)}</span>
                 <input type="range" min={0} max={100} value={fxValues[i].value}
                   onChange={e => { const v = Number(e.target.value); const next = [...fxValues]; next[i] = { ...next[i], value: v }; setFxValues(next); window.dispatchEvent(new CustomEvent('audio:fx', { detail: next })) }}
                   className="flex-1 h-1 accent-[#6c5ce7]" />
@@ -242,7 +244,7 @@ export default function AudioControl() {
           </div>
           <button onClick={() => { const def = [{ id: 'reverb', label: 'Reverb', value: 30, icon: '↗' }, { id: 'echo', label: 'Echo', value: 20, icon: '↔' }, { id: 'bass', label: 'Bass Boost', value: 40, icon: '🔊' }, { id: 'treble', label: 'Treble', value: 50, icon: '🎵' }, { id: 'comp', label: 'Compresor', value: 35, icon: '⬆' }, { id: 'gate', label: 'Noise Gate', value: 15, icon: '🚫' }]; setFxValues(def); window.dispatchEvent(new CustomEvent('audio:fx', { detail: def })) }}
             className="flex items-center justify-center gap-1 mx-2 mb-2 py-1 bg-theme-card rounded text-theme-dim hover:text-theme transition-colors text-[7px]">
-            <Undo2 size={7} /> Restablecer FX
+            <Undo2 size={7} /> {t('audio.resetFX')}
           </button>
         </div>
       )}
@@ -267,15 +269,15 @@ export default function AudioControl() {
               setEqBands(preset)
               window.dispatchEvent(new CustomEvent('audio:eq', { detail: { bands: preset, labels: eqLabels } }))
             }}>
-            <option>Plano</option>
-            <option>Rock</option>
-            <option>Pop</option>
-            <option>Clásica</option>
-            <option>Voz</option>
+            <option>{t('audio.preset.flat')}</option>
+            <option>{t('audio.preset.rock')}</option>
+            <option>{t('audio.preset.pop')}</option>
+            <option>{t('audio.preset.classical')}</option>
+            <option>{t('audio.preset.vocal')}</option>
           </select>
           <button onClick={() => { const flat = [0,0,0,0,0,0,0,0]; setEqBands(flat); window.dispatchEvent(new CustomEvent('audio:eq', { detail: { bands: flat, labels: eqLabels } })) }}
             className="flex items-center justify-center gap-1 mx-2 mb-2 py-1 bg-theme-card rounded text-theme-dim hover:text-theme transition-colors text-[7px]">
-            <Undo2 size={7} /> Restablecer EQ
+            <Undo2 size={7} /> {t('audio.resetEQ')}
           </button>
         </div>
       )}
@@ -284,7 +286,7 @@ export default function AudioControl() {
       <div className="px-2 py-1 border-t border-theme shrink-0 bg-theme-card/30">
           <div className="flex items-center gap-2">
             <span className={`w-1.5 h-1.5 rounded-full ${allMuted ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`} />
-            <span className="text-[6px] text-theme-dim">{allMuted ? 'MUTED' : `${channels.filter(c => !c.muted).length}/${channels.length} activos`}</span>
+            <span className="text-[6px] text-theme-dim">{allMuted ? t('audio.mutedLabel') : `${channels.filter(c => !c.muted).length}/${channels.length} ${t('audio.active')}`}</span>
           </div>
       </div>
     </div>

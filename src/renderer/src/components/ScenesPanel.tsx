@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Save, Play, Trash2, X, Clapperboard } from 'lucide-react'
+import { useLang } from '../i18n'
 
 interface Scene {
   id: string
@@ -15,6 +16,7 @@ interface Scene {
 const STORAGE_KEY = 'ipd-scenes'
 
 export default function ScenesPanel() {
+  const { t } = useLang()
   const [scenes, setScenes] = useState<Scene[]>(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
   })
@@ -75,9 +77,9 @@ export default function ScenesPanel() {
         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
           <Clapperboard size={11} className="text-white" />
         </div>
-        <h3 className="text-[10px] font-bold text-theme flex-1 tracking-wide">Escenas</h3>
+        <h3 className="text-[10px] font-bold text-theme flex-1 tracking-wide">{t('scenes.title')}</h3>
         <button onClick={() => setShowSave(true)}
-          className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 transition-colors" title="Guardar escena actual">
+          className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 transition-colors" title={t('scenes.saveTitle')}>
           <Save size={9} />
         </button>
       </div>
@@ -85,11 +87,11 @@ export default function ScenesPanel() {
       {showSave && (
         <div className="flex items-center gap-1 px-2 py-1.5 border-b border-theme">
           <input type="text" value={sceneName} onChange={e => setSceneName(e.target.value)}
-            placeholder="Nombre de la escena..."
+            placeholder={t('scenes.namePlaceholder')}
             className="flex-1 min-w-0 bg-theme-card px-2 py-1 rounded text-[9px] text-theme placeholder:text-theme-dim/40 outline-none border border-theme"
             onKeyDown={e => e.key === 'Enter' && saveScene()} autoFocus />
           <button onClick={saveScene} disabled={!sceneName.trim()}
-            className="px-2 py-1 bg-green-600/80 rounded text-white text-[8px] hover:bg-green-600 disabled:opacity-30">Guardar</button>
+            className="px-2 py-1 bg-green-600/80 rounded text-white text-[8px] hover:bg-green-600 disabled:opacity-30">{t('scenes.save')}</button>
           <button onClick={() => setShowSave(false)} className="p-1 text-theme-dim hover:text-theme"><X size={9} /></button>
         </div>
       )}
@@ -106,11 +108,11 @@ export default function ScenesPanel() {
               </p>
             </div>
             <button onClick={() => loadScene(s)}
-              className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 opacity-0 group-hover:opacity-100 transition-all" title="Cargar escena">
+              className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 opacity-0 group-hover:opacity-100 transition-all" title={t('scenes.loadTitle')}>
               <Play size={8} />
             </button>
             <button onClick={() => deleteScene(s.id)}
-              className="p-1 text-theme-dim hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all" title="Eliminar">
+              className="p-1 text-theme-dim hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all" title={t('scenes.deleteTitle')}>
               <Trash2 size={7} />
             </button>
           </div>
@@ -118,8 +120,8 @@ export default function ScenesPanel() {
         {scenes.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-8">
             <Clapperboard size={20} className="text-theme-dim/30 mb-2" />
-            <p className="text-[9px] text-theme-dim">Guarda el estado actual</p>
-            <p className="text-[7px] text-theme-dim/50 mt-0.5">Botón + arriba</p>
+            <p className="text-[9px] text-theme-dim">{t('scenes.empty')}</p>
+            <p className="text-[7px] text-theme-dim/50 mt-0.5">{t('scenes.emptyHint')}</p>
           </div>
         )}
       </div>

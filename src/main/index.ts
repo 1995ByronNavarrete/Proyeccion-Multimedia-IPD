@@ -380,6 +380,13 @@ function registerMainIpcHandlers(): void {
     }
   })
 
+  ipcMain.handle('projector:updateConfig', (_event, config: { overlayOpacity?: number; fontSize?: number }) => {
+    for (const [, win] of projectorWindows) {
+      if (!win.isDestroyed()) win.webContents.send('projector:config', config)
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('projector:config', config)
+  })
+
   ipcMain.handle('projector:overlay', (_event, overlay: { type: string; speed: number; color?: string }) => {
     lastOverlay = overlay
     for (const [displayId, win] of projectorWindows) {
@@ -388,6 +395,13 @@ function registerMainIpcHandlers(): void {
       win.webContents.send('projector:overlay', overlay)
     }
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('projector:overlay', overlay)
+  })
+
+  ipcMain.handle('projector:imageZoom', (_event, data: { zoom?: number; panX?: number; panY?: number; reset?: boolean }) => {
+    for (const [, win] of projectorWindows) {
+      if (!win.isDestroyed()) win.webContents.send('projector:imageZoom', data)
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('projector:imageZoom', data)
   })
 
   // Per-display content control

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, RotateCw, FlipHorizontal, FlipVertical, Crop, ZoomIn, ZoomOut, Undo, Download, Save, Sun, Contrast, Droplets, Image as ImageIcon } from 'lucide-react'
+import { X, RotateCw, FlipHorizontal, FlipVertical, ZoomIn, Undo, Download, Save, Sun, Contrast, Droplets, Image as ImageIcon } from 'lucide-react'
 
 interface ImageEditorProps {
   open: boolean

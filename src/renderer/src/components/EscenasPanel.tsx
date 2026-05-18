@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Image as ImageIcon, Trash2, Check, Megaphone, Plus, Play, X, Settings, FolderOpen, Monitor, ListTodo, Eye, Sparkles, Save, Edit3 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Image as ImageIcon, Trash2, Check, Plus, FolderOpen, Monitor, ListTodo, Sparkles, Edit3 } from 'lucide-react'
 import { ANIM_GROUPS } from '../constants'
 import AnimSelectorModal from './shared/AnimSelectorModal'
 import ImageEditor from './shared/ImageEditor'
 import { fileUrl } from '../utils'
+import { useLang } from '../i18n'
 
 interface BackgroundImage {
   id: string
@@ -45,81 +46,81 @@ const ANIM_CATEGORIES = ANIM_GROUPS.filter(g => g.items.some(a => ANUNCIO_ANIM_I
 }))
 
 const DURACIONES = [
-  { id: 3, label: '3s' },
-  { id: 5, label: '5s' },
-  { id: 8, label: '8s' },
-  { id: 10, label: '10s' },
-  { id: 15, label: '15s' },
-  { id: 30, label: '30s' },
-  { id: 0, label: '∞ Manual' },
+  { id: 3, label: '3s', labelKey: 'escenas.duration.3s' as const },
+  { id: 5, label: '5s', labelKey: 'escenas.duration.5s' as const },
+  { id: 8, label: '8s', labelKey: 'escenas.duration.8s' as const },
+  { id: 10, label: '10s', labelKey: 'escenas.duration.10s' as const },
+  { id: 15, label: '15s', labelKey: 'escenas.duration.15s' as const },
+  { id: 30, label: '30s', labelKey: 'escenas.duration.30s' as const },
+  { id: 0, label: '∞ Manual', labelKey: 'escenas.duration.manual' as const },
 ]
 
 const BG_ANIMS_IN = [
-  { id: 'anuncio-bg-fade-in', label: 'Fundido in' },
-  { id: 'anuncio-bg-slide-up', label: 'Subir in' },
-  { id: 'anuncio-bg-zoom-in', label: 'Zoom in' },
+  { id: 'anuncio-bg-fade-in', label: 'Fundido in', labelKey: 'escenas.bgAnim.anuncio-bg-fade-in' as const },
+  { id: 'anuncio-bg-slide-up', label: 'Subir in', labelKey: 'escenas.bgAnim.anuncio-bg-slide-up' as const },
+  { id: 'anuncio-bg-zoom-in', label: 'Zoom in', labelKey: 'escenas.bgAnim.anuncio-bg-zoom-in' as const },
 ]
 
 const BG_ANIMS_OUT = [
-  { id: 'anuncio-bg-fade-out', label: 'Fundido out' },
-  { id: 'anuncio-bg-slide-down', label: 'Bajar out' },
-  { id: 'anuncio-bg-zoom-out', label: 'Zoom out' },
+  { id: 'anuncio-bg-fade-out', label: 'Fundido out', labelKey: 'escenas.bgAnim.anuncio-bg-fade-out' as const },
+  { id: 'anuncio-bg-slide-down', label: 'Bajar out', labelKey: 'escenas.bgAnim.anuncio-bg-slide-down' as const },
+  { id: 'anuncio-bg-zoom-out', label: 'Zoom out', labelKey: 'escenas.bgAnim.anuncio-bg-zoom-out' as const },
 ]
 
 const BG_CATEGORIES = [
   {
-    label: 'Desvanecidos', items: [
-      { id: 'anuncio-bg-soft-lavender', label: 'Lavanda' },
-      { id: 'anuncio-bg-soft-sky', label: 'Cielo' },
-      { id: 'anuncio-bg-glass', label: 'Vidrio' },
-      { id: 'anuncio-bg-fade', label: 'Degradado' },
+    labelKey: 'escenas.bgCat.desvanecidos', items: [
+      { id: 'anuncio-bg-soft-lavender', labelKey: 'escenas.bgItem.anuncio-bg-soft-lavender' },
+      { id: 'anuncio-bg-soft-sky', labelKey: 'escenas.bgItem.anuncio-bg-soft-sky' },
+      { id: 'anuncio-bg-glass', labelKey: 'escenas.bgItem.anuncio-bg-glass' },
+      { id: 'anuncio-bg-fade', labelKey: 'escenas.bgItem.anuncio-bg-fade' },
     ]
   },
   {
-    label: 'Elegantes', items: [
-      { id: 'anuncio-bg-midnight', label: 'Medianoche' },
-      { id: 'anuncio-bg-gradient', label: 'Violeta' },
-      { id: 'anuncio-bg-circles', label: 'Círculos' },
-      { id: 'anuncio-bg-waves', label: 'Olas' },
+    labelKey: 'escenas.bgCat.elegantes', items: [
+      { id: 'anuncio-bg-midnight', labelKey: 'escenas.bgItem.anuncio-bg-midnight' },
+      { id: 'anuncio-bg-gradient', labelKey: 'escenas.bgItem.anuncio-bg-gradient' },
+      { id: 'anuncio-bg-circles', labelKey: 'escenas.bgItem.anuncio-bg-circles' },
+      { id: 'anuncio-bg-waves', labelKey: 'escenas.bgItem.anuncio-bg-waves' },
     ]
   },
   {
-    label: 'Dinámicos', items: [
-      { id: 'anuncio-bg-rainbow', label: 'Arcoíris' },
-      { id: 'anuncio-bg-neon', label: 'Neón' },
-      { id: 'anuncio-bg-sunset', label: 'Atardecer' },
-      { id: 'anuncio-bg-ocean', label: 'Océano' },
+    labelKey: 'escenas.bgCat.dinamicos', items: [
+      { id: 'anuncio-bg-rainbow', labelKey: 'escenas.bgItem.anuncio-bg-rainbow' },
+      { id: 'anuncio-bg-neon', labelKey: 'escenas.bgItem.anuncio-bg-neon' },
+      { id: 'anuncio-bg-sunset', labelKey: 'escenas.bgItem.anuncio-bg-sunset' },
+      { id: 'anuncio-bg-ocean', labelKey: 'escenas.bgItem.anuncio-bg-ocean' },
     ]
   },
 ]
 
 const ANUNCIO_SIZES = [
-  { id: 'anuncio-sm', label: 'S' },
-  { id: 'anuncio-md', label: 'M' },
-  { id: 'anuncio-lg', label: 'L' },
-  { id: 'anuncio-xl', label: 'XL' },
+  { id: 'anuncio-sm', labelKey: 'escenas.size.small' },
+  { id: 'anuncio-md', labelKey: 'escenas.size.medium' },
+  { id: 'anuncio-lg', labelKey: 'escenas.size.large' },
+  { id: 'anuncio-xl', labelKey: 'escenas.size.xlarge' },
 ]
 
 const ANUNCIO_FONTS = [
-  { id: 'anuncio-font-normal', label: 'Normal' },
-  { id: 'anuncio-font-bold', label: 'Negrita' },
-  { id: 'anuncio-font-light', label: 'Fino' },
-  { id: 'anuncio-font-italic', label: 'Itálica' },
-  { id: 'anuncio-font-cursive', label: 'Cursiva' },
+  { id: 'anuncio-font-normal', labelKey: 'escenas.font.normal' },
+  { id: 'anuncio-font-bold', labelKey: 'escenas.font.bold' },
+  { id: 'anuncio-font-light', labelKey: 'escenas.font.light' },
+  { id: 'anuncio-font-italic', labelKey: 'escenas.font.italic' },
+  { id: 'anuncio-font-cursive', labelKey: 'escenas.font.cursive' },
 ]
 
 const COLOR_CATEGORIES = [
   {
-    label: 'Premium', items: [
-      { id: 'anuncio-color-white', label: 'Blanco' },
-      { id: 'anuncio-color-gold', label: 'Dorado' },
-      { id: 'anuncio-color-gradient', label: 'Violeta' },
-      { id: 'anuncio-color-gradient2', label: 'Fuego' },
-      { id: 'anuncio-color-sunset', label: 'Atardecer' },
-      { id: 'anuncio-color-ocean', label: 'Océano' },
-      { id: 'anuncio-color-aurora', label: 'Aurora' },
-      { id: 'anuncio-color-rainbow', label: 'Arcoíris' },
-      { id: 'anuncio-color-neon', label: 'Neón' },
+    labelKey: 'escenas.colorCat.premium', items: [
+      { id: 'anuncio-color-white', labelKey: 'escenas.color.white' },
+      { id: 'anuncio-color-gold', labelKey: 'escenas.color.gold' },
+      { id: 'anuncio-color-gradient', labelKey: 'escenas.color.violet' },
+      { id: 'anuncio-color-gradient2', labelKey: 'escenas.color.fire' },
+      { id: 'anuncio-color-sunset', labelKey: 'escenas.color.sunset' },
+      { id: 'anuncio-color-ocean', labelKey: 'escenas.color.ocean' },
+      { id: 'anuncio-color-aurora', labelKey: 'escenas.color.aurora' },
+      { id: 'anuncio-color-rainbow', labelKey: 'escenas.color.rainbow' },
+      { id: 'anuncio-color-neon', labelKey: 'escenas.color.neon' },
     ]
   },
 ]
@@ -127,6 +128,7 @@ const COLOR_CATEGORIES = [
 const allAnuncioAnims = ANIM_CATEGORIES.flatMap((c) => c.items)
 
 export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProjectVerse, onProjectImage }: EscenasPanelProps) {
+  const { t } = useLang()
   const [tab, setTab] = useState<'fondos' | 'imagenes'>('fondos')
   const [images, setImages] = useState<BackgroundImage[]>([])
   const [animFondos, setAnimFondos] = useState('anim-fade')
@@ -318,11 +320,11 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
       <div className="flex border-b border-theme shrink-0">
         <button onClick={() => setTab('fondos')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[9px] font-semibold transition-colors ${tab === 'fondos' ? 'text-[#6c5ce7] border-b-2 border-[#6c5ce7]' : 'text-theme-dim hover:text-theme'}`}>
-          <ImageIcon size={11} /> Fondos
+          <ImageIcon size={11} /> {t('escenas.tab.fondos')}
         </button>
         <button onClick={() => setTab('imagenes')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[9px] font-semibold transition-colors ${tab === 'imagenes' ? 'text-[#6c5ce7] border-b-2 border-[#6c5ce7]' : 'text-theme-dim hover:text-theme'}`}>
-          <Monitor size={11} /> Imágenes
+          <Monitor size={11} /> {t('escenas.tab.imagenes')}
         </button>
       </div>
 
@@ -331,11 +333,11 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
           {/* ─── FONDOS ─── */}
           <div className="flex flex-col flex-1 min-h-0 border-b border-theme">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-theme">
-              <h3 className="text-[10px] font-semibold text-theme-muted uppercase tracking-wider">Versículos</h3>
+              <h3 className="text-[10px] font-semibold text-theme-muted uppercase tracking-wider">{t('escenas.versiculos')}</h3>
               <div className="flex items-center gap-1">
                 <span className="text-[9px] text-theme-dim">{images.length}</span>
                 <button onClick={handleAddImage}
-                  className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 transition-colors" title="Agregar fondo">
+                  className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 transition-colors" title={t('escenas.addFondoTitle')}>
                   <Plus size={10} />
                 </button>
               </div>
@@ -360,15 +362,15 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
                 {images.length === 0 && (
                   <div className="col-span-3 flex flex-col items-center justify-center h-full text-center px-4 py-8">
                     <ImageIcon size={16} className="text-theme-dim mb-1" />
-                    <p className="text-[9px] text-theme-dim">Agrega imágenes de fondo</p>
-                    <p className="text-[8px] text-theme-dim mt-0.5">Se mostrarán detrás de los versos</p>
+                    <p className="text-[9px] text-theme-dim">{t('escenas.noFondos')}</p>
+                    <p className="text-[8px] text-theme-dim mt-0.5">{t('escenas.noFondosDesc')}</p>
                   </div>
                 )}
               </div>
               {prevBgRef.current && backgroundUrl && prevBgRef.current !== backgroundUrl && (
                 <button onClick={() => { onSelectBackground(prevBgRef.current); prevBgRef.current = null }}
                   className="w-full text-[7px] py-1 mt-1 bg-theme-card text-theme-dim hover:text-theme rounded transition-colors">
-                  Restaurar fondo anterior
+                  {t('escenas.restoreBg')}
                 </button>
               )}
             </div>
@@ -386,9 +388,9 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
             onClose={() => setShowFondosModal(false)}
             onSave={(animId) => { setAnimFondos(animId); saveConfig('animFondos', animId) }}
             currentAnim={animFondos}
-            title="Animación de Fondos"
-            previewText="Texto de muestra"
-            previewRef="Referencia"
+            title={t('escenas.animFondos')}
+            previewText={t('escenas.previewText')}
+            previewRef={t('escenas.previewRef')}
             previewBg={backgroundUrl || undefined}
           />
 
@@ -400,7 +402,7 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
           <div className="w-[130px] shrink-0 border-r border-theme flex flex-col">
             <div className="p-1.5 border-b border-theme">
               <div className="flex gap-1">
-                <input type="text" value={newTareaName} onChange={(e) => setNewTareaName(e.target.value)} placeholder="Nueva..."
+                <input type="text" value={newTareaName} onChange={(e) => setNewTareaName(e.target.value)} placeholder={t('escenas.newTarea')}
                   className="min-w-0 flex-1 px-1.5 py-1 bg-theme-card rounded text-[8px] text-theme placeholder:text-theme-dim border border-theme outline-none"
                   onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTarea() }} />
                 <button onClick={handleCreateTarea} className="p-1 shrink-0 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30"><Plus size={9} /></button>
@@ -417,7 +419,7 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
                     className="p-0.5 text-theme-dim hover:text-red-400 opacity-0 group-hover:opacity-100"><Trash2 size={7} /></button>
                 </div>
               ))}
-              {tareas.length === 0 && <p className="text-[8px] text-theme-dim text-center py-4">Crea una tarea</p>}
+              {tareas.length === 0 && <p className="text-[8px] text-theme-dim text-center py-4">{t('escenas.emptyTareas')}</p>}
             </div>
           </div>
 
@@ -429,7 +431,7 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
                   <h3 className="text-[9px] font-semibold text-theme truncate">{selectedTarea.nombre}</h3>
                   <button onClick={handleAddTareaImage}
                     className="flex items-center gap-1 px-2 py-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/30 text-[8px] transition-colors">
-                    <Plus size={8} /> Agregar imagen
+                    <Plus size={8} /> {t('escenas.addImage')}
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2">
@@ -455,8 +457,8 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
                     {tareaImagenes.length === 0 && (
                       <div className="col-span-2 flex flex-col items-center justify-center h-full text-center px-4 py-8">
                         <FolderOpen size={16} className="text-theme-dim mb-1" />
-                        <p className="text-[9px] text-theme-dim">Agrega imágenes</p>
-                        <p className="text-[8px] text-theme-dim mt-0.5">Toca para proyectar</p>
+                        <p className="text-[9px] text-theme-dim">{t('escenas.noImages')}</p>
+                        <p className="text-[8px] text-theme-dim mt-0.5">{t('escenas.tapToProject')}</p>
                       </div>
                     )}
                   </div>
@@ -466,8 +468,8 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center px-4">
                   <ListTodo size={20} className="text-theme-dim mx-auto mb-2" />
-                  <p className="text-[9px] text-theme-dim">Crea o selecciona una tarea</p>
-                  <p className="text-[8px] text-theme-dim mt-1">Toca la imagen para proyectar</p>
+                  <p className="text-[9px] text-theme-dim">{t('escenas.selectTarea')}</p>
+                  <p className="text-[8px] text-theme-dim mt-1">{t('escenas.tapImageProject')}</p>
                 </div>
               </div>
             )}

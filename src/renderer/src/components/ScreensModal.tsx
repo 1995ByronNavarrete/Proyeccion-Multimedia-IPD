@@ -93,22 +93,6 @@ export default function ScreensModal({ open, onClose }: { open: boolean; onClose
     onClose()
   }
 
-  const copyToAll = (contentType: string) => {
-    setAssignments(prev => {
-      const next = { ...prev }
-      const sourceId = selectedDisplays.find(id => (prev[id] || []).includes(contentType))
-      if (!sourceId) return prev
-      const sourceContent = prev[sourceId] || []
-      for (const d of displays) {
-        if (d.id === appDisplayId) continue
-        const current = next[d.id] || []
-        const merged = [...new Set([...current, ...sourceContent])]
-        next[d.id] = merged
-      }
-      return next
-    })
-  }
-
   const selectAll = () => {
     setSelectedDisplays(displays.filter(d => d.id !== appDisplayId).map(d => d.id))
   }

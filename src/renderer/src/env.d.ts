@@ -52,7 +52,8 @@ interface Translation {
   id: number
   nombre: string
   abreviatura: string
-  activa: boolean
+  idioma: string
+  activa: number
 }
 
 interface Book {
@@ -86,6 +87,9 @@ interface Window {
       hasData: () => Promise<IpcResponse<{ hasData: boolean }>>
       getAvailableSources: () => Promise<IpcResponse<SourceTrans[]>>
       getApiBibleTranslations: (apiKey: string) => Promise<IpcResponse<SourceTrans[]>>
+      getAllTranslations: () => Promise<IpcResponse<Translation[]>>
+      setTranslationActive: (id: number, active: boolean) => Promise<IpcResponse<null>>
+      deleteTranslation: (id: number) => Promise<IpcResponse<null>>
     }
     projector: {
       getDisplays: () => Promise<Display[]>
@@ -102,6 +106,8 @@ interface Window {
       updateAnnouncement: (data: Record<string, unknown>) => Promise<void>
       overlay: (data: { type: string; speed?: number; color?: string }) => Promise<void>
       scrollDocument: (direction: 'up' | 'down') => Promise<void>
+      updateConfig: (config: { overlayOpacity?: number; fontSize?: number }) => Promise<void>
+      imageZoom: (data: { zoom?: number; panX?: number; panY?: number; reset?: boolean }) => Promise<void>
     }
     medialocal: {
       importFile: () => Promise<IpcResponse<unknown[]>>
@@ -153,6 +159,7 @@ interface Window {
       getFondos: () => Promise<IpcResponse<{ id: string; name: string; filePath: string }[]>>
       openDocument: (filePath: string) => Promise<IpcResponse<null>>
       convertDocumentToHtml: (filePath: string) => Promise<IpcResponse<{ html: string; css: string } | null>>
+      getDefaultBg: () => Promise<IpcResponse<{ filePath: string } | null>>
     }
     capture: {
       projector: () => Promise<{ success: boolean; data?: { base64: string }; error?: string }>,
@@ -161,6 +168,7 @@ interface Window {
     anuncios: {
       getAll: () => Promise<IpcResponse<{ id: number; texto: string; animacion: string; fecha_creacion: string }[]>>
       create: (texto: string, animacion: string) => Promise<IpcResponse<{ id: number; texto: string; animacion: string }>>
+      update: (id: number, texto: string, animacion: string) => Promise<IpcResponse<null>>
       delete: (id: number) => Promise<IpcResponse<null>>
       saveAnim: (animacion: string) => Promise<IpcResponse<null>>
     }

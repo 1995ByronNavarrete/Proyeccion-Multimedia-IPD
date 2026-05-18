@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { Play, Pause, Square, Film } from 'lucide-react'
+import { useLang } from '../i18n'
 
 interface VideoState {
   currentTime: number
@@ -9,6 +10,7 @@ interface VideoState {
 }
 
 export default function VideoControls() {
+  const { t } = useLang()
   const [video, setVideo] = useState<VideoState | null>(null)
   const [optimisticPaused, setOptimisticPaused] = useState<boolean | null>(null)
   const [hoverTime, setHoverTime] = useState<number | null>(null)
@@ -115,11 +117,11 @@ export default function VideoControls() {
       <div className="flex items-center justify-center gap-2 pb-2">
         <button onClick={handlePlayPause}
           className={`p-1.5 rounded transition-colors ${isPaused ? 'bg-green-500/20 text-green-400 hover:bg-green-500/40' : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`}
-          title={isPaused ? 'Reproducir' : 'Pausar'}>
+          title={isPaused ? t('video.play') : t('video.pause')}>
           {isPaused ? <Play size={10} /> : <Pause size={10} />}
         </button>
         <button onClick={() => window.api.video.stop()}
-          className="p-1.5 bg-red-500/20 rounded text-red-400 hover:bg-red-500/40 transition-colors" title="Detener">
+          className="p-1.5 bg-red-500/20 rounded text-red-400 hover:bg-red-500/40 transition-colors" title={t('video.stop')}>
           <Square size={10} />
         </button>
       </div>

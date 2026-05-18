@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Clock, Play, Pause, RotateCcw, Timer, AlarmCheck, Monitor, User, Save, Trash2, List, X } from 'lucide-react'
+import { useLang } from '../i18n'
 
 interface Registro {
   persona: string
@@ -10,6 +11,7 @@ interface Registro {
 type Mode = 'crono' | 'countdown'
 
 export default function CronometroPanel() {
+  const { t } = useLang()
   const [mode, setMode] = useState<Mode>('crono')
   const [display, setDisplay] = useState(0)
   const [running, setRunning] = useState(false)
@@ -135,7 +137,7 @@ export default function CronometroPanel() {
     <div className="bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden">
       <div className="flex items-center gap-1.5 px-3 py-1 border-b border-theme shrink-0">
         <Clock size={10} className="text-theme-dim" />
-        <span className="text-[9px] text-theme-dim font-medium">{mode === 'crono' ? 'Cronómetro' : 'Cuenta atrás'}</span>
+        <span className="text-[9px] text-theme-dim font-medium">{mode === 'crono' ? t('timer.title') : 'Cuenta atrás'}</span>
       </div>
 
       <div className="flex items-center gap-2 py-3 px-3 min-h-0 overflow-hidden">

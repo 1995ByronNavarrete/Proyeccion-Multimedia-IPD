@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { MonitorOff, ImageIcon, ChevronLeft, ChevronRight, Download, Sparkles } from 'lucide-react'
+import { MonitorOff, ImageIcon, ChevronLeft, ChevronRight, Download, Sparkles, ZoomIn } from 'lucide-react'
 import type { ProjectedContent } from '../views/DashboardView'
 import AnimSelectorModal from './shared/AnimSelectorModal'
 import { ANIM_GROUPS } from '../constants'
+import { useLang } from '../i18n'
 
 interface ProjectionViewProps {
   onBlack: () => void
@@ -14,15 +15,23 @@ interface ProjectionViewProps {
   verseIdx?: number
   onPrevVerse?: () => void
   onNextVerse?: () => void
+  overlayOpacity?: number
+  fontSize?: number
 }
 
 const allAnimations = ANIM_GROUPS.flatMap((g) => g.items)
 
-export default function ProjectionView({ onBlack, backgroundUrl, projected, animation, onAnimationChange, chapterVerses, verseIdx, onPrevVerse, onNextVerse }: ProjectionViewProps) {
+export default function ProjectionView({ onBlack, backgroundUrl, projected, animation, onAnimationChange, chapterVerses, verseIdx, onPrevVerse, onNextVerse, overlayOpacity: propOverlayOpacity = 80, fontSize: propFontSize = 48 }: ProjectionViewProps) {
+  const { t } = useLang()
   const [openAnim, setOpenAnim] = useState(false)
   const [overlay, setOverlay] = useState<{ type: string; speed?: number; color?: string } | null>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
+  const [overlayOpacity, setOverlayOpacity] = useState(propOverlayOpacity)
+  const [fontSize, setFontSize] = useState(propFontSize)
+
+  useEffect(() => { setOverlayOpacity(propOverlayOpacity) }, [propOverlayOpacity])
+  useEffect(() => { setFontSize(propFontSize) }, [propFontSize])
 
   useEffect(() => {
     const unsub = window.api.on('projector:overlay', (arg: unknown) => {
@@ -63,6 +72,16 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
     animRef.current = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(animRef.current)
   }, [overlay])
+
+  useEffect(() => {
+    const unsub = window.api.on('projector:config', (arg: unknown) => {
+      const cfg = arg as { overlayOpacity?: number; fontSize?: number }
+      if (cfg.overlayOpacity != null) setOverlayOpacity(cfg.overlayOpacity)
+      if (cfg.fontSize != null) setFontSize(cfg.fontSize)
+    })
+    return () => unsub?.()
+  }, [])
+
   const isVerse = projected?.type === 'verse' && projected.text
   const activeAnim = animation || 'anim-fade'
   const hasNav = chapterVerses && chapterVerses.length > 1
@@ -70,6 +89,62 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
   const previewBg = backgroundUrl || projected?.backgroundUrl
   const previewText = projected?.text || 'Texto de muestra'
   const previewRef = projected?.reference || 'Referencia'
+
+  const previewContainerRef = useRef<HTMLDivElement>(null)
+  const previewTextRef = useRef<HTMLParagraphElement>(null)
+  const previewRefRef = useRef<HTMLParagraphElement>(null)
+  const [imgZoom, setImgZoom] = useState(1)
+  const [imgPan, setImgPan] = useState({ x: 0, y: 0 })
+  const dragging = useRef(false)
+  const dragStart = useRef({ x: 0, y: 0 })
+  const panStart = useRef({ x: 0, y: 0 })
+  const imgPrevRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (projected?.type !== 'media' || !imgPrevRef.current) return
+    const el = imgPrevRef.current
+    const onWheel = (e: WheelEvent) => { e.preventDefault(); setImgZoom(z => Math.max(0.5, Math.min(10, z - e.deltaY * 0.003))) }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    setImgZoom(1); setImgPan({ x: 0, y: 0 })
+    window.api.projector.imageZoom({ zoom: 1, panX: 0, panY: 0 })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [projected?.mediaUrl])
+
+  useEffect(() => {
+    if (projected?.type !== 'media') return
+    window.api.projector.imageZoom({ zoom: 1, panX: 0, panY: 0 })
+  }, [projected?.mediaUrl])
+
+  useEffect(() => {
+    if (!isVerse) return
+    const container = previewContainerRef.current
+    const textEl = previewTextRef.current
+    const refEl = previewRefRef.current
+    if (!container || !textEl) return
+    const fit = () => {
+      const cw = container.clientWidth
+      const ch = container.clientHeight
+      if (!cw || !ch) return
+      const maxW = cw * 0.95
+      const maxH = ch * 0.92
+      let size = Math.max(16, Math.min(ch * 0.28, cw * 0.09))
+      textEl.style.fontSize = `${size}px`
+      textEl.style.maxWidth = `${maxW}px`
+      if (refEl) refEl.style.fontSize = `${Math.round(size * 0.35)}px`
+      requestAnimationFrame(() => {
+        if (textEl.scrollHeight <= maxH && textEl.scrollWidth <= maxW) return
+        const scale = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.9
+        if (scale >= 1) return
+        size = Math.max(8, size * scale)
+        textEl.style.fontSize = `${size}px`
+        if (refEl) refEl.style.fontSize = `${size * 0.35}px`
+      })
+    }
+    const raf = requestAnimationFrame(fit)
+    const ro = new ResizeObserver(fit)
+    if (container.parentElement) ro.observe(container.parentElement)
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [projected?.text, isVerse])
 
   const openModal = () => setOpenAnim(true)
   const closeModal = () => setOpenAnim(false)
@@ -92,7 +167,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
   return (
     <div className="h-full bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-theme">
-        <h3 className="text-[10px] font-semibold text-theme-muted uppercase tracking-wider">Vista Proyección</h3>
+        <h3 className="text-[10px] font-semibold text-theme-muted uppercase tracking-wider">{t('view.projection')}</h3>
         <div className="flex items-center gap-1.5 shrink-0">
           {hasNav && (
             <span className="text-[8px] text-theme-dim">
@@ -104,7 +179,24 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
               <Download size={12} className="text-theme-muted" />
             </button>
           )}
-          <button onClick={onBlack} className="p-1 hover:bg-white/5 rounded transition-colors" title="Pantalla negra">
+          <button onClick={() => {
+            const c = document.createElement('canvas'); c.width = 400; c.height = 300
+            const ctx = c.getContext('2d')!
+            ctx.fillStyle = '#1a1a3e'; ctx.fillRect(0, 0, 400, 300)
+            ctx.fillStyle = '#6c5ce7'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center'
+            ctx.fillText('Prueba Zoom', 200, 80)
+            ctx.fillStyle = '#00d4ff'; ctx.font = '16px sans-serif'
+            ctx.fillText('Usa la rueda o los botones + −', 200, 140)
+            for (let i = 0; i < 20; i++) {
+              ctx.fillStyle = ['#6c5ce7','#a855f7','#00d4ff','#22c55e','#f59e0b'][i % 5]
+              ctx.fillRect(30 + i * 17, 180, 12, 60 + Math.sin(i) * 20)
+            }
+            window.api.projector.sendContent({ type: 'media', mediaUrl: c.toDataURL(), text: 'Test Zoom' })
+            window.api.projector.projectToAll()
+          }} className="p-1 hover:bg-white/5 rounded transition-colors" title="Probar zoom">
+            <ZoomIn size={12} className="text-theme-muted" />
+          </button>
+          <button onClick={onBlack} className="p-1 hover:bg-white/5 rounded transition-colors" title={t('black.title')}>
             <MonitorOff size={12} className="text-theme-muted" />
           </button>
         </div>
@@ -115,37 +207,54 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
         {projected?.type === 'black' ? (
           <div className="text-center">
             <MonitorOff size={28} className="text-theme-dim mx-auto mb-2" />
-            <p className="text-[10px] text-theme-dim">Pantalla negra</p>
+            <p className="text-[10px] text-theme-dim">{t('black.title')}</p>
+          </div>
+        ) : projected?.type === 'media' && projected.mediaUrl?.startsWith('data:image') ? (
+          <div ref={imgPrevRef} className="w-full h-full bg-black rounded-lg overflow-hidden relative"
+            onMouseDown={e => { dragging.current = true; dragStart.current = { x: e.clientX, y: e.clientY }; panStart.current = { ...imgPan } }}
+            onMouseMove={e => { if (!dragging.current) return; const dx = e.clientX - dragStart.current.x; const dy = e.clientY - dragStart.current.y; setImgPan({ x: panStart.current.x + dx, y: panStart.current.y + dy }) }}
+            onMouseUp={() => { dragging.current = false }}
+            onMouseLeave={() => { dragging.current = false }}>
+            <img src={projected.mediaUrl} alt="" draggable={false}
+              style={{ transform: `translate(${imgPan.x}px, ${imgPan.y}px) scale(${imgZoom})`, cursor: dragging.current ? 'grabbing' : 'grab' }}
+              className="absolute inset-0 w-full h-full object-contain transition-transform duration-75" />
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
+              <button onClick={() => setImgZoom(z => Math.max(0.5, z - 0.2))} className="w-5 h-5 flex items-center justify-center bg-white/10 rounded text-white/80 hover:bg-white/20 text-xs font-bold">−</button>
+              <span className="text-[10px] text-white/80 min-w-[36px] text-center tabular-nums">{Math.round(imgZoom * 100)}%</span>
+              <button onClick={() => setImgZoom(z => Math.min(10, z + 0.2))} className="w-5 h-5 flex items-center justify-center bg-white/10 rounded text-white/80 hover:bg-white/20 text-xs font-bold">+</button>
+              <div className="w-px h-3 bg-white/20 mx-0.5" />
+              <button onClick={() => { setImgZoom(1); setImgPan({ x: 0, y: 0 }) }} className="text-[9px] text-white/60 hover:text-white/90 px-1">Reset</button>
+            </div>
           </div>
         ) : (backgroundUrl || projected?.backgroundUrl) || isVerse ? (
           <>
             {backgroundUrl && <img src={backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
             {projected?.backgroundUrl && <img src={projected.backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
-            <div className="absolute inset-0 bg-black/50" />
+            <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${(100 - overlayOpacity) / 100})` }} />
             {projected?.sermonTitle && (
               <div className="absolute top-1 right-2 z-10 text-right pointer-events-none">
                 <p className="text-[10px] font-bold text-amber-400 drop-shadow-lg">{projected.sermonTitle}</p>
                 {projected?.sermonPreacher && <p className="text-[7px] text-amber-400/70 drop-shadow-lg">{projected.sermonPreacher}</p>}
               </div>
             )}
-            <div className="relative text-center px-6">
+            <div ref={previewContainerRef} className="relative text-center px-6 w-full max-h-full overflow-hidden">
               {isVerse ? (
-                <div key={`${projected!.text}-${projected!.backgroundUrl}`}>
+                <div key={`${projected!.text}-${projected!.backgroundUrl}`} className="flex flex-col items-center justify-center w-full h-full">
                   {activeAnim.startsWith('anim-letter-') ? (
-                    <p className={`text-sm font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim}`}>
+                    <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim}`}>
                       {projected?.text?.split('').map((char, i) => (
                         <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
                       ))}
                     </p>
                   ) : (
-                    <p className={`text-sm font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>{projected!.text}</p>
+                    <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>{projected!.text}</p>
                   )}
-                  <p className={`text-[11px] text-white/70 mt-4 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>— {projected?.reference}</p>
+                  <p ref={previewRefRef} className={`text-white/70 mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>— {projected?.reference}</p>
                 </div>
               ) : (backgroundUrl || projected?.backgroundUrl) ? (
                 <div>
-                  <p className={`text-sm font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>Verso proyectado aquí</p>
-                  <p className={`text-[11px] text-white/70 mt-4 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>Selecciona un verso en la Biblia</p>
+                  <p className={`font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>Verso proyectado aquí</p>
+                  <p className={`text-white/70 mt-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>Selecciona un verso en la Biblia</p>
                 </div>
               ) : null}
             </div>
@@ -154,7 +263,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
           <div className="w-full h-full bg-gradient-to-br from-[#0a0e1e] via-[#0c1022] to-[#0a0e1e] flex items-center justify-center">
             <div className="text-center">
               <ImageIcon size={28} className="text-gray-700 mx-auto mb-2" />
-              <p className="text-[10px] text-gray-600">Sin contenido proyectado</p>
+              <p className="text-[10px] text-gray-600">{t('black.empty')}</p>
             </div>
           </div>
         )}
@@ -164,20 +273,20 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
         <div className="flex items-center gap-2 px-2 pb-2">
           <button onClick={onPrevVerse} disabled={verseIdx === 0}
             className="flex items-center justify-center gap-1 px-3 py-1 bg-theme-card rounded text-[9px] text-theme hover:bg-[#6c5ce7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-            <ChevronLeft size={10} /> Anterior
+            <ChevronLeft size={10} /> Previous
           </button>
           <div className="flex-1 text-center">
             <span className="text-[8px] text-theme-dim">← flechas del teclado →</span>
           </div>
           <button onClick={onNextVerse} disabled={verseIdx === (chapterVerses?.length ?? 0) - 1}
             className="flex items-center justify-center gap-1 px-3 py-1 bg-theme-card rounded text-[9px] text-theme hover:bg-[#6c5ce7]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-            Siguiente <ChevronRight size={10} />
+            Next <ChevronRight size={10} />
           </button>
         </div>
       )}
 
       <div className="flex items-center gap-2 px-3 py-2 border-t border-theme">
-        <span className="text-[9px] text-theme-dim shrink-0">Animación:</span>
+        <span className="text-[9px] text-theme-dim shrink-0">Animation:</span>
         <button onClick={openModal}
           className="flex-1 flex items-center justify-between gap-1 text-[9px] bg-theme-card text-theme-dim px-2 py-1 rounded border border-theme outline-none hover:border-[#6c5ce7]/50 transition-colors">
           <span className="truncate">{currentLabel}</span>
@@ -190,7 +299,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
         onClose={closeModal}
         onSave={(animId) => onAnimationChange?.(animId)}
         currentAnim={activeAnim}
-        title="Efectos de Animación"
+        title="Animation Effects"
         previewText={previewText}
         previewRef={previewRef}
         previewBg={previewBg || undefined}

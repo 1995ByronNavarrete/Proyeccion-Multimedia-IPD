@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Play, Pause, Music, Film, List } from 'lucide-react'
+import { useLang } from '../i18n'
 
 interface MediaItem {
   id: number
@@ -13,6 +14,7 @@ interface ReproductorPanelProps {
 }
 
 export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
+  const { t } = useLang()
   const [playing, setPlaying] = useState(false)
   const [activePath, setActivePath] = useState<string | null>(null)
   const [currentTrack, setCurrentTrack] = useState<string | null>(null)
@@ -191,7 +193,7 @@ export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
       audioRef.current!.removeEventListener('ended', onEnded)
       audioRef.current!.removeEventListener('loadedmetadata', onMeta)
       audioRef.current!.src = ''
-      alert(`"${nombre}" no se puede reproducir.\nFormato no soportado o archivo dañado.`)
+      alert(`"${nombre}" ${t('player.errorNotPlayable')}`)
       setPlaying(false)
     }
     audioRef.current.addEventListener('ended', onEnded, { once: true })
@@ -201,7 +203,7 @@ export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
     if (p !== undefined) p.then(cb).catch(() => {
       audioRef.current!.removeEventListener('ended', onEnded)
       audioRef.current!.removeEventListener('loadedmetadata', onMeta)
-      alert(`No se pudo reproducir "${nombre}".`)
+      alert(`${t('player.couldNotPlay')} "${nombre}".`)
     })
   }
 
@@ -228,7 +230,7 @@ export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className={`text-sm font-bold truncate ${currentTrack ? 'text-white' : 'text-theme-dim'}`}>
-              {currentTrack || 'Reproductor'}
+              {currentTrack || t('player.title')}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -267,7 +269,7 @@ export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
         <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1 border-t border-theme bg-black/10">
           <div className="flex items-center gap-1.5 px-1 py-1">
             <Music size={9} className="text-theme-dim" />
-            <span className="text-[8px] text-theme-dim font-semibold uppercase tracking-wider">Lista</span>
+            <span className="text-[8px] text-theme-dim font-semibold uppercase tracking-wider">{t('player.playlist')}</span>
             <span className="text-[8px] text-theme-dim ml-auto">{mediaItems.length}</span>
           </div>
           {mediaItems.map((item) => (
@@ -280,7 +282,7 @@ export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
               {item.tipo === 'video' && (
                 <button onClick={(e) => { e.stopPropagation(); const fileUrl = item.ruta_archivo.startsWith('file://') ? item.ruta_archivo : `file:///${item.ruta_archivo.replace(/\\/g, '/')}`; onPlayBg?.(fileUrl, item.nombre) }}
                   className="text-[7px] px-1.5 py-0.5 bg-emerald-600/15 text-emerald-500/70 rounded hover:bg-emerald-600/30 hover:text-emerald-400 opacity-0 group-hover:opacity-100 transition-all">
-                  FONDO
+                  {t('player.fondo')}
                 </button>
               )}
             </div>

@@ -11,7 +11,10 @@ const api = {
     downloadData: (abbreviation: string, nombre: string, source: string, apiKey: string) => ipcRenderer.invoke('bible:downloadData', abbreviation, nombre, source, apiKey),
     hasData: () => ipcRenderer.invoke('bible:hasData'),
     getAvailableSources: () => ipcRenderer.invoke('bible:getAvailableSources'),
-    getApiBibleTranslations: (apiKey: string) => ipcRenderer.invoke('bible:getApiBibleTranslations', apiKey)
+    getApiBibleTranslations: (apiKey: string) => ipcRenderer.invoke('bible:getApiBibleTranslations', apiKey),
+    getAllTranslations: () => ipcRenderer.invoke('bible:getAllTranslations'),
+    setTranslationActive: (id: number, active: boolean) => ipcRenderer.invoke('bible:setTranslationActive', id, active),
+    deleteTranslation: (id: number) => ipcRenderer.invoke('bible:deleteTranslation', id)
   },
   projector: {
     getDisplays: () => ipcRenderer.invoke('screen:getAll'),
@@ -27,7 +30,9 @@ const api = {
     hideAnnouncement: () => ipcRenderer.invoke('projector:hideAnnouncement'),
     updateAnnouncement: (data: Record<string, string>) => ipcRenderer.invoke('projector:updateAnnouncement', data),
     overlay: (data: { type: string; speed?: number; color?: string }) => ipcRenderer.invoke('projector:overlay', data),
-    scrollDocument: (direction: 'up' | 'down') => ipcRenderer.invoke('projector:scrollDocument', direction)
+    scrollDocument: (direction: 'up' | 'down') => ipcRenderer.invoke('projector:scrollDocument', direction),
+    updateConfig: (config: { overlayOpacity?: number; fontSize?: number }) => ipcRenderer.invoke('projector:updateConfig', config),
+    imageZoom: (data: { zoom?: number; panX?: number; panY?: number; reset?: boolean }) => ipcRenderer.invoke('projector:imageZoom', data)
   },
   display: {
     setAssignments: (assignments: Record<number, string[]>) => ipcRenderer.invoke('display:setAssignments', assignments),
@@ -76,6 +81,7 @@ const api = {
   anuncios: {
     getAll: () => ipcRenderer.invoke('anuncios:getAll'),
     create: (texto: string, animacion: string) => ipcRenderer.invoke('anuncios:create', texto, animacion),
+    update: (id: number, texto: string, animacion: string) => ipcRenderer.invoke('anuncios:update', id, texto, animacion),
     delete: (id: number) => ipcRenderer.invoke('anuncios:delete', id),
     saveAnim: (animacion: string) => ipcRenderer.invoke('anuncios:saveAnim', animacion)
   },
@@ -96,11 +102,12 @@ const api = {
     readImageAsDataUrl: (filePath: string) => ipcRenderer.invoke('app:readImageAsDataUrl', filePath),
     readFileAsDataUrl: (filePath: string) => ipcRenderer.invoke('app:readFileAsDataUrl', filePath),
     openDocument: (filePath: string) => ipcRenderer.invoke('app:openDocument', filePath),
-    convertDocumentToHtml: (filePath: string) => ipcRenderer.invoke('app:convertDocumentToHtml', filePath)
+    convertDocumentToHtml: (filePath: string) => ipcRenderer.invoke('app:convertDocumentToHtml', filePath),
+    getDefaultBg: () => ipcRenderer.invoke('app:getDefaultBg')
   },
   update: {
     check: () => ipcRenderer.invoke('update:check'),
-    checkNow: () => ipcRenderer.invoke('update:checkNow'),
+    checkNow: () => ipcRenderer.invoke('update:check'),
     checkAndReturn: () => ipcRenderer.invoke('update:checkAndReturn'),
     download: () => ipcRenderer.invoke('update:download'),
     install: () => ipcRenderer.invoke('update:install')
@@ -121,7 +128,7 @@ const api = {
     restore: () => ipcRenderer.invoke('backup:restore'),
   },
   on: (channel: string, callback: (...args: unknown[]) => void) => {
-    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'projector:prevVerse', 'projector:nextVerse', 'projector:scrollDocument', 'projector:showAnnouncement', 'projector:hideAnnouncement', 'projector:updateAnnouncement', 'projector:overlay', 'projector:timer', 'video:progress', 'medialocal:changed', 'bible:downloadProgress', 'update:available', 'update:not-available', 'update:download-progress', 'update:downloaded', 'update:error']
+    const validChannels = ['projector:content', 'projector:showBlack', 'projector:playVideo', 'projector:pauseVideo', 'projector:resumeVideo', 'projector:stopVideo', 'projector:volumeVideo', 'projector:seekVideo', 'projector:layoutChanged', 'projector:prevVerse', 'projector:nextVerse', 'projector:scrollDocument', 'projector:showAnnouncement', 'projector:hideAnnouncement', 'projector:updateAnnouncement', 'projector:overlay', 'projector:config', 'projector:imageZoom', 'projector:timer', 'video:progress', 'medialocal:changed', 'bible:downloadProgress', 'update:available', 'update:not-available', 'update:download-progress', 'update:downloaded', 'update:error']
     if (validChannels.includes(channel)) {
       const handler = (_event: unknown, ...args: unknown[]) => callback(...args)
       ipcRenderer.on(channel, handler)

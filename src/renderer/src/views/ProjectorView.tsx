@@ -36,6 +36,11 @@ export default function ProjectorView() {
   const [anuncioColor, setAnuncioColor] = useState('anuncio-color-white')
   const [anuncioExiting, setAnuncioExiting] = useState(false)
   const anuncioTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const [cfgOverlayOpacity, setCfgOverlayOpacity] = useState(80)
+  const [cfgFontSize, setCfgFontSize] = useState(48)
+  const [imgZoom, setImgZoom] = useState(1)
+  const [imgPan, setImgPan] = useState({ x: 0, y: 0 })
+  const imgPanRef = useRef({ x: 0, y: 0 })
   const videoRef = useRef<HTMLVideoElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const progressTimer = useRef<ReturnType<typeof setInterval>>()
@@ -171,35 +176,26 @@ export default function ProjectorView() {
 
   useEffect(() => {
     if (!verseText) return
-    const timer = setTimeout(() => {
-      const container = verseContainerRef.current
-      const textEl = verseTextRef.current
-      if (!container || !textEl) return
-      textEl.style.fontSize = ''
-      if (verseRefRef.current) verseRefRef.current.style.fontSize = ''
-      requestAnimationFrame(() => {
-        const maxH = container.clientHeight * 0.92
-        if (textEl.scrollHeight <= maxH) return
-        const textLen = verseText.length
-        let ratio = 1
-        if (textLen > 400) ratio = 0.4
-        else if (textLen > 250) ratio = 0.55
-        else if (textLen > 150) ratio = 0.7
-        else if (textLen > 80) ratio = 0.85
-        textEl.style.fontSize = `${ratio * 5.5}rem`
-        if (verseRefRef.current) verseRefRef.current.style.fontSize = `${ratio * 3}rem`
-        requestAnimationFrame(() => {
-          if (textEl.scrollHeight > maxH) {
-            const factor = maxH / textEl.scrollHeight
-            const newSize = parseFloat(textEl.style.fontSize) * factor * 0.97
-            textEl.style.fontSize = `${newSize}rem`
-            if (verseRefRef.current) verseRefRef.current.style.fontSize = `${newSize * 0.55}rem`
-          }
-        })
-      })
-    }, 50)
-    return () => clearTimeout(timer)
-  }, [verseText, verseRef])
+    const container = verseContainerRef.current
+    const textEl = verseTextRef.current
+    const refEl = verseRefRef.current
+    if (!container || !textEl) return
+    textEl.style.fontSize = `${cfgFontSize}px`
+    if (refEl) refEl.style.fontSize = `${Math.round(cfgFontSize * 0.55)}px`
+    const raf = requestAnimationFrame(() => {
+      const maxH = container.clientHeight * 0.88
+      const maxW = container.clientWidth * 0.92
+      const overflowH = textEl.scrollHeight > maxH
+      const overflowW = textEl.scrollWidth > maxW
+      if (!overflowH && !overflowW) return
+      const scale = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.95
+      if (scale >= 1) return
+      const newSize = Math.max(8, cfgFontSize * scale)
+      textEl.style.fontSize = `${newSize}px`
+      if (refEl) refEl.style.fontSize = `${newSize * 0.55}px`
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [verseText, verseRef, cfgFontSize])
 
   useEffect(() => {
     // Capturar errores de carga del iframe
@@ -213,13 +209,15 @@ export default function ProjectorView() {
     window.addEventListener('unhandledrejection', handleRejection)
 
     const unsub1 = window.api.on('projector:content', (arg: unknown) => {
-      const data = arg as { type?: string; text?: string; reference?: string; mediaUrl?: string; backgroundUrl?: string; animation?: string; effect?: string; speed?: number; sermonTitle?: string; sermonPreacher?: string } | undefined
-      const clearVideo = () => {
-        const v = videoRef.current
-        if (v) { v.pause(); v.src = ''; v.load() }
-        setVideoUrl('')
-        stopLocalTimer(); stopYtTimer()
-      }
+      const data = arg as { type?: string; text?: string; reference?: string; mediaUrl?: string; backgroundUrl?: string; animation?: string; effect?: string; speed?: number; sermonTitle?: string; sermonPreacher?: string; overlayOpacity?: number; fontSize?: number } | undefined
+      if (data?.overlayOpacity != null) setCfgOverlayOpacity(data.overlayOpacity)
+      if (data?.fontSize != null) setCfgFontSize(data.fontSize)
+  const clearVideo = () => {
+    const v = videoRef.current
+    if (v) { v.pause(); v.src = ''; v.load() }
+    setVideoUrl('')
+    stopLocalTimer(); stopYtTimer()
+  }
       if (data?.type === 'verse') {
         setEffect(null); setDocUrl(''); setDocHtmlContent(''); setDocCss('')
         setVerseText(data.text || '')
@@ -391,11 +389,29 @@ export default function ProjectorView() {
       })
     })
 
+    const unsub13 = window.api.on('projector:config', (arg: unknown) => {
+      const cfg = arg as { overlayOpacity?: number; fontSize?: number }
+      if (cfg.overlayOpacity != null) setCfgOverlayOpacity(cfg.overlayOpacity)
+      if (cfg.fontSize != null) setCfgFontSize(cfg.fontSize)
+    })
+
     return () => {
       window.removeEventListener('error', handleLoadError)
       window.removeEventListener('unhandledrejection', handleRejection)
-      unsub1?.(); unsub2?.(); unsub3?.(); unsub4?.(); unsub5?.(); unsub6?.(); unsub7?.(); unsub8?.(); unsub9?.(); unsub10?.(); unsub11?.(); unsub12?.(); stopLocalTimer(); stopYtTimer()
+      unsub1?.(); unsub2?.(); unsub3?.(); unsub4?.(); unsub5?.(); unsub6?.(); unsub7?.(); unsub8?.(); unsub9?.(); unsub10?.(); unsub11?.(); unsub12?.(); unsub13?.(); stopLocalTimer(); stopYtTimer()
     }
+  }, [])
+
+  useEffect(() => {
+    const unsub = window.api.on('projector:imageZoom', (arg: unknown) => {
+      const d = arg as { zoom?: number; panX?: number; panY?: number }
+      if (d.zoom != null) setImgZoom(d.zoom)
+      const px = d.panX ?? imgPanRef.current.x
+      const py = d.panY ?? imgPanRef.current.y
+      imgPanRef.current = { x: px, y: py }
+      setImgPan({ x: px, y: py })
+    })
+    return () => unsub?.()
   }, [])
 
   useEffect(() => {
@@ -433,6 +449,38 @@ export default function ProjectorView() {
 
   let content: JSX.Element | null = null
 
+  const renderVerse = () => (
+    <div key={verseRef} ref={verseContainerRef} className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden p-[5%]">
+      {verseBackground ? (
+        <>
+          <img src={verseBackground} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+          <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: `rgba(0,0,0,${(100 - cfgOverlayOpacity) / 100})` }} />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a1a] to-black" />
+      )}
+      {sermonTitle && (
+        <div className="absolute top-8 right-6 z-20 text-right pointer-events-none">
+          <p className="text-2xl font-bold text-amber-400 drop-shadow-[0_3px_12px_rgba(0,0,0,0.95)]">{sermonTitle}</p>
+          {sermonPreacher && <p className="text-base text-amber-400/70 mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">{sermonPreacher}</p>}
+        </div>
+      )}
+      <div className="relative text-center w-full max-h-full flex flex-col items-center justify-center min-h-0">
+        {verseAnimation.startsWith('anim-letter-') ? (
+          <p ref={verseTextRef} className={`font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation}`}
+            style={{ fontSize: `${cfgFontSize}px`, lineHeight: 1.1, maxWidth: '100%' }}>
+            {verseText.split('').map((char, i) => (<span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>))}
+          </p>
+        ) : (
+          <p ref={verseTextRef} className={`font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation} anim-delay-text`}
+            style={{ fontSize: `${cfgFontSize}px`, lineHeight: 1.1, maxWidth: '100%' }}>{verseText}</p>
+        )}
+        <p ref={verseRefRef} className={`text-white/80 tracking-wider drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-ref`}
+          style={{ fontSize: `${Math.round(cfgFontSize * 0.5)}px`, marginTop: `${Math.round(cfgFontSize * 0.12)}px` }}>— {verseRef}</p>
+      </div>
+    </div>
+  )
+
   if (isBlack) {
     content = (
       <div className="h-screen w-screen bg-black flex items-center justify-center relative">
@@ -469,8 +517,10 @@ export default function ProjectorView() {
     )
   } else if (isImage && videoUrl) {
     content = (
-      <div className="h-screen w-screen bg-black relative flex items-center justify-center">
-        <img src={videoUrl} alt={videoTitle} className="max-h-full max-w-full object-contain" />
+      <div className="h-screen w-screen bg-black relative overflow-hidden">
+        <img src={videoUrl} alt={videoTitle} draggable={false}
+          style={{ transform: `translate(${imgPan.x}px, ${imgPan.y}px) scale(${imgZoom})` }}
+          className="absolute inset-0 w-full h-full object-contain transition-transform duration-75" />
       </div>
     )
   } else if (videoUrl && isYoutube) {
@@ -483,7 +533,7 @@ export default function ProjectorView() {
   } else if (videoUrl) {
     content = (
       <div className="h-screen w-screen bg-black relative">
-        <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain" controls={false} autoPlay playsInline preload="metadata"
+        <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain will-change-transform" controls={false} autoPlay playsInline preload="metadata"
           onError={(e) => { const v = e.currentTarget; console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message) }} />
       </div>
     )
@@ -492,44 +542,9 @@ export default function ProjectorView() {
       anuncioAnimIn={anuncioAnimIn} anuncioAnimOut={anuncioAnimOut} anuncioBg={anuncioBg} anuncioBgAnimIn={anuncioBgAnimIn} anuncioBgAnimOut={anuncioBgAnimOut}
       anuncioSize={anuncioSize} anuncioFont={anuncioFont} anuncioColor={anuncioColor} anuncioExiting={anuncioExiting} />
   } else if (verseText) {
-    content = (
-      <div key={verseRef} ref={verseContainerRef} className="h-screen w-screen relative flex items-center justify-center overflow-hidden">
-        {verseBackground ? (
-          <>
-            <img src={verseBackground} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
-            <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a1a] to-black" />
-        )}
-        {sermonTitle && (
-          <div className="absolute top-16 right-8 z-20 text-right pointer-events-none">
-            <p className="text-5xl font-bold text-amber-400 drop-shadow-[0_3px_12px_rgba(0,0,0,0.95)]">{sermonTitle}</p>
-            {sermonPreacher && <p className="text-2xl text-amber-400/70 mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">{sermonPreacher}</p>}
-          </div>
-        )}
-        <div className="relative text-center w-[95%] px-4">
-          {verseAnimation.startsWith('anim-letter-') ? (
-            <p ref={verseTextRef} className={`text-7xl font-bold leading-[1.2] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation}`}>
-              {verseText.split('').map((char, i) => (<span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>))}
-            </p>
-          ) : (
-            <p ref={verseTextRef} className={`text-7xl font-bold leading-[1.2] text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation} anim-delay-text`}>{verseText}</p>
-          )}
-          <p ref={verseRefRef} className={`text-4xl text-white/80 mt-6 tracking-wider drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-ref`}>— {verseRef}</p>
-        </div>
-      </div>
-    )
+    content = renderVerse()
   } else {
-    content = (
-      <div className="h-screen w-screen bg-black flex items-center justify-center relative">
-        <div className="text-center">
-          <Monitor size={48} className="text-gray-800 mx-auto mb-3" />
-          <p className="text-sm text-gray-700">Sin contenido</p>
-          <p className="text-[10px] text-gray-800 mt-2">Esperando contenido para proyectar...</p>
-        </div>
-      </div>
-    )
+    content = <DefaultBg />
   }
 
   return (
@@ -716,4 +731,18 @@ function OverlayEffect({ type, speed = 1, color = '#6c5ce7' }: { type: string; s
   }, [type])
 
   return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full pointer-events-none z-30" />
+}
+
+function DefaultBg() {
+  return (
+    <div className="h-screen w-screen relative overflow-hidden bg-gradient-to-br from-[#0a0a1a] via-[#12122a] to-[#0a0a1a]">
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 25% 30%, rgba(108,92,231,0.15) 0%, transparent 60%), radial-gradient(ellipse at 75% 70%, rgba(168,85,247,0.1) 0%, transparent 60%), radial-gradient(ellipse at 50% 50%, rgba(0,212,255,0.05) 0%, transparent 50%)' }} />
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <p className="text-[36px] text-[#c084fc] italic text-center leading-relaxed" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
+          &ldquo;Este es el día que hizo Jehová;<br />nos gozaremos y alegraremos en él.&rdquo;
+        </p>
+        <p className="text-[18px] text-[#6c5ce7] mt-6 opacity-50">— Salmos 118:24 (RVR1960)</p>
+      </div>
+    </div>
+  )
 }

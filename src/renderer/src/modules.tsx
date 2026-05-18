@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
-import { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone, Clapperboard } from 'lucide-react'
+import { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone, Clapperboard, Sliders } from 'lucide-react'
 
 export interface ModuleDef {
   id: string
@@ -8,8 +8,6 @@ export interface ModuleDef {
   zone: 'left-top' | 'left-bottom' | 'center-top' | 'center-bottom' | 'right-top' | 'right-mid' | 'right-bottom'
   defaultEnabled: boolean
 }
-
-export const MAX_ACTIVE_MODULES = 9
 
 export const ALL_MODULES: ModuleDef[] = [
   { id: 'pantallas', label: 'Pantallas', icon: 'Monitor', zone: 'left-bottom', defaultEnabled: true },
@@ -22,7 +20,8 @@ export const ALL_MODULES: ModuleDef[] = [
   { id: 'multimedia', label: 'Multimedia', icon: 'FileText', zone: 'right-bottom', defaultEnabled: true },
   { id: 'efectos', label: 'Efectos Visuales', icon: 'Sparkles', zone: 'right-bottom', defaultEnabled: true },
   { id: 'cronometro', label: 'Cronómetro', icon: 'Clock', zone: 'right-bottom', defaultEnabled: true },
-  { id: 'escenas', label: 'Escenas', icon: 'Clapperboard', zone: 'right-bottom', defaultEnabled: true }
+  { id: 'escenas', label: 'Escenas', icon: 'Clapperboard', zone: 'right-bottom', defaultEnabled: true },
+  { id: 'configuracion', label: 'Configuración', icon: 'Sliders', zone: 'right-bottom', defaultEnabled: false }
 ]
 
 const STORAGE_KEY = 'ipd-modules'
@@ -39,26 +38,16 @@ interface ModuleCtx {
   enabled: Set<string>
   toggle: (id: string) => void
   isEnabled: (id: string) => boolean
-  toast: string | null
-  clearToast: () => void
 }
 
-const Ctx = createContext<ModuleCtx>({ enabled: new Set(), toggle: () => {}, isEnabled: () => false, toast: null, clearToast: () => {} })
+const Ctx = createContext<ModuleCtx>({ enabled: new Set(), toggle: () => {}, isEnabled: () => false })
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState<Set<string>>(loadEnabled)
-  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...enabled]))
   }, [enabled])
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3000)
-      return () => clearTimeout(t)
-    }
-  }, [toast])
 
   const toggle = useCallback((id: string) => {
     setEnabled((prev) => {
@@ -66,10 +55,6 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         const next = new Set(prev)
         next.delete(id)
         return next
-      }
-      if (prev.size >= MAX_ACTIVE_MODULES) {
-        setToast(`Límite de ${MAX_ACTIVE_MODULES} módulos activos. Desactiva uno primero.`)
-        return prev
       }
       const next = new Set(prev)
       next.add(id)
@@ -80,7 +65,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const isEnabled = useCallback((id: string) => enabled.has(id), [enabled])
 
   return (
-    <Ctx.Provider value={{ enabled, toggle, isEnabled, toast, clearToast: () => setToast(null) }}>
+    <Ctx.Provider value={{ enabled, toggle, isEnabled }}>
       {children}
     </Ctx.Provider>
   )
@@ -91,6 +76,6 @@ export function useModules() {
 }
 
 export function getModuleIcon(name: string) {
-  const icons: Record<string, any> = { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone, Clapperboard }
+  const icons: Record<string, any> = { BookOpen, Youtube, Image, Monitor, Music, Mic, Sparkles, Clock, Layout, Play, FileVideo, FileText, Megaphone, Clapperboard, Sliders }
   return icons[name] || Layout
 }
