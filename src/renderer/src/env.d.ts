@@ -113,7 +113,6 @@ interface Window {
       importFile: () => Promise<IpcResponse<unknown[]>>
       importFiles: () => Promise<IpcResponse<{ imported: number }>>
       deleteFile: (filePath: string) => Promise<IpcResponse<null>>
-      scanFolder: () => Promise<IpcResponse<unknown[]>>
       openFolder: () => Promise<IpcResponse<{ ruta: string; archivos: { nombre: string; ruta: string; tipo: string; tamano: number }[] } | null>>
       getBiblioteca: () => Promise<IpcResponse<{ ruta: string; musica: { nombre: string; ruta: string; tamano: number }[]; videos: { nombre: string; ruta: string; tamano: number }[]; documentos: { nombre: string; ruta: string; tamano: number }[] }>>
       getAll: () => Promise<IpcResponse<MediaItem[]>>
@@ -138,7 +137,6 @@ interface Window {
     }
     ytdl: {
       search: (query: string, maxResults?: number) => Promise<{ success: boolean; data: { id: string; title: string; channel: string; thumbnail: string; description: string }[]; error?: string }>
-      getInfo: (videoId: string) => Promise<{ success: boolean; data?: { title: string; duration: number; streamUrl: string; author: string }; error?: string }>
       getStreamUrl: (videoId: string) => Promise<{ success: boolean; data?: { url: string; title: string; duration: number }; error?: string }>
     }
     app: {

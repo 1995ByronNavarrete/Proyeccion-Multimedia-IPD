@@ -156,9 +156,9 @@ export default function ConfigPanel() {
       combo.push(e.key === ' ' ? 'Espacio' : e.key)
       setNewShortcutKey(combo.join('+'))
       setRecordingShortcut(false)
-      window.removeEventListener('keydown', handler)
     }
     window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
   }
 
   const addShortcut = () => {

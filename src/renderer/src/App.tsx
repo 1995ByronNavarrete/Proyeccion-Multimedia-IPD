@@ -5,9 +5,11 @@ import ProjectorView from './views/ProjectorView'
 import { ModuleProvider } from './modules'
 import { LangProvider } from './i18n'
 import { ToastProvider } from './components/Toast'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
   return (
+    <ErrorBoundary>
     <ModuleProvider>
       <LangProvider>
       <ToastProvider>
@@ -22,6 +24,7 @@ function App() {
       </ToastProvider>
       </LangProvider>
     </ModuleProvider>
+    </ErrorBoundary>
   )
 }
 

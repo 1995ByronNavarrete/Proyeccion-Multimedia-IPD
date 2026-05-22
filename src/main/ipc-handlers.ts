@@ -6,7 +6,7 @@ import pdfjs from 'pdfjs-dist'
 import { queryAll, queryOne, execute, noAccent, flushDatabase, reloadDatabase } from './database'
 import { downloadAndSeedBible } from './bible-seed'
 import { getBibleApiTranslations, getApiBibleTranslations } from './bible-source'
-import { ok, fail, appDocsPath, getBundledResourcesPath, getMime, IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS, DOCUMENT_EXTS, getMediaType } from './shared'
+import { ok, fail, appDocsPath, getBundledResourcesPath, getMime, MIME, IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS, DOCUMENT_EXTS, getMediaType } from './shared'
 import { DOC_CSS } from './doc-styles'
 
 export function registerIpcHandlers(): void {
@@ -765,12 +765,7 @@ export function registerIpcHandlers(): void {
     try {
       const buffer = readFileSync(filePath)
       const ext = extname(filePath).toLowerCase()
-      const mime: Record<string, string> = {
-        '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.flac': 'audio/flac',
-        '.aac': 'audio/aac', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4',
-        '.opus': 'audio/ogg', '.mp4': 'video/mp4', '.webm': 'video/webm'
-      }
-      return ok({ dataUrl: `data:${mime[ext] || 'audio/mpeg'};base64,${buffer.toString('base64')}` })
+      return ok({ dataUrl: `data:${MIME[ext] || 'application/octet-stream'};base64,${buffer.toString('base64')}` })
     } catch { return ok(null) }
   })
 

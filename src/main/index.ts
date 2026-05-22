@@ -9,7 +9,7 @@ import { initDatabase, seedBibleIfEmpty, flushDatabase } from './database'
 import { registerIpcHandlers } from './ipc-handlers'
 import { registerVideoHandlers, setOpenProjector, setOnVideoPlay, setGetDisplayAssignments } from './video-handlers'
 import { registerBackupHandlers } from './backup-handler'
-import { appDocsPath, getBundledResourcesPath, getMime } from './shared'
+import { appDocsPath, getBundledResourcesPath, getMime, MIME } from './shared'
 let mainWindow: BrowserWindow | null = null
 const projectorWindows: Map<number, BrowserWindow> = new Map()
 let devServerPort: number | null = null
@@ -17,6 +17,7 @@ let lastOverlay: unknown = null
 let lastVideoPayload: { url: string; title: string; duration: number } | null = null
 let displayAssignments: Record<number, string[]> = {}
 const fileWatchers: import('fs').FSWatcher[] = []
+let screenListeners: (() => void) | null = null
 
 function sendContentToDisplay(displayId: number, channel: string, data: unknown): void {
   const win = projectorWindows.get(displayId)
@@ -24,23 +25,6 @@ function sendContentToDisplay(displayId: number, channel: string, data: unknown)
 }
 
 // ── Servidor HTTP local para producción ──
-const MIME: Record<string, string> = {
-  '.html': 'text/html',
-  '.js': 'application/javascript',
-  '.css': 'text/css',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.bmp': 'image/bmp',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.json': 'application/json',
-  '.woff2': 'font/woff2',
-  '.mp3': 'audio/mpeg',
-  '.mp4': 'video/mp4'
-}
 
 function startLocalServer(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -117,8 +101,7 @@ function createMainWindow(): void {
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
-      autoplayPolicy: 'no-user-gesture-required'
+      webSecurity: false
     }
   })
 
@@ -126,16 +109,19 @@ function createMainWindow(): void {
     mainWindow?.show()
     mainWindow?.webContents.setZoomLevel(0)
     autoOpenProjectors()
-    // Detectar cambios de pantalla en tiempo real
-    screen.on('display-added', () => {
-      mainWindow?.webContents.send('projector:layoutChanged')
-    })
-    screen.on('display-removed', () => {
-      mainWindow?.webContents.send('projector:layoutChanged')
-    })
-    screen.on('display-metrics-changed', () => {
-      mainWindow?.webContents.send('projector:layoutChanged')
-    })
+    if (screenListeners) screenListeners()
+    const onDisplayAdded = () => mainWindow?.webContents.send('projector:layoutChanged')
+    const onDisplayRemoved = () => mainWindow?.webContents.send('projector:layoutChanged')
+    const onDisplayMetricsChanged = () => mainWindow?.webContents.send('projector:layoutChanged')
+    screen.on('display-added', onDisplayAdded)
+    screen.on('display-removed', onDisplayRemoved)
+    screen.on('display-metrics-changed', onDisplayMetricsChanged)
+    screenListeners = () => {
+      screen.removeListener('display-added', onDisplayAdded)
+      screen.removeListener('display-removed', onDisplayRemoved)
+      screen.removeListener('display-metrics-changed', onDisplayMetricsChanged)
+      screenListeners = null
+    }
   })
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -147,6 +133,7 @@ function createMainWindow(): void {
   })
 
   mainWindow.on('closed', () => {
+    if (screenListeners) screenListeners()
     mainWindow = null
     for (const [, win] of projectorWindows) {
       if (!win.isDestroyed()) win.close()
@@ -187,8 +174,7 @@ function createProjectorWindow(displayId: number): void {
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
-      autoplayPolicy: 'no-user-gesture-required'
+      webSecurity: false
     }
   })
 
@@ -343,6 +329,8 @@ function registerMainIpcHandlers(): void {
     }
   })
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024
+
   function fileUrlToDataUrl(url: string): string | null {
     try {
       let filePath = url.replace(/^file:\/\/\//, '').replace(/^file:\/\//, '')
@@ -351,6 +339,8 @@ function registerMainIpcHandlers(): void {
       const ext = extname(filePath).toLowerCase()
       const mime = getMime(ext)
       if (!mime.startsWith('image/')) return null
+      const { statSync } = require('fs') as typeof import('fs')
+      if (statSync(filePath).size > MAX_FILE_SIZE) return null
       const buf = readFileSync(filePath)
       return `data:${mime};base64,${buf.toString('base64')}`
     } catch { return null }

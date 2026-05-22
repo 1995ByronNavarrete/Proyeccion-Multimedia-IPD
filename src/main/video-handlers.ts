@@ -105,7 +105,7 @@ export function registerVideoHandlers(): void {
         }))
       // Pre-calentar cache del primer resultado
       if (videos.length > 0 && !getCachedStream(videos[0].id)) {
-        resolveStreamUrl(videos[0].id).then(url => { if (url) setCachedStream(videos[0].id, url) })
+        resolveStreamUrl(videos[0].id).then(url => { if (url) setCachedStream(videos[0].id, url) }).catch(() => {})
       }
       return { success: true, data: videos }
     } catch (err) {

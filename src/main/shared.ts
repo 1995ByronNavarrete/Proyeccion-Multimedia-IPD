@@ -79,14 +79,26 @@ export function getBundledDataDbPath(): string | null {
   return null
 }
 
-export const IMAGE_MIME: Record<string, string> = {
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
-  '.svg': 'image/svg+xml'
+export const MIME: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json',
+  '.woff2': 'font/woff2',
+  '.mp3': 'audio/mpeg',
+  '.mp4': 'video/mp4'
 }
 
 export function getMime(ext: string): string {
-  return IMAGE_MIME[ext.toLowerCase()] || 'image/png'
+  return MIME[ext.toLowerCase()] || 'application/octet-stream'
 }
 
 export const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'])

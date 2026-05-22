@@ -67,9 +67,7 @@ export async function initDatabase(): Promise<void> {
     if (!loaded) {
       db = new SQL.Database()
     }
-    if (!db) db = new SQL.Database()
   }
-
   if (!db) db = new SQL.Database()
   db.run('PRAGMA foreign_keys = ON')
 
@@ -258,6 +256,21 @@ export function execute(sql: string, params?: SqlValue[]): { changes: number; la
   } else {
     d.run(sql)
   }
+  saveDatabase()
+  const result = queryOne('SELECT changes() as changes, last_insert_rowid() as lastInsertRowid')
+  return {
+    changes: (result?.changes as number) ?? 0,
+    lastInsertRowid: (result?.lastInsertRowid as number) ?? 0
+  }
+}
+
+export function executeBatch(sql: string, batchParams: SqlValue[][]): { changes: number; lastInsertRowid: number } {
+  const d = getDatabase()
+  d.run('BEGIN TRANSACTION')
+  for (const params of batchParams) {
+    d.run(sql, params)
+  }
+  d.run('COMMIT')
   saveDatabase()
   const result = queryOne('SELECT changes() as changes, last_insert_rowid() as lastInsertRowid')
   return {

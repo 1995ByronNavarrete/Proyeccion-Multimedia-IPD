@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Megaphone, Plus, Play, Trash2, Eye, X, Settings, Sparkles, Pencil } from 'lucide-react'
 import { useLang } from '../i18n'
-
-const ANUNCIO_ANIM_IDS = ['anim-fade', 'anim-dissolve', 'anuncio-blur-in', 'anuncio-slide-up', 'anuncio-drop-in', 'anuncio-float-in', 'anuncio-bounce', 'anuncio-flip', 'anuncio-zoom', 'anuncio-swirl-in', 'anuncio-glow', 'anuncio-gradient', 'anuncio-fire', 'letra-fade', 'letra-slide-up', 'letra-pop', 'letra-bounce', 'letra-flip']
+import { ANUNCIO_ANIM_IDS } from '../constants'
 
 const BG_CATEGORIES = [
   { labelKey: 'anuncios.bgCat.suaves', items: [

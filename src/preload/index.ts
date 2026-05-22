@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+function isPathSafe(filePath: string): boolean {
+  return !filePath.includes('..') && !filePath.includes('~')
+}
+
 const api = {
   bible: {
     getTranslations: () => ipcRenderer.invoke('bible:getTranslations'),
@@ -44,7 +48,7 @@ const api = {
   medialocal: {
     importFile: () => ipcRenderer.invoke('medialocal:importFile'),
     importFiles: () => ipcRenderer.invoke('medialocal:importFiles'),
-    deleteFile: (filePath: string) => ipcRenderer.invoke('medialocal:deleteFile', filePath),
+    deleteFile: (filePath: string) => isPathSafe(filePath) ? ipcRenderer.invoke('medialocal:deleteFile', filePath) : Promise.reject(new Error('Path no permitido')),
     openFolder: () => ipcRenderer.invoke('medialocal:openFolder'),
     getBiblioteca: () => ipcRenderer.invoke('medialocal:getBiblioteca'),
     getAll: () => ipcRenderer.invoke('medialocal:getAll'),
@@ -99,9 +103,9 @@ const api = {
     pickImage: () => ipcRenderer.invoke('app:pickImage'),
     getFondos: () => ipcRenderer.invoke('app:getFondos'),
     saveEditedImage: (dataUrl: string, name: string) => ipcRenderer.invoke('app:saveEditedImage', dataUrl, name),
-    readImageAsDataUrl: (filePath: string) => ipcRenderer.invoke('app:readImageAsDataUrl', filePath),
-    readFileAsDataUrl: (filePath: string) => ipcRenderer.invoke('app:readFileAsDataUrl', filePath),
-    openDocument: (filePath: string) => ipcRenderer.invoke('app:openDocument', filePath),
+    readImageAsDataUrl: (filePath: string) => isPathSafe(filePath) ? ipcRenderer.invoke('app:readImageAsDataUrl', filePath) : Promise.reject(new Error('Path no permitido')),
+    readFileAsDataUrl: (filePath: string) => isPathSafe(filePath) ? ipcRenderer.invoke('app:readFileAsDataUrl', filePath) : Promise.reject(new Error('Path no permitido')),
+    openDocument: (filePath: string) => isPathSafe(filePath) ? ipcRenderer.invoke('app:openDocument', filePath) : Promise.reject(new Error('Path no permitido')),
     convertDocumentToHtml: (filePath: string) => ipcRenderer.invoke('app:convertDocumentToHtml', filePath),
     getDefaultBg: () => ipcRenderer.invoke('app:getDefaultBg')
   },

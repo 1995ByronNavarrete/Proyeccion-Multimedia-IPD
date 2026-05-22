@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Image as ImageIcon, Trash2, Check, Plus, FolderOpen, Monitor, ListTodo, Sparkles, Edit3 } from 'lucide-react'
-import { ANIM_GROUPS } from '../constants'
+import { ANIM_GROUPS, ANUNCIO_ANIM_IDS } from '../constants'
 import AnimSelectorModal from './shared/AnimSelectorModal'
 import ImageEditor from './shared/ImageEditor'
 import { fileUrl } from '../utils'
@@ -37,8 +37,6 @@ interface Anuncio {
   texto: string
   animacion: string
 }
-
-const ANUNCIO_ANIM_IDS = ['anim-fade', 'anim-dissolve', 'anuncio-blur-in', 'anuncio-slide-up', 'anuncio-drop-in', 'anuncio-float-in', 'anuncio-bounce', 'anuncio-flip', 'anuncio-zoom', 'anuncio-swirl-in', 'anuncio-glow', 'anuncio-gradient', 'anuncio-fire', 'letra-fade', 'letra-slide-up', 'letra-pop', 'letra-bounce', 'letra-flip']
 
 const ANIM_CATEGORIES = ANIM_GROUPS.filter(g => g.items.some(a => ANUNCIO_ANIM_IDS.includes(a.id))).map(g => ({
   ...g,

@@ -1,5 +1,5 @@
 import { dialog, app, ipcMain } from 'electron'
-import { writeFileSync, readFileSync } from 'fs'
+import { writeFileSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { queryAll, execute, flushDatabase, getDbPath, reloadDatabase } from './database'
 
@@ -37,9 +37,17 @@ export function registerBackupHandlers(): void {
       const raw = readFileSync(result.filePaths[0], 'utf-8')
       const backup = JSON.parse(raw)
       if (!backup.db) return { success: false, error: 'Backup inválido' }
+      if (typeof backup.db !== 'string') return { success: false, error: 'Backup inválido: db no es texto' }
+
+      // Backup previo antes de restaurar
+      const dbPath = getDbPath()
+      if (existsSync(dbPath)) {
+        const tempBackup = dbPath + '.restore-backup'
+        writeFileSync(tempBackup, readFileSync(dbPath))
+      }
 
       const buffer = Buffer.from(backup.db, 'base64')
-      writeFileSync(getDbPath(), buffer)
+      writeFileSync(dbPath, buffer)
       await reloadDatabase()
       return { success: true, data: { path: result.filePaths[0] } }
     } catch (err) {
