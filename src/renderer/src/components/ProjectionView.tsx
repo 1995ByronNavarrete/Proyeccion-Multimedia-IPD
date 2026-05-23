@@ -304,6 +304,40 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
                 <video ref={videoRef} className="w-full h-full object-contain pointer-events-none will-change-transform" data-volume="bg" autoPlay playsInline preload="metadata"
                   onError={(e) => console.error('[ProjectionView] error:', (e.target as HTMLVideoElement).error?.message)} />
               )}
+              {(backgroundUrl || projected?.backgroundUrl || isVerse) && (
+                <>
+                  {backgroundUrl && <img src={backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+                  {projected?.backgroundUrl && <img src={projected.backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+                  <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${(100 - overlayOpacity) / 100})` }} />
+                  {projected?.sermonTitle && (
+                    <div className="absolute top-1 right-2 z-10 text-right pointer-events-none">
+                      <p className="text-[10px] font-bold text-amber-400 drop-shadow-lg">{projected.sermonTitle}</p>
+                      {projected?.sermonPreacher && <p className="text-[7px] text-amber-400/70 drop-shadow-lg">{projected.sermonPreacher}</p>}
+                    </div>
+                  )}
+                  <div ref={previewContainerRef} className="absolute inset-0 text-center px-6 flex items-center justify-center overflow-hidden">
+                    {isVerse ? (
+                      <div key={`${projected!.text}-${projected!.backgroundUrl}`} className="flex flex-col items-center justify-center w-full h-full">
+                        {activeAnim.startsWith('anim-letter-') ? (
+                          <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim}`}>
+                            {projected?.text?.split('').map((char, i) => (
+                              <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
+                            ))}
+                          </p>
+                        ) : (
+                          <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>{projected!.text}</p>
+                        )}
+                        <p ref={previewRefRef} className={`text-white/70 mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>— {projected?.reference}</p>
+                      </div>
+                    ) : (backgroundUrl || projected?.backgroundUrl) ? (
+                      <div>
+                        <p className={`font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>Verso proyectado aquí</p>
+                        <p className={`text-white/70 mt-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>Selecciona un verso en la Biblia</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              )}
             </div>
             <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-3 py-2 bg-gradient-to-t from-black/60 to-transparent pointer-events-auto">
               <button onClick={bgVideo.paused ? onResume : onPause}
