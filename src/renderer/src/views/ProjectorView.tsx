@@ -334,7 +334,8 @@ export default function ProjectorView() {
 
     const hideAfterExit = () => {
       setAnuncioExiting(true)
-      setTimeout(() => { setAnuncioText(''); setAnuncioExiting(false) }, 600)
+      clearAnuncioTimer()
+      anuncioTimerRef.current = setTimeout(() => { setAnuncioText(''); setAnuncioExiting(false); anuncioTimerRef.current = undefined }, 600)
     }
 
     const unsub9 = window.api.on('projector:showAnnouncement', (arg: unknown) => {
@@ -642,9 +643,6 @@ function EffectRenderer({ effect, speed, ...anuncio }: any) {
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-black">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-      <AnuncioOverlay text={anuncio.anuncioText} animIn={anuncio.anuncioAnimIn} animOut={anuncio.anuncioAnimOut}
-        bg={anuncio.anuncioBg} bgAnimIn={anuncio.anuncioBgAnimIn} bgAnimOut={anuncio.anuncioBgAnimOut}
-        size={anuncio.anuncioSize} font={anuncio.anuncioFont} color={anuncio.anuncioColor} exiting={anuncio.anuncioExiting} />
     </div>
   )
 }

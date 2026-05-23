@@ -20,14 +20,18 @@ export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }:
   const isYoutube = bgVideo.url != null && bgVideo.url.includes('youtube.com/embed')
 
   useEffect(() => {
+    if (!bgVideo.url) {
+      lastUrlRef.current = null
+      if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = '' }
+      return
+    }
     if (isYoutube) {
-      if (!bgVideo.url) return
       setYtKey((k) => k + 1)
+      if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = '' }
       return
     }
     const v = videoRef.current
     if (!v) return
-    if (!bgVideo.url) { v.pause(); v.src = ''; lastUrlRef.current = null; return }
     if (bgVideo.url !== lastUrlRef.current) {
       lastUrlRef.current = bgVideo.url
       v.src = bgVideo.url

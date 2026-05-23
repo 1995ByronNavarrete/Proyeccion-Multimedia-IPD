@@ -116,21 +116,19 @@ export default function ConfigPanel() {
       overlayOpacity,
       primaryMonitor,
       wsEnabled,
-      wsPort
-    }
-    if (headerTitle || headerSub) {
-      newConfig.headerTitle = headerTitle
-      newConfig.headerSub = headerSub
+      wsPort,
+      headerTitle: headerTitle || '',
+      headerSub: headerSub || ''
     }
     await window.api.app.saveConfig(newConfig)
     setConfig(newConfig)
     if (shortcuts.length) localStorage.setItem('shortcuts', JSON.stringify(shortcuts))
     setDirty(false)
     setSaved(true)
-    window.api.projector.updateConfig({ overlayOpacity })
-    window.dispatchEvent(new CustomEvent('config:changed', { detail: { overlayOpacity } }))
+    window.api.projector.updateConfig({ overlayOpacity, fontSize: config.fontSize as number || 48 })
+    window.dispatchEvent(new CustomEvent('config:changed', { detail: { overlayOpacity, fontSize: config.fontSize as number || 48 } }))
     toast('Configuración guardada', 'success')
-  }, [config, overlayOpacity, primaryMonitor, wsEnabled, wsPort, shortcuts])
+  }, [config, overlayOpacity, primaryMonitor, wsEnabled, wsPort, shortcuts, headerTitle, headerSub])
 
   const toggleTranslation = async (id: number, active: boolean) => {
     await window.api.bible.setTranslationActive(id, active)
@@ -144,9 +142,8 @@ export default function ConfigPanel() {
     setTranslations(prev => prev.filter(t => t.id !== id))
   }
 
-  const startRecording = () => {
-    setRecordingShortcut(true)
-    setNewShortcutKey('Presiona una tecla...')
+  useEffect(() => {
+    if (!recordingShortcut) return
     const handler = (e: KeyboardEvent) => {
       e.preventDefault()
       const combo: string[] = []
@@ -159,6 +156,11 @@ export default function ConfigPanel() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
+  }, [recordingShortcut])
+
+  const startRecording = () => {
+    setRecordingShortcut(true)
+    setNewShortcutKey('Presiona una tecla...')
   }
 
   const addShortcut = () => {

@@ -119,8 +119,10 @@ export default function AudioControl() {
 
   const setMaster = (val: number) => {
     setMasterFader(val)
-    setChannels(prev => prev.map(ch => ({ ...ch, volume: val })))
-    channels.forEach(ch => applyVolume(ch.id, val))
+    channels.forEach(ch => {
+      const scaled = Math.round(ch.volume * val / 100)
+      applyVolume(ch.id, scaled)
+    })
   }
 
   const clearFade = () => { if (fadeTimerRef.current) { clearInterval(fadeTimerRef.current); fadeTimerRef.current = undefined } }
@@ -129,14 +131,15 @@ export default function AudioControl() {
     if (fadeActive) return
     setFadeActive(true)
     let v = masterFader
-    fadeTimerRef.current = setInterval(() => { v -= 3; if (v <= 0) { clearFade(); setMaster(0); setFadeActive(false) } else setMaster(v) }, 50)
+    fadeTimerRef.current = setInterval(() => { v -= 3; if (v <= 0) { clearFade(); setMasterFader(0); channels.forEach(ch => applyVolume(ch.id, 0)); setFadeActive(false) } else setMaster(v) }, 50)
   }
 
   const fadeIn = () => {
     if (fadeActive) return
     setFadeActive(true)
+    const target = masterFader
     let v = 0
-    fadeTimerRef.current = setInterval(() => { v += 3; if (v >= masterFader) { clearFade(); setMaster(masterFader); setFadeActive(false) } else setMaster(v) }, 50)
+    fadeTimerRef.current = setInterval(() => { v += 3; if (v >= target) { clearFade(); setMasterFader(target); channels.forEach(ch => applyVolume(ch.id, Math.round(ch.volume * target / 100))); setFadeActive(false) } else setMaster(v) }, 50)
   }
 
   useEffect(() => { return () => clearFade() }, [])

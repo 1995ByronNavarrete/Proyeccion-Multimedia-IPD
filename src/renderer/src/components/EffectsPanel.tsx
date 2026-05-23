@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Sparkles, Snowflake, Bug, PartyPopper, CircleDot, Droplets, Heart, Cloud, Zap, Star, Square, Diamond, Globe, Settings, X, Ban, Waves, Radio, Sun, Rows } from 'lucide-react'
 import { useLang } from '../i18n'
 
@@ -31,6 +31,10 @@ export default function EffectsPanel() {
   const [intensity, setIntensity] = useState(50)
   const [count, setCount] = useState(50)
   const updateTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => {
+    return () => { if (updateTimer.current) clearTimeout(updateTimer.current) }
+  }, [])
 
   const sendOverlay = (id: string, sp: number, col: string) => {
     if (updateTimer.current) clearTimeout(updateTimer.current)

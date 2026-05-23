@@ -34,6 +34,8 @@ export interface ProjectedContent {
 }
 
 export default function DashboardView() {
+  const { isEnabled } = useModules()
+  const { toast } = useToast()
   const [projected, setProjected] = useState<ProjectedContent>({ type: 'none' })
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
   const [overlayOpacity, setOverlayOpacity] = useState(80)
@@ -92,6 +94,7 @@ export default function DashboardView() {
 
   // Escuchar cambios de pantalla desde ScreensModal
   useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = []
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (!detail?.assignments) return
@@ -106,7 +109,7 @@ export default function DashboardView() {
 
         window.api.projector.projectToDisplay(displayId)
 
-        setTimeout(() => {
+        const t = setTimeout(() => {
           const removed = oldTypes.filter(t => !types.includes(t))
           const added = types.filter(t => !oldTypes.includes(t))
 
@@ -128,10 +131,14 @@ export default function DashboardView() {
             }
           }
         }, 300)
+        timeouts.push(t)
       }
     }
     window.addEventListener('screens:applied', handler)
-    return () => window.removeEventListener('screens:applied', handler)
+    return () => {
+      window.removeEventListener('screens:applied', handler)
+      timeouts.forEach(clearTimeout)
+    }
   }, [backgroundUrl, animBiblia])
 
   // Escuchar cambios de predicación en tiempo real
@@ -278,6 +285,8 @@ export default function DashboardView() {
 
   const handleShowBlack = () => {
     setProjected({ type: 'black' })
+    setChapterVerses([])
+    setVerseIdx(0)
     window.api.projector.showBlack()
     toast('Pantalla negra', 'info')
   }
@@ -309,9 +318,6 @@ export default function DashboardView() {
     window.api.projector.projectToAll()
     toast(`Imagen: ${name}`, 'success')
   }
-
-  const { isEnabled } = useModules()
-  const { toast } = useToast()
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden bg-theme">
