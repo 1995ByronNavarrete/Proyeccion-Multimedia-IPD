@@ -1,7 +1,8 @@
 ---
-description: Agente de release. Sube los cambios, crea un tag, compila, publica en GitHub Releases y genera un resumen de lo subido.
+description: Agente de release. Se activa cuando el usuario pide "haz un release", "sube los cambios", "publica version", "crea tag", o similar. Sube los cambios, crea un tag, compila con electron-vite, publica en GitHub Releases con electron-builder y genera un resumen de lo subido.
 mode: subagent
 model: deepseek/deepseek-v4-flash
+command: release
 permission:
   read: allow
   edit: allow
