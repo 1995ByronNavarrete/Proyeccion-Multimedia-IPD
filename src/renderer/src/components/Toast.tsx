@@ -56,8 +56,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           const Icon = ICONS[t.type]
           return (
             <div key={t.id}
-              className={`pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-lg border shadow-lg shadow-black/30 backdrop-blur-md animate-slide-up ${COLORS[t.type]}`}
-              style={{ animation: 'slideUp 0.3s ease-out' }}>
+              className={`pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-lg border shadow-lg shadow-black/30 backdrop-blur-md animate-slide-up ${COLORS[t.type]}`}>
               <Icon size={12} />
               <span className="text-[11px] font-medium">{t.message}</span>
               <button onClick={() => remove(t.id)} className="ml-1 p-0.5 opacity-60 hover:opacity-100 transition-opacity">

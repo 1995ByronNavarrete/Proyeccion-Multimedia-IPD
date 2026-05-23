@@ -231,7 +231,7 @@ export default function ProjectorView() {
         setEffect({ type: data.effect || 'waves', speed: data.speed || 1 })
         setVerseText(''); setVerseRef(''); setVerseBackground(''); setIsImage(false); setIsBlack(false); setDocUrl('')
         clearVideo()
-      } else if (data?.type === 'media' && (data.mediaUrl?.startsWith('data:image') || data.mediaUrl?.startsWith('file://') || data.mediaUrl?.match(/\.(png|jpg|jpeg|gif|webp|bmp)/i))) {
+      } else if (data?.type === 'media' && (data.mediaUrl?.startsWith('data:image') || data.mediaUrl?.startsWith('file://') || data.mediaUrl?.match(/\.(png|jpg|jpeg|gif|webp|bmp)(\?.*)?$/i))) {
         setEffect(null); setDocUrl('')
         setVerseText('')
         setVerseRef('')

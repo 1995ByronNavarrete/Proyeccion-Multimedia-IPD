@@ -187,7 +187,7 @@ export async function seedFromApiBible(
     )
     const versesData = chRes?.data ?? []
     return versesData.map((v: any) => ({
-      capitulo: v.chapterId ? parseInt(v.chapterId.split('.').pop() || '1', 10) : 1,
+      capitulo: v.chapterId ? parseInt((v.chapterId as string).split('.').pop() || '1', 10) : 1,
       versiculo: v.orgId ? parseInt(v.orgId, 10) : 1,
       texto: v.textContent || v.content?.[0]?.text || ''
     }))

@@ -253,9 +253,10 @@ export default function DashboardView() {
     return () => { unsub1?.(); unsub2?.() }
   }, [])
 
-  // Cuando cambia el fondo, re-proyectar con el nuevo fondo
+  // Cuando cambia el fondo, re-proyectar solo si hay versículo activo
   useEffect(() => {
     if (!backgroundUrl) return
+    if (projected.type !== 'verse') return
     if (lastVerse.current) {
       let sermonTitle = '', sermonPreacher = ''
       try { const s = JSON.parse(localStorage.getItem('sermonInfo') || '{}'); sermonTitle = s.title || ''; sermonPreacher = s.preacher || '' } catch {}
@@ -271,13 +272,8 @@ export default function DashboardView() {
       setProjected(content)
       window.api.projector.sendContent(content)
       window.api.projector.projectToAll()
-    } else {
-      const content: ProjectedContent = { type: 'media', text: 'Fondo', mediaUrl: '', backgroundUrl, overlayOpacity, fontSize }
-      setProjected(content)
-      window.api.projector.sendContent(content)
-      window.api.projector.projectToAll()
     }
-  }, [backgroundUrl])
+  }, [backgroundUrl, projected.type])
 
   const handleShowBlack = () => {
     setProjected({ type: 'black' })
