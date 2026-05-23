@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { MonitorOff, ImageIcon, ChevronLeft, ChevronRight, Download, Sparkles, ZoomIn, Play, Pause, Square } from 'lucide-react'
+import { MonitorOff, ImageIcon, ChevronLeft, ChevronRight, Download, Sparkles, ZoomIn } from 'lucide-react'
 import type { ProjectedContent } from '../views/DashboardView'
 import AnimSelectorModal from './shared/AnimSelectorModal'
 import { ANIM_GROUPS } from '../constants'
@@ -17,17 +17,11 @@ interface ProjectionViewProps {
   onNextVerse?: () => void
   overlayOpacity?: number
   fontSize?: number
-  bgVideo?: { url: string | null; title: string; paused: boolean }
-  onPause?: () => void
-  onResume?: () => void
-  onStop?: () => void
 }
 
 const allAnimations = ANIM_GROUPS.flatMap((g) => g.items)
 
-const YT_CMD = (fn: string) => JSON.stringify({ event: 'command', func: fn, args: [] })
-
-export default function ProjectionView({ onBlack, backgroundUrl, projected, animation, onAnimationChange, chapterVerses, verseIdx, onPrevVerse, onNextVerse, overlayOpacity: propOverlayOpacity = 80, fontSize: propFontSize = 48, bgVideo, onPause, onResume, onStop }: ProjectionViewProps) {
+export default function ProjectionView({ onBlack, backgroundUrl, projected, animation, onAnimationChange, chapterVerses, verseIdx, onPrevVerse, onNextVerse, overlayOpacity: propOverlayOpacity = 80, fontSize: propFontSize = 48 }: ProjectionViewProps) {
   const { t } = useLang()
   const [openAnim, setOpenAnim] = useState(false)
   const [overlay, setOverlay] = useState<{ type: string; speed?: number; color?: string } | null>(null)
@@ -35,60 +29,6 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
   const animRef = useRef<number>(0)
   const [overlayOpacity, setOverlayOpacity] = useState(propOverlayOpacity)
   const [fontSize, setFontSize] = useState(propFontSize)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-  const [ytKey, setYtKey] = useState(0)
-  const lastUrlRef = useRef<string | null>(null)
-  const [debug, setDebug] = useState(false)
-  const [testResult, setTestResult] = useState<string[]>([])
-  const testCount = useRef(0)
-
-  const runSelfTest = () => {
-    const results: string[] = []
-    const id = ++testCount.current
-    const ok = (msg: string) => results.push(`✓ ${msg}`)
-    const fail = (msg: string) => results.push(`✗ ${msg}`)
-
-    ok(`Test #${id} iniciado`)
-
-    if (bgVideo?.url) {
-      ok(`bgVideo.url: ${bgVideo.url.slice(0, 60)}...`)
-      ok(`bgVideo.paused: ${bgVideo.paused}`)
-      ok(`isYoutube: ${isYoutube}`)
-      if (isYoutube) {
-        ok(`iframeRef existe: ${!!iframeRef.current}`)
-      } else {
-        const v = videoRef.current
-        ok(`videoRef existe: ${!!v}`)
-        if (v) {
-          ok(`video.src: ${v.src ? v.src.slice(0, 50) + '...' : '(vacio)'}`)
-          ok(`video.paused: ${v.paused}`)
-          ok(`video.readyState: ${v.readyState}`)
-          ok(`lastUrlRef: ${lastUrlRef.current ? lastUrlRef.current.slice(0, 50) + '...' : '(null)'}`)
-          ok(`urls coinciden: ${lastUrlRef.current === bgVideo.url}`)
-        }
-      }
-      ok(`onPause existe: ${!!onPause}`)
-      ok(`onResume existe: ${!!onResume}`)
-      ok(`onStop existe: ${!!onStop}`)
-    } else {
-      ok(`Sin video activo (bgVideo.url es null)`)
-    }
-
-    ok(`Test #${id} completado (${results.length} checks)`)
-    setTestResult(results)
-    console.log(`[ProjectionView:test #${id}]`, results.join('\n'))
-  }
-
-  useEffect(() => {
-    if (!debug) return
-    console.log('[ProjectionView:debug] bgVideo.url:', bgVideo?.url)
-    console.log('[ProjectionView:debug] bgVideo.paused:', bgVideo?.paused)
-    console.log('[ProjectionView:debug] isYoutube:', isYoutube)
-    console.log('[ProjectionView:debug] lastUrlRef:', lastUrlRef.current)
-    console.log('[ProjectionView:debug] videoRef:', videoRef.current?.src)
-    console.log('[ProjectionView:debug] iframeRef:', !!iframeRef.current)
-  }, [bgVideo?.url, bgVideo?.paused, debug])
 
   useEffect(() => { setOverlayOpacity(propOverlayOpacity) }, [propOverlayOpacity])
   useEffect(() => { setFontSize(propFontSize) }, [propFontSize])
@@ -141,33 +81,6 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
     })
     return () => unsub?.()
   }, [])
-
-  const isYoutube = bgVideo?.url != null && bgVideo.url.includes('youtube.com/embed')
-
-  useEffect(() => {
-    if (isYoutube) {
-      if (!bgVideo?.url) return
-      setYtKey((k) => k + 1)
-      return
-    }
-    const v = videoRef.current
-    if (!v) return
-    if (!bgVideo?.url) { v.pause(); v.src = ''; lastUrlRef.current = null; return }
-    if (bgVideo.url !== lastUrlRef.current) {
-      lastUrlRef.current = bgVideo.url
-      v.src = bgVideo.url
-      v.play().catch(() => {})
-    } else if (bgVideo.paused) {
-      v.pause()
-    } else {
-      v.play().catch(() => {})
-    }
-  }, [bgVideo?.url, bgVideo?.paused, isYoutube])
-
-  useEffect(() => {
-    if (!isYoutube || !bgVideo?.url || !iframeRef.current?.contentWindow) return
-    iframeRef.current.contentWindow.postMessage(YT_CMD(bgVideo.paused ? 'pauseVideo' : 'playVideo'), '*')
-  }, [bgVideo?.paused, isYoutube])
 
   const isVerse = projected?.type === 'verse' && projected.text
   const activeAnim = animation || 'anim-fade'
@@ -286,71 +199,12 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
           <button onClick={onBlack} className="p-1 hover:bg-white/5 rounded transition-colors" title={t('black.title')}>
             <MonitorOff size={12} className="text-theme-muted" />
           </button>
-          <button onClick={() => { if (!debug) { setDebug(true); runSelfTest() } else setDebug(false) }}
-            className={`p-1 rounded transition-colors ${debug ? 'bg-yellow-500/20 text-yellow-400' : 'hover:bg-white/5 text-theme-muted'}`} title="Diagnóstico video">
-            <span className="text-[9px] font-mono">{debug ? 'DBG' : '⚡'}</span>
-          </button>
         </div>
       </div>
 
       <div className="flex-1 m-2 rounded-lg overflow-hidden relative flex items-center justify-center">
         {overlay && <canvas ref={overlayRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />}
-        {bgVideo?.url ? (
-          <div className="w-full h-full bg-black rounded-lg overflow-hidden relative flex flex-col">
-            <div className="flex-1 relative overflow-hidden">
-              {isYoutube ? (
-                <iframe ref={iframeRef} key={ytKey} src={bgVideo.url} className="w-full h-full pointer-events-none" data-volume="bg" allow="autoplay; fullscreen" allowFullScreen loading="lazy" />
-              ) : (
-                <video ref={videoRef} className="w-full h-full object-contain pointer-events-none will-change-transform" data-volume="bg" autoPlay playsInline preload="metadata"
-                  onError={(e) => console.error('[ProjectionView] error:', (e.target as HTMLVideoElement).error?.message)} />
-              )}
-              {(backgroundUrl || projected?.backgroundUrl || isVerse) && (
-                <>
-                  {backgroundUrl && <img src={backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
-                  {projected?.backgroundUrl && <img src={projected.backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
-                  <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${(100 - overlayOpacity) / 100})` }} />
-                  {projected?.sermonTitle && (
-                    <div className="absolute top-1 right-2 z-10 text-right pointer-events-none">
-                      <p className="text-[10px] font-bold text-amber-400 drop-shadow-lg">{projected.sermonTitle}</p>
-                      {projected?.sermonPreacher && <p className="text-[7px] text-amber-400/70 drop-shadow-lg">{projected.sermonPreacher}</p>}
-                    </div>
-                  )}
-                  <div ref={previewContainerRef} className="absolute inset-0 text-center px-6 flex items-center justify-center overflow-hidden">
-                    {isVerse ? (
-                      <div key={`${projected!.text}-${projected!.backgroundUrl}`} className="flex flex-col items-center justify-center w-full h-full">
-                        {activeAnim.startsWith('anim-letter-') ? (
-                          <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim}`}>
-                            {projected?.text?.split('').map((char, i) => (
-                              <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
-                            ))}
-                          </p>
-                        ) : (
-                          <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>{projected!.text}</p>
-                        )}
-                        <p ref={previewRefRef} className={`text-white/70 mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>— {projected?.reference}</p>
-                      </div>
-                    ) : (backgroundUrl || projected?.backgroundUrl) ? (
-                      <div>
-                        <p className={`font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>Verso proyectado aquí</p>
-                        <p className={`text-white/70 mt-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>Selecciona un verso en la Biblia</p>
-                      </div>
-                    ) : null}
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-3 py-2 bg-gradient-to-t from-black/60 to-transparent pointer-events-auto">
-              <button onClick={bgVideo.paused ? onResume : onPause}
-                className="p-2 bg-[#6c5ce7]/30 rounded-full text-[#6c5ce7] hover:bg-[#6c5ce7]/50 transition-colors" title={bgVideo.paused ? 'Reanudar' : 'Pausar'}>
-                {bgVideo.paused ? <Play size={14} /> : <Pause size={14} />}
-              </button>
-              <button onClick={onStop}
-                className="p-2 bg-red-600/30 rounded-full text-red-500 hover:bg-red-600/50 transition-colors" title="Detener">
-                <Square size={14} />
-              </button>
-            </div>
-          </div>
-        ) : projected?.type === 'black' ? (
+        {projected?.type === 'black' ? (
           <div className="text-center">
             <MonitorOff size={28} className="text-theme-dim mx-auto mb-2" />
             <p className="text-[10px] text-theme-dim">{t('black.title')}</p>
@@ -413,29 +267,6 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
             </div>
           </div>
         )}
-
-        {debug && testResult.length > 0 && (
-          <div className="absolute inset-0 z-30 bg-black/80 overflow-auto pointer-events-none">
-            <div className="p-2 font-mono text-[8px] leading-tight pointer-events-auto">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-yellow-400 font-bold text-[9px]">DIAGNÓSTICO VIDEO</span>
-                <button onClick={runSelfTest} className="text-[8px] text-cyan-400 hover:text-cyan-300 px-1">Re-ejecutar</button>
-              </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-gray-300 mb-2">
-                <span className="text-gray-500">bgVideo.url:</span><span className="text-cyan-300 break-all">{bgVideo?.url || '(null)'}</span>
-                <span className="text-gray-500">bgVideo.paused:</span><span className={bgVideo?.paused ? 'text-yellow-300' : 'text-green-400'}>{String(bgVideo?.paused)}</span>
-                <span className="text-gray-500">isYoutube:</span><span>{String(isYoutube)}</span>
-                <span className="text-gray-500">videoRef:</span><span className="break-all">{videoRef.current ? `src: ${videoRef.current.src.slice(0, 40)}... paused:${videoRef.current.paused}` : '(sin ref)'}</span>
-                <span className="text-gray-500">iframeRef:</span><span>{iframeRef.current ? 'presente' : 'ausente'}</span>
-                <span className="text-gray-500">lastUrlRef:</span><span className="break-all">{lastUrlRef.current || '(null)'}</span>
-                <span className="text-gray-500">onPause/Resume/Stop:</span><span>{[!!onPause, !!onResume, !!onStop].map(Boolean).join('/')}</span>
-              </div>
-              {testResult.map((r, i) => (
-                <div key={i} className={`${r.startsWith('✓') ? 'text-green-400' : r.startsWith('✗') ? 'text-red-400' : 'text-gray-500'}`}>{r}</div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {hasNav && (
@@ -476,5 +307,3 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
     </div>
   )
 }
-
-
