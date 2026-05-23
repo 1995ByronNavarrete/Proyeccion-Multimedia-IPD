@@ -63,6 +63,11 @@
 - **Config**: `opencode.json`
 - **Memoria**: `.opencode/MEMORY.md`
 
+### 2026-05-23: Agregado agente database
+- **Archivo**: `.opencode/agents/database.md`
+- **Rol**: Administrador de SQLite (schema, migraciones, integridad). Coordina con biblia y multimedia.
+- **Actualizado**: `opencode.json`, `MEMORY.md`
+
 ---
 
 ## CONVENCIONES DE CODIGO
@@ -85,6 +90,7 @@
 | `leader` | Coordina el equipo, revisa arquitectura | `.opencode/agents/leader.md` |
 | `biblia` | Modulo de Biblia (navegacion, proyeccion, DB) | `.opencode/agents/biblia.md` |
 | `multimedia` | Video, audio, imagenes, efectos, pantallas | `.opencode/agents/multimedia.md` |
+| `database` | Administrador de SQLite — schema, migraciones, integridad | `.opencode/agents/database.md` |
 
 ---
 

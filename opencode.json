@@ -16,6 +16,11 @@
       "description": "Especialista en multimedia (video, audio, imagenes, efectos, pantallas)",
       "mode": "subagent",
       "model": "anthropic/claude-sonnet-4-6"
+    },
+    "database": {
+      "description": "Administrador de la base de datos SQLite — schema, migraciones, consultas, integridad",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
     }
   }
 }
