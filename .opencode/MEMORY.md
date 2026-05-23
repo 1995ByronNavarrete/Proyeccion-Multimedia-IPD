@@ -68,6 +68,10 @@
 - **Rol**: Administrador de SQLite (schema, migraciones, integridad). Coordina con biblia y multimedia.
 - **Actualizado**: `opencode.json`, `MEMORY.md`
 
+### 2026-05-23: Agregado agente frontend
+- **Archivo**: `.opencode/agents/frontend.md`
+- **Rol**: UI — componentes React, TailwindCSS, temas, i18n, animaciones, iconos
+
 ---
 
 ## CONVENCIONES DE CODIGO
@@ -91,6 +95,7 @@
 | `biblia` | Modulo de Biblia (navegacion, proyeccion, DB) | `.opencode/agents/biblia.md` |
 | `multimedia` | Video, audio, imagenes, efectos, pantallas | `.opencode/agents/multimedia.md` |
 | `database` | Administrador de SQLite — schema, migraciones, integridad | `.opencode/agents/database.md` |
+| `frontend` | UI — componentes React, TailwindCSS, temas, i18n, animaciones | `.opencode/agents/frontend.md` |
 
 ---
 

@@ -21,6 +21,11 @@
       "description": "Administrador de la base de datos SQLite — schema, migraciones, consultas, integridad",
       "mode": "subagent",
       "model": "anthropic/claude-sonnet-4-6"
+    },
+    "frontend": {
+      "description": "Especialista en UI — componentes React, TailwindCSS, temas, i18n, animaciones, experiencia de usuario",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
     }
   }
 }
