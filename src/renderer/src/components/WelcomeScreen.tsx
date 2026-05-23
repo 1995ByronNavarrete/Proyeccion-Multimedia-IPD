@@ -103,7 +103,7 @@ export default function WelcomeScreen() {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={finish} />
+      <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" />
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[580px] max-w-[94vw] bg-gradient-to-br from-[#0a0a1a] via-[#12122a] to-[#0a0a1a] border border-[#6c5ce7]/30 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6c5ce7] via-[#a855f7] to-[#00d4ff] animate-pulse" style={{ opacity: 0.6 }} />
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#6c5ce7]/20">

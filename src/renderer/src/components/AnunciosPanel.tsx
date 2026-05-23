@@ -98,7 +98,7 @@ export default function AnunciosPanel() {
   }
 
   const handleProject = (a: {id:number;texto:string}) => {
-    window.api.projector.showAnnouncement({ text: a.texto, animation: animIn, animIn, animOut, duration: duracion, bg, bgAnimIn, bgAnimOut, size, font, color })
+    window.api.projector.showAnnouncement({ text: a.texto, animIn, animOut, duration: duracion, bg, bgAnimIn, bgAnimOut, size, font, color })
     setProyectadoId(a.id)
     if (timerRef.current) clearTimeout(timerRef.current)
     if (duracion > 0) {

@@ -17,7 +17,7 @@ let lastOverlay: unknown = null
 let lastVideoPayload: { url: string; title: string; duration: number } | null = null
 let displayAssignments: Record<number, string[]> = {}
 const fileWatchers: import('fs').FSWatcher[] = []
-let screenListeners: (() => void) | null = null
+
 
 function sendContentToDisplay(displayId: number, channel: string, data: unknown): void {
   const win = projectorWindows.get(displayId)
@@ -105,23 +105,19 @@ function createMainWindow(): void {
     }
   })
 
+  let listenersRegistered = false
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
     mainWindow?.webContents.setZoomLevel(0)
     autoOpenProjectors()
-    if (screenListeners) screenListeners()
+    if (listenersRegistered) return
+    listenersRegistered = true
     const onDisplayAdded = () => mainWindow?.webContents.send('projector:layoutChanged')
     const onDisplayRemoved = () => mainWindow?.webContents.send('projector:layoutChanged')
     const onDisplayMetricsChanged = () => mainWindow?.webContents.send('projector:layoutChanged')
     screen.on('display-added', onDisplayAdded)
     screen.on('display-removed', onDisplayRemoved)
     screen.on('display-metrics-changed', onDisplayMetricsChanged)
-    screenListeners = () => {
-      screen.removeListener('display-added', onDisplayAdded)
-      screen.removeListener('display-removed', onDisplayRemoved)
-      screen.removeListener('display-metrics-changed', onDisplayMetricsChanged)
-      screenListeners = null
-    }
   })
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -133,7 +129,6 @@ function createMainWindow(): void {
   })
 
   mainWindow.on('closed', () => {
-    if (screenListeners) screenListeners()
     mainWindow = null
     for (const [, win] of projectorWindows) {
       if (!win.isDestroyed()) win.close()

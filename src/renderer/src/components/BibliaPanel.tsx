@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Search, Send, BookOpen, Download, Globe, Plus, Check, ArrowRightToLine } from 'lucide-react'
 import { useLang } from '../i18n'
 
+interface Translation { id: number; nombre: string; abreviatura: string; idioma: string; activa: number }
+interface Book { id: number; nombre: string; orden: number; testamento: string }
+interface Verse { id?: number; libro_id?: number; libro?: string; capitulo: number; versiculo: number; texto: string; traduccion?: string }
+interface SourceTrans { id: string; name: string; abbreviation: string; language: string; source: 'bible-api' | 'api-bible' }
+
 interface BibliaPanelProps {
   onProject: (text: string, reference: string) => void
   onLoadChapter?: (verses: { text: string; reference: string; verseNumber: number }[], idx: number) => void
@@ -245,8 +250,8 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
 
   const goToReference = useCallback(async () => {
     setGoRefError('')
-    const match = goRef.trim().match(/^(\d?\s*[a-z\u00E0-\u00FC]+)\s*(\d+)(?:\s*[.:,]\s*(\d+))?$/i)
-    if (!match) { setGoRefError(t('biblia.formatError')); return }
+    const match = goRef.trim().match(/^(\d?\s*[a-z\u00E0-\u00FC]+)\s*(\d+)(?:\s*[.:,]\s*(\d+)(?:\s*-\s*(\d+))?)?$/i)
+    if (!match || !match[2]) { setGoRefError(t('biblia.formatError')); return }
     const bookName = match[1].trim()
     const chapter = parseInt(match[2], 10)
     const verse = match[3] ? parseInt(match[3], 10) : null
@@ -620,10 +625,6 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
                       const transColor = TRANS_COLORS[v.traduccion as string] || '#6c5ce7'
                       return (
                         <div key={i} onClick={async () => {
-                          if (v.traduccion) {
-                            const matchTrans = translations.find((t: Translation) => t.abreviatura === v.traduccion)
-                            if (matchTrans) setSelectedTrans(matchTrans.id)
-                          }
                           setSelectedVerse(v.versiculo)
                           savedVerse.current = v.versiculo
                           const ref = `${v.libro || selectedBook?.nombre} ${v.capitulo || selectedChapter}:${v.versiculo}`
