@@ -205,7 +205,6 @@ export default function DashboardView() {
     saveStateToStorage()
     window.api.projector.sendContent(content)
     window.api.projector.projectToAll()
-    if (bgVideo.url) handleStopBg()
   }
 
   const handleLoadChapter = (verses: { text: string; reference: string; verseNumber: number }[], idx: number) => {
@@ -356,8 +355,7 @@ export default function DashboardView() {
           ) : (
             <>
               <div className="flex-[4] min-h-0 overflow-hidden">
-                <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg}
-                overlayOpacity={overlayOpacity} fontSize={fontSize} />
+                <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
               </div>
               <div className="flex gap-3 min-h-0">
     <div className="flex-1 min-w-0"><ReproductorPanel onPlayBg={handlePlayBg} /></div>

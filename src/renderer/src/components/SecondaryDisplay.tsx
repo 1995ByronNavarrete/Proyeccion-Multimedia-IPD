@@ -7,8 +7,6 @@ interface SecondaryDisplayProps {
   onPause: () => void
   onResume: () => void
   onStop: () => void
-  overlayOpacity?: number
-  fontSize?: number
 }
 
 const YT_CMD = (fn: string) => JSON.stringify({ event: 'command', func: fn, args: [] })
