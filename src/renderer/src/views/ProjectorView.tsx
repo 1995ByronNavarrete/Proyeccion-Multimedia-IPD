@@ -449,9 +449,9 @@ export default function ProjectorView() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a1a] to-black" />
       )}
       {sermonTitle && (
-        <div className="absolute top-8 right-6 z-20 text-right pointer-events-none">
-          <p className="text-2xl font-bold text-amber-400 drop-shadow-[0_3px_12px_rgba(0,0,0,0.95)]">{sermonTitle}</p>
-          {sermonPreacher && <p className="text-base text-amber-400/70 mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">{sermonPreacher}</p>}
+        <div className="absolute top-8 right-6 left-6 z-20 text-right pointer-events-none overflow-hidden">
+          <p className="text-2xl font-bold text-amber-400 drop-shadow-[0_3px_12px_rgba(0,0,0,0.95)] truncate">{sermonTitle}</p>
+          {sermonPreacher && <p className="text-base text-amber-400/70 mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] truncate">{sermonPreacher}</p>}
         </div>
       )}
       <div className="relative text-center w-full max-h-full flex flex-col items-center justify-center min-h-0">

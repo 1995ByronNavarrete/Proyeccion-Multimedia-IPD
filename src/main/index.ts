@@ -122,8 +122,9 @@ function createMainWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     if (lastOverlay) {
-      for (const [, win] of projectorWindows) {
-        if (!win.isDestroyed()) win.webContents.send('projector:overlay', lastOverlay)
+      for (const [displayId, win] of projectorWindows) {
+        if (!win.isDestroyed() && (!displayAssignments[displayId] || displayAssignments[displayId].includes('efectos') || (lastOverlay as any).type === 'none'))
+          win.webContents.send('projector:overlay', lastOverlay)
       }
     }
   })

@@ -5,7 +5,8 @@ import { useLang } from '../i18n'
 interface Translation { id: number; nombre: string; abreviatura: string; idioma: string; activa: number }
 interface Book { id: number; nombre: string; orden: number; testamento: string }
 interface Verse { id?: number; libro_id?: number; libro?: string; capitulo: number; versiculo: number; texto: string; traduccion?: string }
-interface SourceTrans { id: string; name: string; abbreviation: string; language: string; source: 'bible-api' | 'api-bible' }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 
 interface BibliaPanelProps {
   onProject: (text: string, reference: string) => void
