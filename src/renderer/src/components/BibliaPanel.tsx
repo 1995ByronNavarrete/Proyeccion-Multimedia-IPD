@@ -165,9 +165,11 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
           setSelectedBook(book)
           if (match && chapterToLoad) {
             window.api.bible.getChapters(book.id).then((cRes) => {
+              if (cancelled) return
               if (cRes.success && cRes.data) setChapters(cRes.data.map((r: { capitulo: number }) => r.capitulo))
             })
             window.api.bible.getVerses(book.id, chapterToLoad).then((vRes) => {
+              if (cancelled) return
               if (vRes.success && vRes.data) {
                 setVerses(vRes.data)
                 setSelectedChapter(chapterToLoad)
@@ -210,7 +212,7 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
         const ch = savedChapter.current
         setSelectedChapter(caps.includes(ch) ? ch : caps[0] || 1)
       }
-    })
+    }).catch(() => console.error('[BibliaPanel] Error al cargar capítulos'))
   }, [selectedBook])
 
   useEffect(() => {
@@ -238,7 +240,7 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
         }))
         onLoadChapter?.(allVerses, 0)
       }
-    })
+    }).catch(() => console.error('[BibliaPanel] Error al cargar versículos'))
   }, [selectedBook, selectedChapter])
 
   const goToReference = useCallback(async () => {
@@ -617,7 +619,7 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
                       const isSel = selectedVerse === v.versiculo
                       const transColor = TRANS_COLORS[v.traduccion as string] || '#6c5ce7'
                       return (
-                        <div key={i} onClick={() => {
+                        <div key={i} onClick={async () => {
                           if (v.traduccion) {
                             const matchTrans = translations.find((t: Translation) => t.abreviatura === v.traduccion)
                             if (matchTrans) setSelectedTrans(matchTrans.id)
@@ -627,6 +629,20 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
                           const ref = `${v.libro || selectedBook?.nombre} ${v.capitulo || selectedChapter}:${v.versiculo}`
                           const text = `${v.versiculo}. ${v.texto}`
                           onProject(text, ref)
+                          // Cargar capítulo completo para navegación prev/next
+                          if (onLoadChapter && v.libro_id && v.capitulo) {
+                            const vRes = await window.api.bible.getVerses(v.libro_id, v.capitulo)
+                            if (vRes.success && vRes.data) {
+                              const chapterRef = `${v.libro || selectedBook?.nombre} ${v.capitulo}`
+                              const allVerses = vRes.data.map((vv: Verse) => ({
+                                text: `${vv.versiculo}. ${vv.texto}`,
+                                reference: `${chapterRef}:${vv.versiculo}`,
+                                verseNumber: vv.versiculo
+                              }))
+                              const idx = vRes.data.findIndex((vv: Verse) => vv.versiculo === v.versiculo)
+                              onLoadChapter(allVerses, idx >= 0 ? idx : 0)
+                            }
+                          }
                           setSearch('')
                           setSearchResults([])
                         }}

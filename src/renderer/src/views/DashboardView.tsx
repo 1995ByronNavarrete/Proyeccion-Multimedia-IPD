@@ -49,6 +49,7 @@ export default function DashboardView() {
         const cfg = res.data as Record<string, any>
         if (cfg.overlayOpacity) setOverlayOpacity(cfg.overlayOpacity)
         if (cfg.fontSize) setFontSize(cfg.fontSize)
+        if (cfg.animBiblia) setAnimBiblia(cfg.animBiblia as string)
       }
     }).catch(() => {})
     return () => { cancelled = true }
@@ -176,15 +177,6 @@ export default function DashboardView() {
   const [chapterVerses, setChapterVerses] = useState<{ text: string; reference: string; verseNumber: number }[]>([])
   const [verseIdx, setVerseIdx] = useState(0)
   const lastVerse = useRef<{ text: string; reference: string } | null>(null)
-
-  // Restaurar animación guardada y fondo
-  useEffect(() => {
-    window.api.app.getConfig().then((res) => {
-      if (res?.success && res.data) {
-        if (res.data.animBiblia) setAnimBiblia(res.data.animBiblia as string)
-      }
-    })
-  }, [])
 
   const saveAnimBiblia = (anim: string) => {
     setAnimBiblia(anim)

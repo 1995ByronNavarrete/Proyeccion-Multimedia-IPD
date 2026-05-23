@@ -431,22 +431,7 @@ export default function ProjectorView() {
     return () => clearTimeout(delay)
   }, [videoUrl, isYoutube])
 
-  const OverlayFX = () => overlay ? <OverlayEffect type={overlay.type} speed={overlay.speed} color={overlay.color} /> : null
-
-  const GlobalOverlays = () => (
-    <>
-      <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
-      <OverlayFX />
-      {timerDisplay && (
-        <div className="fixed bottom-8 right-8 z-50 bg-black/70 backdrop-blur-md px-8 py-5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
-          <div className="flex items-center gap-4">
-            {timerRunning && <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />}
-            <span className="text-7xl font-bold font-mono text-white tabular-nums tracking-wider drop-shadow-[0_0_40px_rgba(0,0,0,0.9)]">{timerDisplay}</span>
-          </div>
-        </div>
-      )}
-    </>
-  )
+  const showOverlay = overlay != null
 
   let content: JSX.Element | null = null
 
@@ -552,7 +537,16 @@ export default function ProjectorView() {
     <div className="h-screen w-screen relative">
       {content}
       <div className="fixed inset-0 z-50 pointer-events-none">
-        <GlobalOverlays />
+        <AnuncioOverlay text={anuncioText} animIn={anuncioAnimIn} animOut={anuncioAnimOut} bg={anuncioBg} bgAnimIn={anuncioBgAnimIn} bgAnimOut={anuncioBgAnimOut} size={anuncioSize} font={anuncioFont} color={anuncioColor} exiting={anuncioExiting} />
+        {showOverlay && <OverlayEffect type={overlay!.type} speed={overlay!.speed} color={overlay!.color} />}
+        {timerDisplay && (
+          <div className="fixed bottom-8 right-8 z-50 bg-black/70 backdrop-blur-md px-8 py-5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
+            <div className="flex items-center gap-4">
+              {timerRunning && <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />}
+              <span className="text-7xl font-bold font-mono text-white tabular-nums tracking-wider drop-shadow-[0_0_40px_rgba(0,0,0,0.9)]">{timerDisplay}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -72,6 +72,7 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       }
     } catch {
       setError('Error al reproducir')
+      setActiveId(null)
     }
     setPlaying(false)
   }
