@@ -29,6 +29,7 @@ export default function ReproductorPanel({ onPlayBg }: ReproductorPanelProps) {
         if (audioRef.current.parentNode) audioRef.current.parentNode.removeChild(audioRef.current)
         audioRef.current = null
       }
+      if (audioCtxRef.current) { audioCtxRef.current.close(); audioCtxRef.current = null }
     }
   }, [])
   const [duration, setDuration] = useState(0)

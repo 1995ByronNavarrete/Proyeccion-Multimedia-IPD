@@ -435,8 +435,11 @@ export default function ProjectorView() {
 
   let content: JSX.Element | null = null
 
-  const renderVerse = () => (
-    <div key={verseRef} ref={verseContainerRef} className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden p-[5%]">
+  const verseKeyRef = useRef(0)
+  const renderVerse = () => {
+    verseKeyRef.current++
+    return (
+    <div key={verseRef + '-' + verseKeyRef.current} ref={verseContainerRef} className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden p-[5%]">
       {verseBackground ? (
         <>
           <img src={verseBackground} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
@@ -465,7 +468,8 @@ export default function ProjectorView() {
           style={{ fontSize: `${Math.round(cfgFontSize * 0.5)}px`, marginTop: `${Math.round(cfgFontSize * 0.12)}px` }}>— {verseRef}</p>
       </div>
     </div>
-  )
+    )
+  }
 
   if (isBlack) {
     content = (

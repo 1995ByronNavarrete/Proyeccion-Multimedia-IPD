@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Monitor, MonitorPlay, MonitorOff, X, Check, Laptop, BookOpen, Youtube, Image, Megaphone, Sparkles, Play, Clock } from 'lucide-react'
 import { useModules } from '../modules'
 
@@ -28,7 +28,7 @@ function loadAssignments(): ContentAssignment {
 
 export default function ScreensModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { isEnabled } = useModules()
-  const CONTENT_TYPES = ALL_CONTENT_TYPES.filter(ct => isEnabled(ct.moduleId))
+  const CONTENT_TYPES = useMemo(() => ALL_CONTENT_TYPES.filter(ct => isEnabled(ct.moduleId)), [isEnabled])
   const [displays, setDisplays] = useState<Display[]>([])
   const [assignments, setAssignments] = useState<ContentAssignment>(loadAssignments)
   const [appDisplayId, setAppDisplayId] = useState<number | null>(null)

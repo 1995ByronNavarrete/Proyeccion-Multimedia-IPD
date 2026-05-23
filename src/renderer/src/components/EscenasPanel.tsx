@@ -171,7 +171,7 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
   useEffect(() => {
     Promise.all([
       window.api.app.getFondos().catch(() => null),
-      window.api.app.getConfig().catch(() => ({ success: false })),
+      window.api.app.getConfig().catch(() => ({ success: false, data: null } as any)),
       window.api.anuncios.getAll().catch(() => null),
       window.api.tarea.getAll().catch(() => null)
     ]).then(([fondosRes, cfgRes, anunRes, tareaRes]) => {

@@ -83,6 +83,11 @@ export default function AudioControl() {
   const soloActive = channels.some(c => c.solo)
   const allMuted = channels.every(c => c.muted)
 
+  const channelsRef = useRef(channels)
+  channelsRef.current = channels
+  const masterFaderRef = useRef(masterFader)
+  masterFaderRef.current = masterFader
+
   // Visualizer
   useEffect(() => {
     const canvas = canvasRef.current
@@ -93,11 +98,13 @@ export default function AudioControl() {
     const draw = () => {
       time += 0.02
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const spacing = canvas.width / (channels.length + 1)
+      const chs = channelsRef.current
+      const spacing = canvas.width / (chs.length + 1)
+      const mf = masterFaderRef.current
 
-      channels.forEach((ch, i) => {
+      chs.forEach((ch, i) => {
         const cx = spacing * (i + 1)
-        const amp = ch.muted ? 0.05 : (ch.volume / 100) * (masterFader / 100)
+        const amp = ch.muted ? 0.05 : (ch.volume / 100) * (mf / 100)
         const h = Math.abs(Math.sin(time * 2 + i * 0.7) * Math.cos(time * 0.8 + i * 0.3)) * 28 * amp + 2
         const grad = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - h)
         grad.addColorStop(0, ch.color)
@@ -115,7 +122,7 @@ export default function AudioControl() {
     }
     draw()
     return () => cancelAnimationFrame(animRef.current)
-  }, [channels, masterFader])
+  }, [])
 
   const setMaster = (val: number) => {
     setMasterFader(val)
