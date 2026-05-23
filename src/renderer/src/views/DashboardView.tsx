@@ -335,7 +335,8 @@ export default function DashboardView() {
           <div className="flex-[3] min-h-0 overflow-hidden">
             <ProjectionView onBlack={handleShowBlack} backgroundUrl={backgroundUrl} projected={projected} animation={animBiblia} onAnimationChange={saveAnimBiblia}
               chapterVerses={chapterVerses} verseIdx={verseIdx} onPrevVerse={goPrevVerse} onNextVerse={goNextVerse}
-              overlayOpacity={overlayOpacity} fontSize={fontSize} />
+              overlayOpacity={overlayOpacity} fontSize={fontSize}
+              bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
           </div>
           <div className="flex-[2] flex gap-3 min-h-0 overflow-hidden">
             {isEnabled('audio') && <div className="flex-1 min-w-0 overflow-hidden"><AudioControl /></div>}
