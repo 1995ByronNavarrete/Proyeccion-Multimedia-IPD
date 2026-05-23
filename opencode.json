@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [".opencode/MEMORY.md"],
+  "agent": {
+    "leader": {
+      "description": "Lider del equipo — coordina agentes, revisa arquitectura, planifica tareas",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    },
+    "biblia": {
+      "description": "Especialista en el modulo de Biblia (navegacion, proyeccion, DB)",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    },
+    "multimedia": {
+      "description": "Especialista en multimedia (video, audio, imagenes, efectos, pantallas)",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6"
+    }
+  }
+}
