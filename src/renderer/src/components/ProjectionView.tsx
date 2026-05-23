@@ -121,6 +121,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
     const textEl = previewTextRef.current
     const refEl = previewRefRef.current
     if (!container || !textEl) return
+    let cancelled = false
     const fit = () => {
       const cw = container.clientWidth
       const ch = container.clientHeight
@@ -132,6 +133,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
       textEl.style.maxWidth = `${maxW}px`
       if (refEl) refEl.style.fontSize = `${Math.round(size * 0.35)}px`
       requestAnimationFrame(() => {
+        if (cancelled) return
         if (textEl.scrollHeight <= maxH && textEl.scrollWidth <= maxW) return
         const scale = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.9
         if (scale >= 1) return
@@ -143,7 +145,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
     const raf = requestAnimationFrame(fit)
     const ro = new ResizeObserver(fit)
     if (container.parentElement) ro.observe(container.parentElement)
-    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+    return () => { cancelled = true; cancelAnimationFrame(raf); ro.disconnect() }
   }, [projected?.text, isVerse])
 
   const openModal = () => setOpenAnim(true)
@@ -228,8 +230,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
           </div>
         ) : (backgroundUrl || projected?.backgroundUrl) || isVerse ? (
           <>
-            {backgroundUrl && <img src={backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
-            {projected?.backgroundUrl && <img src={projected.backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+            <img src={projected?.backgroundUrl || backgroundUrl || ''} alt="" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${(100 - overlayOpacity) / 100})` }} />
             {projected?.sermonTitle && (
               <div className="absolute top-1 right-2 z-10 text-right pointer-events-none">

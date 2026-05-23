@@ -34,8 +34,6 @@ export default function ScreensModal({ open, onClose }: { open: boolean; onClose
   const [appDisplayId, setAppDisplayId] = useState<number | null>(null)
   const [selectedDisplays, setSelectedDisplays] = useState<number[]>([])
 
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments)) }, [assignments])
-
   useEffect(() => {
     if (!open) return
     window.api.screen.getLayout().then(res => {

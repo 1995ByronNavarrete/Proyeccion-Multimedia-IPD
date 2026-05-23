@@ -157,19 +157,23 @@ export default function EscenasPanel({ backgroundUrl, onSelectBackground, onProj
   const [newTareaName, setNewTareaName] = useState('')
 
   const saveConfig = async (key: string, value: string) => {
-    const res = await window.api.app.getConfig()
-    const cfg = res?.success && res.data ? { ...res.data } : {}
-    cfg[key] = value
-    await window.api.app.saveConfig(cfg)
+    try {
+      const res = await window.api.app.getConfig()
+      const cfg = res?.success && res.data ? { ...res.data } : {}
+      cfg[key] = value
+      await window.api.app.saveConfig(cfg)
+    } catch (err) {
+      console.error('[EscenasPanel] Error al guardar config:', err)
+    }
   }
 
   // Load initial data
   useEffect(() => {
     Promise.all([
-      window.api.app.getFondos(),
-      window.api.app.getConfig(),
-      window.api.anuncios.getAll(),
-      window.api.tarea.getAll()
+      window.api.app.getFondos().catch(() => null),
+      window.api.app.getConfig().catch(() => ({ success: false })),
+      window.api.anuncios.getAll().catch(() => null),
+      window.api.tarea.getAll().catch(() => null)
     ]).then(([fondosRes, cfgRes, anunRes, tareaRes]) => {
       const cfg = cfgRes?.success && cfgRes.data ? cfgRes.data : {}
       if (fondosRes?.success && fondosRes.data && fondosRes.data.length > 0) {

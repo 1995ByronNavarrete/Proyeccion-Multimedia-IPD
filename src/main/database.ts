@@ -168,6 +168,8 @@ export function noAccent(s: string): string {
 }
 
 export async function reloadDatabase(): Promise<string> {
+  flushNow()
+  if (db) { try { (db as any).close?.() } catch {} }
   const SQL = await initSqlJs()
   const dbPath = getDbPath()
   if (!existsSync(dbPath)) return 'NO_FILE'
@@ -221,6 +223,8 @@ export async function seedBibleIfEmpty(): Promise<void> {
 
   async function replaceDb(srcPath: string): Promise<boolean> {
     try {
+      flushNow()
+      if (db) { try { (db as any).close?.() } catch {} }
       const dest = getDbPath()
       const buf = readFileSync(srcPath)
       writeFileSync(dest, Buffer.from(buf))
@@ -267,10 +271,16 @@ export function execute(sql: string, params?: SqlValue[]): { changes: number; la
 export function executeBatch(sql: string, batchParams: SqlValue[][]): { changes: number; lastInsertRowid: number } {
   const d = getDatabase()
   d.run('BEGIN TRANSACTION')
-  for (const params of batchParams) {
-    d.run(sql, params)
+  try {
+    for (const params of batchParams) {
+      d.run(sql, params)
+    }
+    d.run('COMMIT')
+  } catch (err) {
+    d.run('ROLLBACK')
+    console.error('[db] executeBatch error, rolled back:', err)
+    throw err
   }
-  d.run('COMMIT')
   saveDatabase()
   const result = queryOne('SELECT changes() as changes, last_insert_rowid() as lastInsertRowid')
   return {

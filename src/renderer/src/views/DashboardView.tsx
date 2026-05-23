@@ -81,11 +81,15 @@ export default function DashboardView() {
 
   useEffect(() => {
     const unsub = window.api.on('projector:content', (arg: unknown) => {
-      const data = arg as { type?: string; mediaUrl?: string; text?: string } | undefined
+      const data = arg as { type?: string; mediaUrl?: string; text?: string; reference?: string } | undefined
       if (data?.type === 'document') {
         setProjected({ type: 'document', text: data.text || 'Documento', mediaUrl: data.mediaUrl })
       } else if (data?.type === 'media' && data.mediaUrl?.startsWith('data:image')) {
         setProjected({ type: 'media', text: data.text || 'Imagen', mediaUrl: data.mediaUrl })
+      } else if (data?.type === 'verse') {
+        setProjected({ type: 'verse', text: data.text, reference: data.reference })
+      } else if (data?.type === 'black') {
+        setProjected({ type: 'black' })
       }
     })
     return () => { unsub?.() }

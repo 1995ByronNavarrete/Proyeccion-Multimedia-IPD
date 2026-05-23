@@ -19,10 +19,17 @@ export async function downloadAndSeedBible(
   )
   const translationId = transResult.lastInsertRowid
 
-  if (source === 'bible-api') {
-    await seedFromBibleApi(translationId, abbreviation, onProgress)
-  } else {
-    await seedFromApiBible(translationId, abbreviation, apiKey, nombre, abbreviation, onProgress)
+  try {
+    if (source === 'bible-api') {
+      await seedFromBibleApi(translationId, abbreviation, onProgress)
+    } else {
+      await seedFromApiBible(translationId, abbreviation, apiKey, nombre, abbreviation, onProgress)
+    }
+  } catch (err) {
+    execute('DELETE FROM versiculos WHERE libro_id IN (SELECT id FROM libros WHERE traduccion_id = ?)', [translationId])
+    execute('DELETE FROM libros WHERE traduccion_id = ?', [translationId])
+    execute('DELETE FROM traducciones WHERE id = ?', [translationId])
+    throw err
   }
 
   execute('UPDATE traducciones SET activa = 1 WHERE id = ?', [translationId])

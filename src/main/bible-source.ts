@@ -63,6 +63,7 @@ async function runWorkers(
   onProgress: (completed: number, total: number, bookName?: string) => void
 ): Promise<void> {
   let completedChapters = 0
+  let failedChapters = 0
   let index = 0
   const workers = Array.from({ length: concurrency }, () => worker())
   await Promise.all(workers)
@@ -70,6 +71,7 @@ async function runWorkers(
   async function worker(): Promise<void> {
     while (index < queue.length) {
       const item = queue[index++]
+      let ok = false
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const verses = await fetchVerses(item)
@@ -79,11 +81,13 @@ async function runWorkers(
               [item.book.id, v.capitulo, v.versiculo, v.texto]
             )
           }
+          ok = true
           break
         } catch {
           if (attempt < 2) await delay(1000 * (attempt + 1))
         }
       }
+      if (!ok) failedChapters++
       completedChapters++
       onProgress(completedChapters, totalChapters, item.book.name)
     }
