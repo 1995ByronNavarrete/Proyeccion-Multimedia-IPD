@@ -74,7 +74,7 @@ export default function Header() {
             <span className={`text-[10px] font-bold tracking-widest ${isLive ? 'text-green-400' : 'text-red-400'}`}>{t('app.live')}</span>
           </div>
           <button onClick={() => setShowInfo(true)}
-            className="p-1.5 hover:bg-[#6c5ce7]/20 rounded-lg transition-colors" title={t('common.close')}>
+            className="p-1.5 hover:bg-[#6c5ce7]/20 rounded-lg transition-colors" title="Información del sistema">
             <Info size={12} className="text-[#6c5ce7]" />
           </button>
           <button onClick={() => window.api.update.checkNow()} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="Buscar actualizaciones">
@@ -105,7 +105,7 @@ export default function Header() {
             className="flex items-center gap-1 px-2 py-1 hover:bg-white/5 rounded transition-colors text-[10px] text-gray-500 text-theme-muted hover:text-theme">
             <Monitor size={12} /> {t('nav.pantalla')}
           </button>
-        <ScreensModal open={showScreens} onClose={() => setShowScreens(false)} />
+        {showScreens && <ScreensModal open={showScreens} onClose={() => setShowScreens(false)} />}
         <div className="flex-1" />
       </div>
       {showInfo && (

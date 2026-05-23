@@ -55,8 +55,13 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
   const savedChapter = useRef<number>(1)
   const savedVerse = useRef<number | null>(null)
   const projectedTimer = useRef<ReturnType<typeof setTimeout>>()
+  const goToRefTimer = useRef<ReturnType<typeof setTimeout>>()
   const versesGridRef = useRef<HTMLDivElement>(null)
   const isInitialProject = useRef(true)
+
+  useEffect(() => {
+    return () => { if (goToRefTimer.current) clearTimeout(goToRefTimer.current) }
+  }, [])
 
   useEffect(() => {
     checkData()
@@ -254,7 +259,8 @@ export default function BibliaPanel({ onProject, onLoadChapter, projectedVerseNu
     setSelectedBook(book)
     setSelectedChapter(chapter)
     if (verse) {
-      setTimeout(async () => {
+      if (goToRefTimer.current) clearTimeout(goToRefTimer.current)
+      goToRefTimer.current = setTimeout(async () => {
         const vRes = await window.api.bible.getVerses(book.id, chapter)
         if (vRes.success && vRes.data) {
           const found = vRes.data.find((v: Verse) => v.versiculo === verse)

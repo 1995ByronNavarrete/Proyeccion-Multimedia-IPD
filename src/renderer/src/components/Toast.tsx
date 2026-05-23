@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react'
 import { X, Check, AlertCircle, Info } from 'lucide-react'
 
 interface Toast {
@@ -13,14 +13,30 @@ interface ToastCtx {
 
 const Ctx = createContext<ToastCtx>({ toast: () => {} })
 let nextId = 0
+const MAX_TOASTS = 5
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const timersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(t => clearTimeout(t))
+      timersRef.current.clear()
+    }
+  }, [])
 
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = nextId++
-    setToasts(prev => [...prev, { id, message, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)
+    setToasts(prev => {
+      const next = [...prev, { id, message, type }]
+      return next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next
+    })
+    const t = setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id))
+      timersRef.current.delete(id)
+    }, 3000)
+    timersRef.current.set(id, t)
   }, [])
 
   const remove = (id: number) => setToasts(prev => prev.filter(t => t.id !== id))
