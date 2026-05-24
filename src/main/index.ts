@@ -175,7 +175,12 @@ function createProjectorWindow(displayId: number): void {
     }
   })
 
-  win.on('closed', () => projectorWindows.delete(displayId))
+  win.on('closed', () => {
+    projectorWindows.delete(displayId)
+    if (projectorWindows.size === 0 && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('video:progress', { currentTime: 0, duration: 0, paused: true, title: '' })
+    }
+  })
   win.webContents.on('did-finish-load', () => {
     win.webContents.setZoomLevel(0)
     if (lastOverlay && (!displayAssignments[displayId] || displayAssignments[displayId].includes('efectos'))) {
@@ -257,6 +262,9 @@ function registerMainIpcHandlers(): void {
       if (!win.isDestroyed()) win.close()
     }
     projectorWindows.clear()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('video:progress', { currentTime: 0, duration: 0, paused: true, title: '' })
+    }
   })
 
   ipcMain.handle('projector:showBlack', () => {
