@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { Monitor } from 'lucide-react'
+import { Play, Pause, Square, Monitor } from 'lucide-react'
 import { useLang } from '../i18n'
 
 interface SecondaryDisplayProps {
@@ -48,6 +48,8 @@ export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }:
     iframeRef.current.contentWindow.postMessage(YT_CMD(bgVideo.paused ? 'pauseVideo' : 'playVideo'), '*')
   }, [bgVideo.paused, isYoutube])
 
+  const handleStop = () => { onStop() }
+
   if (!bgVideo.url) {
     return (
       <div className="h-full w-full bg-[rgba(8,12,30,0.95)] rounded-xl overflow-hidden flex items-center justify-center">
@@ -67,7 +69,16 @@ export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }:
         <video ref={videoRef} className="w-full h-full object-contain pointer-events-none will-change-transform" data-volume="bg" autoPlay playsInline preload="metadata"
           onError={(e) => console.error('[SecondaryDisplay] error:', (e.target as HTMLVideoElement).error?.message)} />
       )}
-      <div className="absolute inset-0 z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center gap-3 py-2 bg-gradient-to-t from-black/60 to-transparent pointer-events-auto">
+        <button onClick={bgVideo.paused ? onResume : onPause}
+          className="p-2 bg-[#6c5ce7]/30 rounded-full text-[#6c5ce7] hover:bg-[#6c5ce7]/50 transition-colors" title={bgVideo.paused ? 'Reanudar' : 'Pausar'}>
+          {bgVideo.paused ? <Play size={14} /> : <Pause size={14} />}
+        </button>
+        <button onClick={handleStop}
+          className="p-2 bg-red-600/30 rounded-full text-red-500 hover:bg-red-600/50 transition-colors" title="Detener">
+          <Square size={14} />
+        </button>
+      </div>
     </div>
   )
 }

@@ -25,10 +25,12 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const [projectingTitle, setProjectingTitle] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
+  const [pausedId, setPausedId] = useState<string | null>(null)
+
   useEffect(() => {
     const unsub = window.api.on('video:progress', (arg: unknown) => {
       const data = arg as { title: string; paused: boolean }
-      if (!data.title) setPlayingIds(new Set())
+      if (!data.title) { setPlayingIds(new Set()); setPausedId(null) }
     })
     return () => { unsub?.() }
   }, [])
@@ -56,9 +58,13 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
 
   const handlePlay = async (item: YTResult) => {
     if (playingIds.has(item.id)) {
-      await window.api.video.stop()
-      setPlayingIds(new Set())
-      setProjectingTitle(null)
+      if (pausedId === item.id) {
+        await window.api.video.resume()
+        setPausedId(null)
+      } else {
+        await window.api.video.pause()
+        setPausedId(item.id)
+      }
       return
     }
     setError('')
@@ -154,8 +160,8 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
                 <p className="text-[8px] text-theme-dim truncate">{r.channel}</p>
               </div>
               <button onClick={() => handlePlay(r)} disabled={playing}
-                className={`p-1.5 rounded transition-all duration-200 shrink-0 self-center disabled:opacity-40 scale-100 active:scale-90 ${playingIds.has(r.id) ? 'bg-green-500/30 text-green-400' : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`} title={playingIds.has(r.id) ? 'Detener' : 'Proyectar'}>
-                {playing && activeId === r.id ? <Loader2 size={10} className="animate-spin" /> : playingIds.has(r.id) ? <Pause size={10} /> : <Play size={10} />}
+                className={`p-1.5 rounded transition-all duration-200 shrink-0 self-center disabled:opacity-40 scale-100 active:scale-90 ${playingIds.has(r.id) ? (pausedId === r.id ? 'bg-amber-500/30 text-amber-400' : 'bg-green-500/30 text-green-400') : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`} title={playingIds.has(r.id) ? (pausedId === r.id ? 'Reanudar' : 'Pausar') : 'Proyectar'}>
+                {playing && activeId === r.id ? <Loader2 size={10} className="animate-spin" /> : playingIds.has(r.id) ? (pausedId === r.id ? <Play size={10} /> : <Pause size={10} />) : <Play size={10} />}
               </button>
               <button onClick={() => handlePlayBg(r)} disabled={bgLoading}
                 className="p-1.5 bg-emerald-600/20 rounded text-emerald-500 hover:bg-emerald-600/40 transition-colors shrink-0 self-center disabled:opacity-40 text-[7px] font-bold" title="Fondo para pantalla secundaria">
