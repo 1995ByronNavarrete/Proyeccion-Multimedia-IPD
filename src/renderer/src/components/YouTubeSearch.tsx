@@ -96,18 +96,14 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const handlePlayBg = async (item: YTResult) => {
     setBgLoading(true)
     setProjectingTitle(item.title)
-    try {
-      const streamRes = await window.api.ytdl.getStreamUrl(item.id)
-      if (streamRes.success && streamRes.data?.url) {
-        onPlayBg?.(streamRes.data.url, streamRes.data.title || item.title)
-      } else {
-        const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
-        onPlayBg?.(embedUrl, item.title)
+    const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
+    onPlayBg?.(embedUrl, item.title)
+    // Intentar obtener stream para mejor calidad (no bloqueante)
+    window.api.ytdl.getStreamUrl(item.id).then(res => {
+      if (res.success && res.data?.url) {
+        onPlayBg?.(res.data.url, res.data.title || item.title)
       }
-    } catch {
-      const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
-      onPlayBg?.(embedUrl, item.title)
-    }
+    }).catch(() => {})
     setBgLoading(false)
     setProjectingTitle(null)
   }
