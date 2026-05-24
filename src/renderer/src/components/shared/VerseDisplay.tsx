@@ -28,46 +28,55 @@ export default function VerseDisplay({ projected, backgroundUrl, animation, over
       if (cancelled) return
       const cw = container.clientWidth
       const ch = container.clientHeight
-      if (!cw || !ch) return
-      const padPct = 0.88
+      if (!cw || !ch) { requestAnimationFrame(fit); return }
       const maxW = cw * 0.92
-      const maxH = ch * padPct
+      const maxH = ch * 0.9
 
-      // Start big and scale down if needed — max 40% height or fill width
-      let size = Math.max(24, Math.round(Math.min(cw * 0.12, ch * 0.35)))
-      textEl.style.fontSize = `${size}px`
-      textEl.style.maxWidth = `${maxW}px`
-      if (refEl) refEl.style.fontSize = `${Math.round(size * 0.45)}px`
+      // Start huge and scale down in a loop until it fits
+      let size = Math.max(24, Math.round(Math.min(cw * 0.08, ch * 0.4)))
+
+      const applySize = (s: number) => {
+        textEl.style.fontSize = `${s}px`
+        textEl.style.maxWidth = `${maxW}px`
+        if (refEl) refEl.style.fontSize = `${Math.round(s * 0.45)}px`
+      }
+
+      applySize(size)
 
       requestAnimationFrame(() => {
         if (cancelled) return
-        const oh = textEl.scrollHeight
-        const ow = textEl.scrollWidth
-        if (oh <= maxH && ow <= maxW) {
-          // Try to make it even bigger
-          while (size < 500) {
+
+        // If it overflows, keep scaling down
+        if (textEl.scrollHeight > maxH || textEl.scrollWidth > maxW) {
+          const scale = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.95
+          size = Math.max(12, Math.round(size * scale))
+          applySize(size)
+          // Check again after applying
+          requestAnimationFrame(() => {
+            if (cancelled) return
+            if (textEl.scrollHeight > maxH || textEl.scrollWidth > maxW) {
+              const scale2 = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.95
+              size = Math.max(10, Math.round(size * scale2))
+              applySize(size)
+            }
+          })
+        } else {
+          // Try to make it bigger to fill space
+          while (size < 600) {
             size += 4
-            textEl.style.fontSize = `${size}px`
-            textEl.style.maxWidth = `${maxW}px`
-            if (refEl) refEl.style.fontSize = `${Math.round(size * 0.45)}px`
+            applySize(size)
             if (textEl.scrollHeight > maxH || textEl.scrollWidth > maxW) {
               size -= 4
-              textEl.style.fontSize = `${size}px`
-              if (refEl) refEl.style.fontSize = `${Math.round(size * 0.45)}px`
+              applySize(size)
               break
             }
           }
-          return
         }
-        const scale = Math.min(maxH / oh, maxW / ow) * 0.92
-        size = Math.max(12, Math.round(size * scale))
-        textEl.style.fontSize = `${size}px`
-        if (refEl) refEl.style.fontSize = `${Math.round(size * 0.45)}px`
       })
     }
 
     const raf = requestAnimationFrame(fit)
-    const ro = new ResizeObserver(fit)
+    const ro = new ResizeObserver(() => requestAnimationFrame(fit))
     if (container.parentElement) ro.observe(container.parentElement)
     return () => { cancelled = true; cancelAnimationFrame(raf); ro.disconnect() }
   }, [projected?.text, isVerse])
@@ -84,7 +93,7 @@ export default function VerseDisplay({ projected, backgroundUrl, animation, over
               {projected?.sermonPreacher && <p className="text-amber-400/70 truncate" style={{ fontSize: 'clamp(8px, 1.5vw, 14px)' }}>{projected.sermonPreacher}</p>}
             </div>
           )}
-          <div ref={containerRef} className="absolute inset-0 flex items-center justify-center px-[5%] py-[3%] overflow-hidden">
+          <div ref={containerRef} className="absolute inset-0 flex items-center justify-center px-[4%] py-[2%] overflow-hidden">
             {isVerse ? (
               <div key={`${projected!.text}-${projected!.backgroundUrl}`} className="flex flex-col items-center justify-center w-full h-full text-center">
                 {activeAnim.startsWith('anim-letter-') ? (
