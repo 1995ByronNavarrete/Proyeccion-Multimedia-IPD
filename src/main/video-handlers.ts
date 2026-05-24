@@ -35,24 +35,22 @@ function getYtDlpPath(): string {
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string, timeout = 15000): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 10000): Promise<string | null> {
   const binaryPath = getYtDlpPath()
-  // Probar con y sin cookies en paralelo
-  const withoutCookies = execFileAsync(binaryPath, [
+  const baseArgs = [
     '--no-warnings', '--get-url', '-f', format,
+    '--extractor-args', 'youtube:player_client=android',
     `https://www.youtube.com/watch?v=${videoId}`
-  ], { timeout }).then(r => r.stdout?.toString().trim()).catch(() => null)
-
+  ]
+  const withoutCookies = execFileAsync(binaryPath, baseArgs, { timeout })
+    .then(r => r.stdout?.toString().trim()).catch(() => null)
   const withCookies = execFileAsync(binaryPath, [
-    '--no-warnings', '--get-url', '-f', format,
-    '--cookies-from-browser', 'chrome',
-    `https://www.youtube.com/watch?v=${videoId}`
+    ...baseArgs, '--cookies-from-browser', 'chrome'
   ], { timeout }).then(r => r.stdout?.toString().trim()).catch(() => null)
 
   const result = await Promise.race([withoutCookies, withCookies])
   if (result?.startsWith('http')) return result
 
-  // Si el race devolvio null (ambos fallaron), esperar al que termine primero exitosamente
   const all = await Promise.allSettled([withoutCookies, withCookies])
   for (const r of all) {
     if (r.status === 'fulfilled' && r.value?.startsWith('http')) return r.value
@@ -147,16 +145,17 @@ export function registerVideoHandlers(): void {
   })
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
-    // Secuencial como en v1.5.3 (funcionaba)
-    const url = await ytDlpGetUrl(videoId, 'best[height<=1080]', 15000)
-    if (url) return url
-    const sd = await ytDlpGetUrl(videoId, 'best[height<=720]', 15000)
-    if (sd) return sd
-    const fallbacks = ['best[ext=mp4]', 'best', 'worst[ext=mp4]']
-    for (const fmt of fallbacks) {
-      const u = await ytDlpGetUrl(videoId, fmt, 15000)
-      if (u) return u
-    }
+    // Probar todos los formatos en paralelo, usar el primero que responda
+    const formats = ['best[height<=720]', 'best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
+    const promises = formats.map(fmt =>
+      ytDlpGetUrl(videoId, fmt).then(url => {
+        if (url) return url
+        throw url
+      })
+    )
+    try {
+      return await Promise.any(promises)
+    } catch {}
     // Fallback a play-dl si yt-dlp falla
     const playUrl = await playDlGetUrl(videoId)
     return playUrl
