@@ -108,15 +108,18 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
     setBgLoading(true)
     setProjectingTitle(item.title)
     setProjectingBg(true)
-    const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
-    onPlayBg?.(embedUrl, item.title)
-    // Cachear stream para futuras reproducciones (no reemplaza el actual)
-    window.api.ytdl.getStreamUrl(item.id).then(res => {
-      if (res.success && res.data?.url) {
-        setBgLoading(false)
-        setProjectingTitle(null)
+    try {
+      const streamRes = await window.api.ytdl.getStreamUrl(item.id)
+      if (streamRes.success && streamRes.data?.url) {
+        onPlayBg?.(streamRes.data.url, item.title)
+      } else {
+        const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
+        onPlayBg?.(embedUrl, item.title)
       }
-    }).catch(() => {})
+    } catch {
+      const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
+      onPlayBg?.(embedUrl, item.title)
+    }
     setBgLoading(false)
     setProjectingTitle(null)
   }
