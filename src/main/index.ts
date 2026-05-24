@@ -165,6 +165,7 @@ function createProjectorWindow(displayId: number): void {
     fullscreen: !isSameDisplay,
     frame: isSameDisplay,
     alwaysOnTop: !isSameDisplay,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
