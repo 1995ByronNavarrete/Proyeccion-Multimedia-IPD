@@ -166,7 +166,7 @@ export function registerVideoHandlers(): void {
       return { success: true, data: { url: streamUrl, title: meta.title, duration: meta.duration } }
     }
 
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=https://www.youtube.com`
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
     return { success: true, data: { url: embedUrl, title: meta.title, duration: meta.duration } }
   })
 

@@ -499,6 +499,7 @@ export default function ProjectorView() {
       <div className="h-screen w-screen bg-black relative">
         <iframe ref={iframeRef} src={videoUrl} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen" allowFullScreen loading="lazy"
           onError={(e) => console.error('[YT Iframe error]', e)} />
+        <div className="absolute inset-0 z-10 pointer-events-none" />
       </div>
     )
   } else if (videoUrl) {
@@ -506,6 +507,7 @@ export default function ProjectorView() {
       <div className="h-screen w-screen bg-black relative">
         <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain will-change-transform" controls={false} autoPlay playsInline preload="metadata"
           onError={(e) => { const v = e.currentTarget; console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message) }} />
+        <div className="absolute inset-0 z-10 pointer-events-none" />
       </div>
     )
   } else if (effect) {

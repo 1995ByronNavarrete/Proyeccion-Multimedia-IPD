@@ -89,15 +89,13 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       if (streamRes.success && streamRes.data?.url) {
         onPlayBg?.(streamRes.data.url, streamRes.data.title || item.title)
       } else {
-        const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1`
+        const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
         onPlayBg?.(embedUrl, item.title)
       }
     } catch {
-      const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1`
+      const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
       onPlayBg?.(embedUrl, item.title)
     }
-    setBgLoading(false)
-    setProjectingTitle(null)
   }
 
   return (
