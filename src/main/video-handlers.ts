@@ -132,13 +132,12 @@ export function registerVideoHandlers(): void {
           thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`,
           description: (v.description || '').substring(0, 200)
         }))
-      // Pre-calentar cache solo de los 2 primeros (evita saturar CPU)
-      const toCache = videos.slice(0, 2)
+      // Pre-calentar cache de los primeros 5 resultados
+      const toCache = videos.slice(0, 5)
       for (const v of toCache) {
         if (!getCachedStream(v.id)) {
           resolveStreamUrl(v.id).then(url => { if (url) setCachedStream(v.id, url) }).catch(() => {})
-          // Pequeña pausa entre cada uno para no saturar
-          await new Promise(r => setTimeout(r, 100))
+          await new Promise(r => setTimeout(r, 50))
         }
       }
       return { success: true, data: videos }
