@@ -51,12 +51,9 @@ export default function ProjectorView() {
   const ytElapsedRef = useRef(0)
   const ytDurationRef = useRef(0)
   const titleRef = useRef('')
-  const verseContainerRef = useRef<HTMLDivElement>(null)
   const [currentTime, setCurrentTime] = useState('')
   const [timerDisplay, setTimerDisplay] = useState('')
   const [timerRunning, setTimerRunning] = useState(false)
-  const verseTextRef = useRef<HTMLParagraphElement>(null)
-  const verseRefRef = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     const update = () => {
@@ -175,29 +172,6 @@ export default function ProjectorView() {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
-
-  useEffect(() => {
-    if (!verseText) return
-    const container = verseContainerRef.current
-    const textEl = verseTextRef.current
-    const refEl = verseRefRef.current
-    if (!container || !textEl) return
-    textEl.style.fontSize = `${cfgFontSize}px`
-    if (refEl) refEl.style.fontSize = `${Math.round(cfgFontSize * 0.55)}px`
-    const raf = requestAnimationFrame(() => {
-      const maxH = container.clientHeight * 0.88
-      const maxW = container.clientWidth * 0.92
-      const overflowH = textEl.scrollHeight > maxH
-      const overflowW = textEl.scrollWidth > maxW
-      if (!overflowH && !overflowW) return
-      const scale = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.95
-      if (scale >= 1) return
-      const newSize = Math.max(8, cfgFontSize * scale)
-      textEl.style.fontSize = `${newSize}px`
-      if (refEl) refEl.style.fontSize = `${newSize * 0.55}px`
-    })
-    return () => cancelAnimationFrame(raf)
-  }, [verseText, verseRef, cfgFontSize])
 
   useEffect(() => {
     // Capturar errores de carga del iframe
