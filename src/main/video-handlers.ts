@@ -120,7 +120,7 @@ export function registerVideoHandlers(): void {
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
     const formats = ['best[height<=720]', 'best[ext=mp4]', 'worst[ext=mp4]']
-    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 6000).then(url => ({ fmt, url })))
+    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 8000).then(url => ({ fmt, url })))
     const results = await Promise.allSettled(promises)
     for (const r of results) {
       if (r.status === 'fulfilled' && r.value.url) return r.value.url
@@ -155,19 +155,21 @@ export function registerVideoHandlers(): void {
 
   ipcMain.handle('ytdl:getStreamUrl', async (_event, videoId: string) => {
     const cached = getCachedStream(videoId)
-
     if (cached) {
       return { success: true, data: { url: cached } }
     }
 
+    // Intentar obtener stream (max 8s), si falla usar embed
+    const streamPromise = resolveStreamUrl(videoId)
+    const timeout = new Promise<null>(r => setTimeout(() => r(null), 8000))
+    const streamUrl = await Promise.race([streamPromise, timeout])
+
+    if (streamUrl) {
+      setCachedStream(videoId, streamUrl)
+      return { success: true, data: { url: streamUrl } }
+    }
+
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
-
-    // Obtener stream en segundo plano para futuras reproducciones
-    resolveStreamUrl(videoId).then(streamUrl => {
-      if (streamUrl) setCachedStream(videoId, streamUrl)
-    }).catch(() => {})
-
-    // Devolver embed URL inmediatamente
     return { success: true, data: { url: embedUrl } }
   })
 
