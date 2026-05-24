@@ -1,37 +1,84 @@
-import { Monitor } from 'lucide-react'
+import { useRef, useEffect, useState } from 'react'
+import { Play, Pause, Square, Monitor } from 'lucide-react'
 import { useLang } from '../i18n'
-import type { ProjectedContent } from '../views/DashboardView'
-import VerseDisplay from './shared/VerseDisplay'
 
 interface SecondaryDisplayProps {
-  projected?: ProjectedContent
-  backgroundUrl?: string | null
-  animation?: string
-  overlayOpacity?: number
+  bgVideo: { url: string | null; title: string; paused: boolean }
+  onPause: () => void
+  onResume: () => void
+  onStop: () => void
 }
 
-export default function SecondaryDisplay({ projected, backgroundUrl, animation, overlayOpacity = 80 }: SecondaryDisplayProps) {
+const YT_CMD = (fn: string) => JSON.stringify({ event: 'command', func: fn, args: [] })
+
+export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }: SecondaryDisplayProps) {
   const { t } = useLang()
-  const hasContent = projected?.type === 'verse' || projected?.type === 'black' || projected?.type === 'media'
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [ytKey, setYtKey] = useState(0)
+  const lastUrlRef = useRef<string | null>(null)
+  const isYoutube = bgVideo.url != null && bgVideo.url.includes('youtube.com/embed')
+
+  useEffect(() => {
+    if (!bgVideo.url) {
+      lastUrlRef.current = null
+      if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = '' }
+      return
+    }
+    if (isYoutube) {
+      setYtKey((k) => k + 1)
+      if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = '' }
+      return
+    }
+    const v = videoRef.current
+    if (!v) return
+    if (bgVideo.url !== lastUrlRef.current) {
+      lastUrlRef.current = bgVideo.url
+      v.src = bgVideo.url
+      v.play().catch(() => {})
+    } else if (bgVideo.paused) {
+      v.pause()
+    } else {
+      v.play().catch(() => {})
+    }
+  }, [bgVideo.url, bgVideo.paused, isYoutube])
+
+  useEffect(() => {
+    if (!isYoutube || !bgVideo.url || !iframeRef.current?.contentWindow) return
+    iframeRef.current.contentWindow.postMessage(YT_CMD(bgVideo.paused ? 'pauseVideo' : 'playVideo'), '*')
+  }, [bgVideo.paused, isYoutube])
+
+  const handleStop = () => { onStop() }
+
+  if (!bgVideo.url) {
+    return (
+      <div className="h-full w-full bg-[rgba(8,12,30,0.95)] rounded-xl overflow-hidden flex items-center justify-center">
+        <div className="text-center">
+          <Monitor size={24} className="text-gray-600 mx-auto mb-1" />
+          <p className="text-[9px] text-gray-500">{t('black.empty')}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="h-full w-full overflow-hidden">
-      {!hasContent ? (
-        <div className="h-full w-full bg-[rgba(8,12,30,0.95)] rounded-xl flex items-center justify-center">
-          <div className="text-center">
-            <Monitor size={24} className="text-gray-600 mx-auto mb-1" />
-            <p className="text-[9px] text-gray-500">{t('black.empty')}</p>
-          </div>
-        </div>
-      ) : projected?.type === 'black' ? (
-        <div className="h-full w-full bg-black rounded-xl" />
-      ) : projected?.type === 'media' && projected.mediaUrl?.startsWith('data:image') ? (
-        <div className="h-full w-full bg-black rounded-xl flex items-center justify-center">
-          <img src={projected.mediaUrl} alt="" className="max-w-full max-h-full object-contain" />
-        </div>
+    <div className="h-full w-full bg-black rounded-xl overflow-hidden relative">
+      {isYoutube ? (
+        <iframe ref={iframeRef} key={ytKey} src={bgVideo.url} className="w-full h-full pointer-events-none" data-volume="bg" allow="autoplay; fullscreen" allowFullScreen loading="lazy" />
       ) : (
-        <VerseDisplay projected={projected} backgroundUrl={backgroundUrl} animation={animation} overlayOpacity={overlayOpacity} />
+        <video ref={videoRef} className="w-full h-full object-contain pointer-events-none will-change-transform" data-volume="bg" autoPlay playsInline preload="metadata"
+          onError={(e) => console.error('[SecondaryDisplay] error:', (e.target as HTMLVideoElement).error?.message)} />
       )}
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center gap-3 py-2 bg-gradient-to-t from-black/60 to-transparent pointer-events-auto">
+        <button onClick={bgVideo.paused ? onResume : onPause}
+          className="p-2 bg-[#6c5ce7]/30 rounded-full text-[#6c5ce7] hover:bg-[#6c5ce7]/50 transition-colors" title={bgVideo.paused ? 'Reanudar' : 'Pausar'}>
+          {bgVideo.paused ? <Play size={14} /> : <Pause size={14} />}
+        </button>
+        <button onClick={handleStop}
+          className="p-2 bg-red-600/30 rounded-full text-red-500 hover:bg-red-600/50 transition-colors" title="Detener">
+          <Square size={14} />
+        </button>
+      </div>
     </div>
   )
 }
