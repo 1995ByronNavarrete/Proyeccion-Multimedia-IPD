@@ -36,35 +36,28 @@ function getYtDlpPath(): string {
 }
 
 async function ytDlpGetUrl(videoId: string, format: string, timeout = 15000): Promise<string | null> {
-  try {
-    const binaryPath = getYtDlpPath()
-    const args = [
-      '--no-warnings',
-      '--get-url',
-      '-f', format,
-      `https://www.youtube.com/watch?v=${videoId}`
-    ]
-    const { stdout } = await execFileAsync(binaryPath, args, { timeout })
-    const url = stdout?.toString().trim()
-    return url?.startsWith('http') ? url : null
-  } catch {
-    // Si falla, reintentar con cookies del navegador
-    try {
-      const binaryPath = getYtDlpPath()
-      const args = [
-        '--no-warnings',
-        '--get-url',
-        '-f', format,
-        '--cookies-from-browser', 'chrome',
-        `https://www.youtube.com/watch?v=${videoId}`
-      ]
-      const { stdout } = await execFileAsync(binaryPath, args, { timeout })
-      const url = stdout?.toString().trim()
-      return url?.startsWith('http') ? url : null
-    } catch {
-      return null
-    }
+  const binaryPath = getYtDlpPath()
+  // Probar con y sin cookies en paralelo
+  const withoutCookies = execFileAsync(binaryPath, [
+    '--no-warnings', '--get-url', '-f', format,
+    `https://www.youtube.com/watch?v=${videoId}`
+  ], { timeout }).then(r => r.stdout?.toString().trim()).catch(() => null)
+
+  const withCookies = execFileAsync(binaryPath, [
+    '--no-warnings', '--get-url', '-f', format,
+    '--cookies-from-browser', 'chrome',
+    `https://www.youtube.com/watch?v=${videoId}`
+  ], { timeout }).then(r => r.stdout?.toString().trim()).catch(() => null)
+
+  const result = await Promise.race([withoutCookies, withCookies])
+  if (result?.startsWith('http')) return result
+
+  // Si el race devolvio null (ambos fallaron), esperar al que termine primero exitosamente
+  const all = await Promise.allSettled([withoutCookies, withCookies])
+  for (const r of all) {
+    if (r.status === 'fulfilled' && r.value?.startsWith('http')) return r.value
   }
+  return null
 }
 
 // Fallback using play-dl when yt-dlp fails
