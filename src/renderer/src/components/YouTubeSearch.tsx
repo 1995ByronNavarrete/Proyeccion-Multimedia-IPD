@@ -29,8 +29,8 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
 
   useEffect(() => {
     const unsub = window.api.on('video:progress', (arg: unknown) => {
-      const data = arg as { title: string; paused: boolean }
-      if (!data.title) { setPlayingIds(new Set()); setPausedId(null) }
+      const data = arg as { title: string; paused: boolean; duration?: number }
+      if (!data.title && data.duration === 0) { setPlayingIds(new Set()); setPausedId(null) }
     })
     return () => { unsub?.() }
   }, [])
