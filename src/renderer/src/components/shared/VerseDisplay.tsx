@@ -12,6 +12,7 @@ export default function VerseDisplay({ projected, backgroundUrl, animation, over
   const containerRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLParagraphElement>(null)
   const refRef = useRef<HTMLParagraphElement>(null)
+  const fittingRef = useRef(false)
 
   const isVerse = projected?.type === 'verse' && projected.text
   const activeAnim = animation || 'anim-fade'
@@ -25,60 +26,51 @@ export default function VerseDisplay({ projected, backgroundUrl, animation, over
     let cancelled = false
 
     const fit = () => {
-      if (cancelled) return
+      if (cancelled || fittingRef.current) return
+      fittingRef.current = true
+
       const cw = container.clientWidth
       const ch = container.clientHeight
-      if (!cw || !ch) { requestAnimationFrame(fit); return }
+      if (!cw || !ch) { fittingRef.current = false; return }
       const maxW = cw * 0.92
-      const maxH = ch * 0.9
+      const maxH = ch * 0.88
 
-      // Start huge and scale down in a loop until it fits
-      let size = Math.max(24, Math.round(Math.min(cw * 0.08, ch * 0.4)))
+      // Measure reference height at a small size first
+      if (refEl) refEl.style.fontSize = '12px'
+      const refH = refEl ? refEl.scrollHeight + 4 : 0
+      const availH = maxH - refH
 
-      const applySize = (s: number) => {
-        textEl.style.fontSize = `${s}px`
+      // Binary search for best font size
+      let lo = 10, hi = 500, best = 10
+
+      while (lo <= hi) {
+        const mid = Math.round((lo + hi) / 2)
+        textEl.style.fontSize = `${mid}px`
         textEl.style.maxWidth = `${maxW}px`
-        if (refEl) refEl.style.fontSize = `${Math.round(s * 0.45)}px`
+        if (refEl) refEl.style.fontSize = `${Math.round(mid * 0.45)}px`
+        // Force layout read
+        const oh = textEl.scrollHeight
+        const ow = textEl.scrollWidth
+        if (oh <= availH && ow <= maxW) {
+          best = mid
+          lo = mid + 1
+        } else {
+          hi = mid - 1
+        }
       }
 
-      applySize(size)
-
-      requestAnimationFrame(() => {
-        if (cancelled) return
-
-        // If it overflows, keep scaling down
-        if (textEl.scrollHeight > maxH || textEl.scrollWidth > maxW) {
-          const scale = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.95
-          size = Math.max(12, Math.round(size * scale))
-          applySize(size)
-          // Check again after applying
-          requestAnimationFrame(() => {
-            if (cancelled) return
-            if (textEl.scrollHeight > maxH || textEl.scrollWidth > maxW) {
-              const scale2 = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.95
-              size = Math.max(10, Math.round(size * scale2))
-              applySize(size)
-            }
-          })
-        } else {
-          // Try to make it bigger to fill space
-          while (size < 600) {
-            size += 4
-            applySize(size)
-            if (textEl.scrollHeight > maxH || textEl.scrollWidth > maxW) {
-              size -= 4
-              applySize(size)
-              break
-            }
-          }
-        }
-      })
+      // Apply best size
+      textEl.style.fontSize = `${best}px`
+      textEl.style.maxWidth = `${maxW}px`
+      if (refEl) refEl.style.fontSize = `${Math.round(best * 0.45)}px`
+      fittingRef.current = false
     }
 
+    // Use requestIdleCallback if available, else rAF
     const raf = requestAnimationFrame(fit)
-    const ro = new ResizeObserver(() => requestAnimationFrame(fit))
+    const ro = new ResizeObserver(() => { if (!fittingRef.current) requestAnimationFrame(fit) })
     if (container.parentElement) ro.observe(container.parentElement)
-    return () => { cancelled = true; cancelAnimationFrame(raf); ro.disconnect() }
+    return () => { cancelled = true; if (raf) cancelAnimationFrame(raf); ro.disconnect(); fittingRef.current = false }
   }, [projected?.text, isVerse])
 
   return (
