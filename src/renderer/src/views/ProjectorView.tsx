@@ -228,7 +228,7 @@ export default function ProjectorView() {
         setVerseAnimation(data.animation || 'anim-fade')
         setSermonTitle(data.sermonTitle || '')
         setSermonPreacher(data.sermonPreacher || '')
-        setIsBlack(false); clearVideo()
+        setIsBlack(false)
       } else if (data?.type === 'effect') {
         setEffect({ type: data.effect || 'waves', speed: data.speed || 1 })
         setVerseText(''); setVerseRef(''); setVerseBackground(''); setIsImage(false); setIsBlack(false); setDocUrl('')
@@ -500,6 +500,11 @@ export default function ProjectorView() {
         <iframe ref={iframeRef} src={videoUrl} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen" allowFullScreen loading="lazy"
           onError={(e) => console.error('[YT Iframe error]', e)} />
         <div className="absolute inset-0 z-10 pointer-events-none" />
+        {verseText && (
+          <div className="absolute inset-0 z-20">
+            <VerseDisplay projected={projectedForVerse} backgroundUrl={verseBackground} animation={verseAnimation} overlayOpacity={cfgOverlayOpacity} />
+          </div>
+        )}
       </div>
     )
   } else if (videoUrl) {
@@ -508,6 +513,11 @@ export default function ProjectorView() {
         <video ref={videoRef} className="absolute inset-0 h-full w-full object-contain will-change-transform" controls={false} autoPlay playsInline preload="metadata"
           onError={(e) => { const v = e.currentTarget; console.error('[Video error] code:', v.error?.code, 'message:', v.error?.message) }} />
         <div className="absolute inset-0 z-10 pointer-events-none" />
+        {verseText && (
+          <div className="absolute inset-0 z-20">
+            <VerseDisplay projected={projectedForVerse} backgroundUrl={verseBackground} animation={verseAnimation} overlayOpacity={cfgOverlayOpacity} />
+          </div>
+        )}
       </div>
     )
   } else if (effect) {
