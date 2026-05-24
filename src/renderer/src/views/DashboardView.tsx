@@ -208,7 +208,6 @@ export default function DashboardView() {
     saveStateToStorage()
     window.api.projector.sendContent(content)
     window.api.projector.projectToAll()
-    if (bgVideo.url) handleStopBg()
   }
 
   const handleLoadChapter = (verses: { text: string; reference: string; verseNumber: number }[], idx: number) => {

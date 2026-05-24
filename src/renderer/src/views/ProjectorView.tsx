@@ -228,7 +228,7 @@ export default function ProjectorView() {
         setVerseAnimation(data.animation || 'anim-fade')
         setSermonTitle(data.sermonTitle || '')
         setSermonPreacher(data.sermonPreacher || '')
-        setIsBlack(false)
+        setIsBlack(false); clearVideo()
       } else if (data?.type === 'effect') {
         setEffect({ type: data.effect || 'waves', speed: data.speed || 1 })
         setVerseText(''); setVerseRef(''); setVerseBackground(''); setIsImage(false); setIsBlack(false); setDocUrl('')
