@@ -26,8 +26,11 @@ export default function SecondaryDisplay({ bgVideo, onPause, onResume, onStop }:
       return
     }
     if (isYoutube) {
-      setYtKey((k) => k + 1)
-      if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = '' }
+      if (bgVideo.url !== lastUrlRef.current) {
+        lastUrlRef.current = bgVideo.url
+        setYtKey((k) => k + 1)
+        if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = '' }
+      }
       return
     }
     const v = videoRef.current

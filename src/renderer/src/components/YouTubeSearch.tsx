@@ -26,11 +26,19 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const [pausedId, setPausedId] = useState<string | null>(null)
+  const playingIdsRef = useRef(playingIds)
+  playingIdsRef.current = playingIds
 
   useEffect(() => {
     const unsub = window.api.on('video:progress', (arg: unknown) => {
       const data = arg as { title: string; paused: boolean; duration?: number }
-      if (!data.title && data.duration === 0) { setPlayingIds(new Set()); setPausedId(null) }
+      if (!data.title && data.duration === 0) { setPlayingIds(new Set()); setPausedId(null); return }
+      if (data.title && data.duration !== undefined) {
+        const currentId = playingIdsRef.current.values().next().value
+        if (currentId) {
+          setPausedId(data.paused ? currentId : null)
+        }
+      }
     })
     return () => { unsub?.() }
   }, [])
