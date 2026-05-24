@@ -76,7 +76,7 @@ export default function DirectoryBrowser({ onPlayBg }: DirectoryBrowserProps) {
   }
 
   const handlePlayVideo = async (file: MediaFile) => {
-    const fileUrl = file.ruta.startsWith('file://') ? file.ruta : `file:///${file.ruta.replace(/\\/g, '/')}`
+    const fileUrl = 'file:///' + encodeURI(file.ruta.replace(/\\/g, '/'))
     window.dispatchEvent(new CustomEvent('play-media', { detail: { ruta: file.ruta, nombre: file.nombre, tipo: 'video' } }))
     await window.api.video.play(fileUrl, file.nombre)
   }
@@ -208,7 +208,7 @@ export default function DirectoryBrowser({ onPlayBg }: DirectoryBrowserProps) {
                         className="p-1 bg-[#6c5ce7]/20 rounded text-[#6c5ce7] hover:bg-[#6c5ce7]/40 transition-colors" title="Proyectar">
                         <Play size={10} />
                       </button>
-                      <button onClick={() => { const fileUrl = f.ruta.startsWith('file://') ? f.ruta : `file:///${f.ruta.replace(/\\/g, '/')}`; onPlayBg?.(fileUrl, f.nombre) }}
+                      <button onClick={() => { const fileUrl = 'file:///' + encodeURI(f.ruta.replace(/\\/g, '/')); onPlayBg?.(fileUrl, f.nombre) }}
                         className="p-1 bg-emerald-600/20 rounded text-emerald-500 hover:bg-emerald-600/40 transition-colors" title="Fondo">
                         <Play size={10} className="opacity-70" />
                       </button>

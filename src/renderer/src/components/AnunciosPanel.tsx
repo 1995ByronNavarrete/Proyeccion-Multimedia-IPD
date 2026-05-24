@@ -79,15 +79,16 @@ export default function AnunciosPanel() {
     }
   }
 
-  const handleEdit = (a: {id:number;texto:string}) => {
+  const handleEdit = (a: {id:number;texto:string;animacion?:string}) => {
     setEditId(a.id)
     setEditText(a.texto)
+    setAnimIn(a.animacion || animIn)
   }
 
   const handleSaveEdit = async () => {
     if (editId === null || !editText.trim()) return
     await window.api.anuncios.update(editId, editText, animIn)
-    setList(list.map(a => a.id === editId ? { ...a, texto: editText } : a))
+    setList(list.map(a => a.id === editId ? { ...a, texto: editText, animacion: animIn } : a))
     setEditId(null)
     setEditText('')
   }
@@ -97,8 +98,8 @@ export default function AnunciosPanel() {
     setList(list.filter(a => a.id !== id))
   }
 
-  const handleProject = (a: {id:number;texto:string}) => {
-    window.api.projector.showAnnouncement({ text: a.texto, animIn, animOut, duration: duracion, bg, bgAnimIn, bgAnimOut, size, font, color })
+  const handleProject = (a: {id:number;texto:string;animacion?:string}) => {
+    window.api.projector.showAnnouncement({ text: a.texto, animIn: a.animacion || animIn, animOut, duration: duracion, bg, bgAnimIn, bgAnimOut, size, font, color })
     setProyectadoId(a.id)
     if (timerRef.current) clearTimeout(timerRef.current)
     if (duracion > 0) {

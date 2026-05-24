@@ -91,9 +91,10 @@ export default function ImageEditor({ open, imageUrl, imageName, onClose, onSave
         const gr = 0.2989 * r + 0.587 * g + 0.114 * b
         r = gr; g = gr; b = gr
       } else if (filter === 'sepia') {
-        r = r * 0.393 + g * 0.769 + b * 0.189
-        g = r * 0.349 + g * 0.686 + b * 0.168
-        b = r * 0.272 + g * 0.534 + b * 0.131
+        const or = r; const og = g; const ob = b
+        r = or * 0.393 + og * 0.769 + ob * 0.189
+        g = or * 0.349 + og * 0.686 + ob * 0.168
+        b = or * 0.272 + og * 0.534 + ob * 0.131
       } else if (filter === 'invert') {
         r = 255 - r; g = 255 - g; b = 255 - b
       } else if (filter === 'vintage') {
@@ -157,7 +158,7 @@ export default function ImageEditor({ open, imageUrl, imageName, onClose, onSave
           {/* Canvas preview */}
           <div className="flex-1 flex items-center justify-center p-4 bg-black/50 overflow-hidden">
             <div className="relative" style={{ transform: `scale(${zoom})` }}>
-              <img ref={imgRef} src={imageUrl} alt="" className="hidden" crossOrigin="anonymous" onLoad={() => setLoaded(true)} onError={(e) => console.error('[ImageEditor] load error:', e)} />
+              <img ref={imgRef} src={imageUrl} alt="" className="hidden" crossOrigin={imageUrl?.startsWith('http') ? 'anonymous' : undefined} onLoad={() => setLoaded(true)} onError={(e) => { console.error('[ImageEditor] load error:', e); setLoaded(true) }} />
               <canvas ref={canvasRef} className="max-w-full max-h-[55vh] rounded-lg shadow-lg" />
             </div>
           </div>

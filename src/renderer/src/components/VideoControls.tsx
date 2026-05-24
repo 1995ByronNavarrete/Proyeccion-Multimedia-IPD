@@ -107,7 +107,7 @@ export default function VideoControls() {
         {hoverTime !== null && (
           <div
             className="absolute -top-5 -translate-x-1/2 bg-[#a855f7] text-white text-[9px] font-bold px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap"
-            style={{ left: `${(hoverTime / video.duration) * 100}%` }}
+            style={{ left: `${video.duration > 0 ? (hoverTime / video.duration) * 100 : 0}%` }}
           >
             {fmt(hoverTime)}
           </div>

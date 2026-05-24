@@ -82,6 +82,7 @@ export default function CronometroPanel() {
     startTimeRef.current = performance.now()
     setRunning(true)
     runningRef.current = true
+    broadcast(display, true)
     rafRef.current = requestAnimationFrame(tick)
   }
 
