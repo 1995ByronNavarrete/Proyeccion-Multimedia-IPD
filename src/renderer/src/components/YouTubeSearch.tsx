@@ -91,13 +91,14 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       if (streamRes.success && streamRes.data?.url) {
         await window.api.video.play(streamRes.data.url, streamRes.data.title || item.title, streamRes.data.duration)
       } else {
-        setError('No se pudo obtener el video')
-        setPlayingIds(new Set())
+        // Fallback a embed si no se pudo obtener stream
+        const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
+        await window.api.video.play(embedUrl, item.title)
       }
     } catch {
-      setError('Error al reproducir')
-      setActiveId(null)
-      setPlayingIds(new Set())
+      const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
+      await window.api.video.play(embedUrl, item.title)
+      setActiveId(item.id)
     }
     setPlaying(false)
     setProjectingTitle(null)
@@ -109,10 +110,11 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
     setProjectingBg(true)
     const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
     onPlayBg?.(embedUrl, item.title)
-    // Intentar obtener stream para mejor calidad (no bloqueante)
+    // Cachear stream para futuras reproducciones (no reemplaza el actual)
     window.api.ytdl.getStreamUrl(item.id).then(res => {
       if (res.success && res.data?.url) {
-        onPlayBg?.(res.data.url, res.data.title || item.title)
+        setBgLoading(false)
+        setProjectingTitle(null)
       }
     }).catch(() => {})
     setBgLoading(false)
