@@ -437,7 +437,7 @@ export default function ProjectorView() {
 
   let content: JSX.Element | null = null
 
-  const projectedForVerse: ProjectedContent = verseText ? {
+  const projectedForVerse: any = verseText ? {
     type: 'verse',
     text: verseText,
     reference: verseRef,
