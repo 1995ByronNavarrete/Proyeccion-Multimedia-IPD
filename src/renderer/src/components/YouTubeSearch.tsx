@@ -71,17 +71,23 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
     setPlaying(true)
     setActiveId(item.id)
     setProjectingTitle(item.title)
+    // Stop current video if switching to a different one
+    if (playingIds.size > 0) {
+      await window.api.video.stop()
+    }
+    setPlayingIds(new Set([item.id]))
     try {
       const streamRes = await window.api.ytdl.getStreamUrl(item.id)
       if (streamRes.success && streamRes.data?.url) {
         await window.api.video.play(streamRes.data.url, streamRes.data.title || item.title, streamRes.data.duration)
-        setPlayingIds(new Set([item.id]))
       } else {
         setError('No se pudo obtener el video')
+        setPlayingIds(new Set())
       }
     } catch {
       setError('Error al reproducir')
       setActiveId(null)
+      setPlayingIds(new Set())
     }
     setPlaying(false)
     setProjectingTitle(null)
@@ -102,6 +108,8 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
       onPlayBg?.(embedUrl, item.title)
     }
+    setBgLoading(false)
+    setProjectingTitle(null)
   }
 
   return (
