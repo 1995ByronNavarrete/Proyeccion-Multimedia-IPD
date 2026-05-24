@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Youtube, Search, Play, Pause, Loader2 } from 'lucide-react'
+import { Youtube, Search, Play, Pause, Loader2, Check } from 'lucide-react'
 
 interface YTResult {
   id: string
@@ -23,6 +23,7 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const [playingIds, setPlayingIds] = useState<Set<string>>(new Set())
   const [bgLoading, setBgLoading] = useState(false)
   const [projectingTitle, setProjectingTitle] = useState<string | null>(null)
+  const [projectingBg, setProjectingBg] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const [pausedId, setPausedId] = useState<string | null>(null)
@@ -79,6 +80,7 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
     setPlaying(true)
     setActiveId(item.id)
     setProjectingTitle(item.title)
+    setProjectingBg(false)
     // Stop current video if switching to a different one
     if (playingIds.size > 0) {
       await window.api.video.stop()
@@ -104,6 +106,7 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const handlePlayBg = async (item: YTResult) => {
     setBgLoading(true)
     setProjectingTitle(item.title)
+    setProjectingBg(true)
     const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
     onPlayBg?.(embedUrl, item.title)
     // Intentar obtener stream para mejor calidad (no bloqueante)
@@ -121,7 +124,7 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       {projectingTitle && (
         <div className="absolute inset-0 z-10 bg-[rgba(5,8,22,0.95)] flex flex-col items-center justify-center gap-2">
           <Loader2 size={24} className="animate-spin text-[#6c5ce7]" />
-          <p className="text-[10px] text-theme-dim text-center px-4">Preparando proyección...</p>
+          <p className="text-[10px] text-theme-dim text-center px-4">{projectingBg ? 'Preparando video de fondo...' : 'Preparando proyección...'}</p>
           <p className="text-[9px] text-[#6c5ce7] text-center px-4 truncate max-w-full">{projectingTitle}</p>
         </div>
       )}
@@ -172,8 +175,8 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
                 <p className="text-[8px] text-theme-dim truncate">{r.channel}</p>
               </div>
               <button onClick={() => handlePlay(r)} disabled={playing}
-                className={`p-1.5 rounded transition-all duration-200 shrink-0 self-center disabled:opacity-40 scale-100 active:scale-90 ${playingIds.has(r.id) ? (pausedId === r.id ? 'bg-amber-500/30 text-amber-400' : 'bg-green-500/30 text-green-400') : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`} title={playingIds.has(r.id) ? (pausedId === r.id ? 'Reanudar' : 'Pausar') : 'Proyectar'}>
-                {playing && activeId === r.id ? <Loader2 size={10} className="animate-spin" /> : playingIds.has(r.id) ? (pausedId === r.id ? <Play size={10} /> : <Pause size={10} />) : <Play size={10} />}
+                className={`p-1.5 rounded transition-all duration-200 shrink-0 self-center disabled:opacity-40 scale-100 active:scale-90 ${playingIds.has(r.id) ? (pausedId === r.id ? 'bg-amber-500/30 text-amber-400' : 'bg-green-600/30 text-green-400 cursor-default') : 'bg-[#6c5ce7]/20 text-[#6c5ce7] hover:bg-[#6c5ce7]/40'}`} title={playingIds.has(r.id) ? (pausedId === r.id ? 'Reanudar' : 'En ejecución') : 'Proyectar'}>
+                {playing && activeId === r.id ? <Loader2 size={10} className="animate-spin" /> : playingIds.has(r.id) ? (pausedId === r.id ? <Play size={10} /> : <Check size={10} />) : <Play size={10} />}
               </button>
               <button onClick={() => handlePlayBg(r)} disabled={bgLoading}
                 className="p-1.5 bg-emerald-600/20 rounded text-emerald-500 hover:bg-emerald-600/40 transition-colors shrink-0 self-center disabled:opacity-40 text-[7px] font-bold" title="Fondo para pantalla secundaria">
