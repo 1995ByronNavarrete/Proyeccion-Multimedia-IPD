@@ -35,7 +35,7 @@ function getYtDlpPath(): string {
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string, timeout = 15000): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 10000): Promise<string | null> {
   try {
     const binaryPath = getYtDlpPath()
     const { stdout } = await execFileAsync(binaryPath, [
@@ -114,14 +114,11 @@ export function registerVideoHandlers(): void {
   })
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
-    const url = await ytDlpGetUrl(videoId, 'best[height<=1080]', 25000)
-    if (url) return url
-    const sd = await ytDlpGetUrl(videoId, 'best[height<=720]', 25000)
-    if (sd) return sd
-    const fallbacks = ['best[ext=mp4]', 'best', 'worst[ext=mp4]']
-    for (const fmt of fallbacks) {
-      const url = await ytDlpGetUrl(videoId, fmt, 15000)
-      if (url) return url
+    const formats = ['best[height<=720]', 'best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
+    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 10000).then(url => ({ fmt, url })))
+    const results = await Promise.allSettled(promises)
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value.url) return r.value.url
     }
     return null
   }
