@@ -35,7 +35,7 @@ function getYtDlpPath(): string {
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string, timeout = 10000): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 8000): Promise<string | null> {
   try {
     const binaryPath = getYtDlpPath()
     const { stdout } = await execFileAsync(binaryPath, [
@@ -103,9 +103,11 @@ export function registerVideoHandlers(): void {
           thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`,
           description: (v.description || '').substring(0, 200)
         }))
-      // Pre-calentar cache del primer resultado
-      if (videos.length > 0 && !getCachedStream(videos[0].id)) {
-        resolveStreamUrl(videos[0].id).then(url => { if (url) setCachedStream(videos[0].id, url) }).catch(() => {})
+      // Pre-calentar cache de resultados visibles
+      for (const v of videos) {
+        if (!getCachedStream(v.id)) {
+          resolveStreamUrl(v.id).then(url => { if (url) setCachedStream(v.id, url) }).catch(() => {})
+        }
       }
       return { success: true, data: videos }
     } catch (err) {

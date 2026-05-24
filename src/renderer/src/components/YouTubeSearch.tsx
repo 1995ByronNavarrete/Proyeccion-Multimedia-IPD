@@ -22,6 +22,7 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [playingIds, setPlayingIds] = useState<Set<string>>(new Set())
   const [bgLoading, setBgLoading] = useState(false)
+  const [projectingTitle, setProjectingTitle] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -57,11 +58,13 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
     if (playingIds.has(item.id)) {
       await window.api.video.stop()
       setPlayingIds(new Set())
+      setProjectingTitle(null)
       return
     }
     setError('')
     setPlaying(true)
     setActiveId(item.id)
+    setProjectingTitle(item.title)
     try {
       const streamRes = await window.api.ytdl.getStreamUrl(item.id)
       if (streamRes.success && streamRes.data?.url) {
@@ -75,10 +78,12 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       setActiveId(null)
     }
     setPlaying(false)
+    setProjectingTitle(null)
   }
 
   const handlePlayBg = async (item: YTResult) => {
     setBgLoading(true)
+    setProjectingTitle(item.title)
     try {
       const streamRes = await window.api.ytdl.getStreamUrl(item.id)
       if (streamRes.success && streamRes.data?.url) {
@@ -92,10 +97,18 @@ export default function YouTubeSearch({ onPlayBg }: YouTubeSearchProps) {
       onPlayBg?.(embedUrl, item.title)
     }
     setBgLoading(false)
+    setProjectingTitle(null)
   }
 
   return (
-    <div className="h-full bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden">
+    <div className="h-full bg-theme-panel border border-theme rounded-xl flex flex-col overflow-hidden relative">
+      {projectingTitle && (
+        <div className="absolute inset-0 z-10 bg-[rgba(5,8,22,0.95)] flex flex-col items-center justify-center gap-2">
+          <Loader2 size={24} className="animate-spin text-[#6c5ce7]" />
+          <p className="text-[10px] text-theme-dim text-center px-4">Preparando proyección...</p>
+          <p className="text-[9px] text-[#6c5ce7] text-center px-4 truncate max-w-full">{projectingTitle}</p>
+        </div>
+      )}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-theme">
         <Youtube size={12} className="text-red-500 shrink-0" />
         <h3 className="text-[10px] font-semibold text-theme-muted uppercase tracking-wider">YouTube</h3>
