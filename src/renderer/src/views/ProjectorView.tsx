@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Monitor, FileText } from 'lucide-react'
 import AnuncioOverlay from '../components/AnuncioOverlay'
+import VerseDisplay from '../components/shared/VerseDisplay'
+import type { ProjectedContent } from './DashboardView'
 
 const YT_CMD = (fn: string) => JSON.stringify({ event: 'command', func: fn, args: [] })
 
@@ -435,41 +437,20 @@ export default function ProjectorView() {
 
   let content: JSX.Element | null = null
 
+  const projectedForVerse: ProjectedContent = verseText ? {
+    type: 'verse',
+    text: verseText,
+    reference: verseRef,
+    backgroundUrl: verseBackground || undefined,
+    animation: verseAnimation,
+    sermonTitle,
+    sermonPreacher,
+    overlayOpacity: cfgOverlayOpacity,
+    fontSize: cfgFontSize
+  } : undefined
+
   const verseKeyRef = useRef(0)
-  const renderVerse = () => {
-    verseKeyRef.current++
-    return (
-    <div key={verseRef + '-' + verseKeyRef.current} ref={verseContainerRef} className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden p-[5%]">
-      {verseBackground ? (
-        <>
-          <img src={verseBackground} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
-          <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: `rgba(0,0,0,${(100 - cfgOverlayOpacity) / 100})` }} />
-        </>
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a1a] to-black" />
-      )}
-      {sermonTitle && (
-        <div className="absolute top-8 right-6 left-6 z-20 text-right pointer-events-none overflow-hidden">
-          <p className="text-2xl font-bold text-amber-400 drop-shadow-[0_3px_12px_rgba(0,0,0,0.95)] truncate">{sermonTitle}</p>
-          {sermonPreacher && <p className="text-base text-amber-400/70 mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] truncate">{sermonPreacher}</p>}
-        </div>
-      )}
-      <div className="relative text-center w-full max-h-full flex flex-col items-center justify-center min-h-0">
-        {verseAnimation.startsWith('anim-letter-') ? (
-          <p ref={verseTextRef} className={`font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation}`}
-            style={{ fontSize: `${cfgFontSize}px`, lineHeight: 1.1, maxWidth: '100%' }}>
-            {verseText.split('').map((char, i) => (<span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>))}
-          </p>
-        ) : (
-          <p ref={verseTextRef} className={`font-bold text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] tracking-wide ${verseAnimation} anim-delay-text`}
-            style={{ fontSize: `${cfgFontSize}px`, lineHeight: 1.1, maxWidth: '100%' }}>{verseText}</p>
-        )}
-        <p ref={verseRefRef} className={`text-white/80 tracking-wider drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)] ${verseAnimation} anim-delay-ref`}
-          style={{ fontSize: `${Math.round(cfgFontSize * 0.5)}px`, marginTop: `${Math.round(cfgFontSize * 0.12)}px` }}>— {verseRef}</p>
-      </div>
-    </div>
-    )
-  }
+  verseKeyRef.current++
 
   if (isBlack) {
     content = (
@@ -532,7 +513,7 @@ export default function ProjectorView() {
       anuncioAnimIn={anuncioAnimIn} anuncioAnimOut={anuncioAnimOut} anuncioBg={anuncioBg} anuncioBgAnimIn={anuncioBgAnimIn} anuncioBgAnimOut={anuncioBgAnimOut}
       anuncioSize={anuncioSize} anuncioFont={anuncioFont} anuncioColor={anuncioColor} anuncioExiting={anuncioExiting} />
   } else if (verseText) {
-    content = renderVerse()
+    content = <VerseDisplay projected={projectedForVerse} backgroundUrl={verseBackground} animation={verseAnimation} overlayOpacity={cfgOverlayOpacity} />
   } else {
     content = <DefaultBg />
   }
