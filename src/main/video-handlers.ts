@@ -35,7 +35,7 @@ function getYtDlpPath(): string {
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string, timeout = 8000): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 15000): Promise<string | null> {
   try {
     const binaryPath = getYtDlpPath()
     const args = [
@@ -48,7 +48,22 @@ async function ytDlpGetUrl(videoId: string, format: string, timeout = 8000): Pro
     const url = stdout?.toString().trim()
     return url?.startsWith('http') ? url : null
   } catch {
-    return null
+    // Si falla, reintentar con cookies del navegador
+    try {
+      const binaryPath = getYtDlpPath()
+      const args = [
+        '--no-warnings',
+        '--get-url',
+        '-f', format,
+        '--cookies-from-browser', 'chrome',
+        `https://www.youtube.com/watch?v=${videoId}`
+      ]
+      const { stdout } = await execFileAsync(binaryPath, args, { timeout })
+      const url = stdout?.toString().trim()
+      return url?.startsWith('http') ? url : null
+    } catch {
+      return null
+    }
   }
 }
 
@@ -140,13 +155,16 @@ export function registerVideoHandlers(): void {
   })
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
-    // Probar todos los formatos en paralelo, usar el primero que responda (Promise.any)
-    const formats = ['best[height<=720]', 'best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
-    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 8000))
-    try {
-      const url = await Promise.any(promises)
-      if (url) return url
-    } catch {}
+    // Secuencial como en v1.5.3 (funcionaba)
+    const url = await ytDlpGetUrl(videoId, 'best[height<=1080]', 15000)
+    if (url) return url
+    const sd = await ytDlpGetUrl(videoId, 'best[height<=720]', 15000)
+    if (sd) return sd
+    const fallbacks = ['best[ext=mp4]', 'best', 'worst[ext=mp4]']
+    for (const fmt of fallbacks) {
+      const u = await ytDlpGetUrl(videoId, fmt, 15000)
+      if (u) return u
+    }
     // Fallback a play-dl si yt-dlp falla
     const playUrl = await playDlGetUrl(videoId)
     return playUrl
