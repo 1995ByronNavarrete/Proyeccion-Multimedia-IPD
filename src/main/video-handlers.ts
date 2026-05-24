@@ -35,17 +35,38 @@ function getYtDlpPath(): string {
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string, timeout = 6000): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 10000): Promise<string | null> {
   try {
     const binaryPath = getYtDlpPath()
-    const { stdout } = await execFileAsync(binaryPath, [
+    const args = [
       '--no-warnings',
       '--get-url',
       '-f', format,
       `https://www.youtube.com/watch?v=${videoId}`
-    ], { timeout })
+    ]
+    const { stdout } = await execFileAsync(binaryPath, args, { timeout })
     const url = stdout?.toString().trim()
     return url?.startsWith('http') ? url : null
+  } catch {
+    return null
+  }
+}
+
+// Fallback using play-dl when yt-dlp fails
+async function playDlGetUrl(videoId: string): Promise<string | null> {
+  try {
+    const info = await play.video_info(`https://www.youtube.com/watch?v=${videoId}`)
+    const formats = info.format
+    // Buscar formato con video y audio, priorizar 720p
+    const sorted = (formats as any[]).sort((a: any, b: any) => {
+      const aScore = a.quality === 'medium' ? 2 : a.quality === 'hd720' ? 3 : 1
+      const bScore = b.quality === 'medium' ? 2 : b.quality === 'hd720' ? 3 : 1
+      return bScore - aScore
+    })
+    for (const f of sorted) {
+      if (f.url && f.hasVideo && f.hasAudio) return f.url
+    }
+    return null
   } catch {
     return null
   }
@@ -119,13 +140,16 @@ export function registerVideoHandlers(): void {
   })
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
-    const formats = ['best[height<=720]', 'best[ext=mp4]', 'worst[ext=mp4]']
-    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 8000).then(url => ({ fmt, url })))
+    // Probar con yt-dlp (varios formatos en paralelo)
+    const formats = ['best[height<=720]', 'best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
+    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 10000).then(url => ({ fmt, url })))
     const results = await Promise.allSettled(promises)
     for (const r of results) {
       if (r.status === 'fulfilled' && r.value.url) return r.value.url
     }
-    return null
+    // Fallback a play-dl si yt-dlp falla (cookies, bloqueo, etc)
+    const playUrl = await playDlGetUrl(videoId)
+    return playUrl
   }
 
   async function getMeta(videoId: string): Promise<{ title: string; duration: number }> {
@@ -159,16 +183,14 @@ export function registerVideoHandlers(): void {
       return { success: true, data: { url: cached } }
     }
 
-    // Intentar obtener stream (max 8s), si falla usar embed
-    const streamPromise = resolveStreamUrl(videoId)
-    const timeout = new Promise<null>(r => setTimeout(() => r(null), 8000))
-    const streamUrl = await Promise.race([streamPromise, timeout])
-
+    // Intentar obtener stream real con todos los formatos disponibles
+    const streamUrl = await resolveStreamUrl(videoId)
     if (streamUrl) {
       setCachedStream(videoId, streamUrl)
       return { success: true, data: { url: streamUrl } }
     }
 
+    // Fallback a embed URL solo si el stream falla completamente
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&controls=0&rel=0&showinfo=0`
     return { success: true, data: { url: embedUrl } }
   })
