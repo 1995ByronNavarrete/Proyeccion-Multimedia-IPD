@@ -35,7 +35,7 @@ function getYtDlpPath(): string {
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string, timeout = 10000): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 8000): Promise<string | null> {
   try {
     const binaryPath = getYtDlpPath()
     const args = [
@@ -140,14 +140,14 @@ export function registerVideoHandlers(): void {
   })
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
-    // Probar con yt-dlp (varios formatos en paralelo)
+    // Probar todos los formatos en paralelo, usar el primero que responda (Promise.any)
     const formats = ['best[height<=720]', 'best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
-    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 10000).then(url => ({ fmt, url })))
-    const results = await Promise.allSettled(promises)
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value.url) return r.value.url
-    }
-    // Fallback a play-dl si yt-dlp falla (cookies, bloqueo, etc)
+    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 8000))
+    try {
+      const url = await Promise.any(promises)
+      if (url) return url
+    } catch {}
+    // Fallback a play-dl si yt-dlp falla
     const playUrl = await playDlGetUrl(videoId)
     return playUrl
   }
