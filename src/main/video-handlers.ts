@@ -35,7 +35,7 @@ function getYtDlpPath(): string {
   return fallback
 }
 
-async function ytDlpGetUrl(videoId: string, format: string, timeout = 8000): Promise<string | null> {
+async function ytDlpGetUrl(videoId: string, format: string, timeout = 6000): Promise<string | null> {
   try {
     const binaryPath = getYtDlpPath()
     const { stdout } = await execFileAsync(binaryPath, [
@@ -103,10 +103,13 @@ export function registerVideoHandlers(): void {
           thumbnail: v.thumbnail || `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`,
           description: (v.description || '').substring(0, 200)
         }))
-      // Pre-calentar cache de resultados visibles
-      for (const v of videos) {
+      // Pre-calentar cache solo de los 2 primeros (evita saturar CPU)
+      const toCache = videos.slice(0, 2)
+      for (const v of toCache) {
         if (!getCachedStream(v.id)) {
           resolveStreamUrl(v.id).then(url => { if (url) setCachedStream(v.id, url) }).catch(() => {})
+          // Pequeña pausa entre cada uno para no saturar
+          await new Promise(r => setTimeout(r, 100))
         }
       }
       return { success: true, data: videos }
@@ -116,8 +119,8 @@ export function registerVideoHandlers(): void {
   })
 
   async function resolveStreamUrl(videoId: string): Promise<string | null> {
-    const formats = ['best[height<=720]', 'best[height<=1080]', 'best[ext=mp4]', 'best', 'worst[ext=mp4]']
-    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 10000).then(url => ({ fmt, url })))
+    const formats = ['best[height<=720]', 'best[ext=mp4]', 'worst[ext=mp4]']
+    const promises = formats.map(fmt => ytDlpGetUrl(videoId, fmt, 6000).then(url => ({ fmt, url })))
     const results = await Promise.allSettled(promises)
     for (const r of results) {
       if (r.status === 'fulfilled' && r.value.url) return r.value.url
