@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { MonitorOff, ImageIcon, ChevronLeft, ChevronRight, Download, Sparkles, ZoomIn } from 'lucide-react'
 import type { ProjectedContent } from '../views/DashboardView'
 import AnimSelectorModal from './shared/AnimSelectorModal'
+import VerseDisplay from './shared/VerseDisplay'
 import { ANIM_GROUPS } from '../constants'
 import { useLang } from '../i18n'
 
@@ -89,10 +90,6 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
   const previewBg = backgroundUrl || projected?.backgroundUrl
   const previewText = projected?.text || 'Texto de muestra'
   const previewRef = projected?.reference || 'Referencia'
-
-  const previewContainerRef = useRef<HTMLDivElement>(null)
-  const previewTextRef = useRef<HTMLParagraphElement>(null)
-  const previewRefRef = useRef<HTMLParagraphElement>(null)
   const [imgZoom, setImgZoom] = useState(1)
   const [imgPan, setImgPan] = useState({ x: 0, y: 0 })
   const dragging = useRef(false)
@@ -115,38 +112,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
     window.api.projector.imageZoom({ zoom: 1, panX: 0, panY: 0 })
   }, [projected?.mediaUrl])
 
-  useEffect(() => {
-    if (!isVerse) return
-    const container = previewContainerRef.current
-    const textEl = previewTextRef.current
-    const refEl = previewRefRef.current
-    if (!container || !textEl) return
-    let cancelled = false
-    const fit = () => {
-      const cw = container.clientWidth
-      const ch = container.clientHeight
-      if (!cw || !ch) return
-      const maxW = cw * 0.95
-      const maxH = ch * 0.92
-      let size = Math.max(16, Math.min(ch * 0.28, cw * 0.09))
-      textEl.style.fontSize = `${size}px`
-      textEl.style.maxWidth = `${maxW}px`
-      if (refEl) refEl.style.fontSize = `${Math.round(size * 0.35)}px`
-      requestAnimationFrame(() => {
-        if (cancelled) return
-        if (textEl.scrollHeight <= maxH && textEl.scrollWidth <= maxW) return
-        const scale = Math.min(maxH / textEl.scrollHeight, maxW / textEl.scrollWidth) * 0.9
-        if (scale >= 1) return
-        size = Math.max(8, size * scale)
-        textEl.style.fontSize = `${size}px`
-        if (refEl) refEl.style.fontSize = `${size * 0.35}px`
-      })
-    }
-    const raf = requestAnimationFrame(fit)
-    const ro = new ResizeObserver(fit)
-    if (container.parentElement) ro.observe(container.parentElement)
-    return () => { cancelled = true; cancelAnimationFrame(raf); ro.disconnect() }
-  }, [projected?.text, isVerse])
+
 
   const openModal = () => setOpenAnim(true)
   const closeModal = () => setOpenAnim(false)
@@ -229,37 +195,7 @@ export default function ProjectionView({ onBlack, backgroundUrl, projected, anim
             </div>
           </div>
         ) : (backgroundUrl || projected?.backgroundUrl) || isVerse ? (
-          <>
-            <img src={projected?.backgroundUrl || backgroundUrl || ''} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${(100 - overlayOpacity) / 100})` }} />
-            {projected?.sermonTitle && (
-              <div className="absolute top-1 right-2 z-10 text-right pointer-events-none">
-                <p className="text-[10px] font-bold text-amber-400 drop-shadow-lg">{projected.sermonTitle}</p>
-                {projected?.sermonPreacher && <p className="text-[7px] text-amber-400/70 drop-shadow-lg">{projected.sermonPreacher}</p>}
-              </div>
-            )}
-            <div ref={previewContainerRef} className="relative text-center px-6 w-full max-h-full overflow-hidden">
-              {isVerse ? (
-                <div key={`${projected!.text}-${projected!.backgroundUrl}`} className="flex flex-col items-center justify-center w-full h-full">
-                  {activeAnim.startsWith('anim-letter-') ? (
-                    <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim}`}>
-                      {projected?.text?.split('').map((char, i) => (
-                        <span key={i} style={{ animationDelay: `${i * 0.045}s` }} className="inline-block">{char === ' ' ? '\u00A0' : char}</span>
-                      ))}
-                    </p>
-                  ) : (
-                    <p ref={previewTextRef} className={`font-bold text-white leading-tight drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>{projected!.text}</p>
-                  )}
-                  <p ref={previewRefRef} className={`text-white/70 mt-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>— {projected?.reference}</p>
-                </div>
-              ) : (backgroundUrl || projected?.backgroundUrl) ? (
-                <div>
-                  <p className={`font-bold text-white leading-relaxed drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-text`}>Verso proyectado aquí</p>
-                  <p className={`text-white/70 mt-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${activeAnim} anim-delay-ref`}>Selecciona un verso en la Biblia</p>
-                </div>
-              ) : null}
-            </div>
-          </>
+          <VerseDisplay projected={projected} backgroundUrl={backgroundUrl} animation={animation} overlayOpacity={overlayOpacity} />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#0a0e1e] via-[#0c1022] to-[#0a0e1e] flex items-center justify-center">
             <div className="text-center">

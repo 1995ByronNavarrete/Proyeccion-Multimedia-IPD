@@ -352,7 +352,7 @@ export default function DashboardView() {
           ) : (
             <>
               <div className="flex-[4] min-h-0 overflow-hidden">
-                <SecondaryDisplay bgVideo={bgVideo} onPause={handlePauseBg} onResume={handleResumeBg} onStop={handleStopBg} />
+                <SecondaryDisplay projected={projected} backgroundUrl={backgroundUrl} animation={animBiblia} overlayOpacity={overlayOpacity} />
               </div>
               <div className="flex gap-3 min-h-0">
     <div className="flex-1 min-w-0"><ReproductorPanel onPlayBg={handlePlayBg} /></div>
