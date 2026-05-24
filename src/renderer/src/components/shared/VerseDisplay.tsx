@@ -58,7 +58,7 @@ export default function VerseDisplay({ projected, backgroundUrl, animation, over
     fit()
     window.addEventListener('resize', fit)
     return () => { cancelled = true; window.removeEventListener('resize', fit) }
-  }, [projected?.text, isVerse])
+  }, [projected?.text, isVerse, showBg])
 
   return (
     <div className="w-full h-full relative overflow-hidden">
