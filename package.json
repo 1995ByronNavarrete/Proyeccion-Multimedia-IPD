@@ -1,6 +1,6 @@
 {
   "name": "desktopappipd",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "description": "Sistema de proyección multimedia profesional para iglesias",
   "author": "Byron Antonio Navarrete Cañada",
   "main": "./out/main/index.js",
