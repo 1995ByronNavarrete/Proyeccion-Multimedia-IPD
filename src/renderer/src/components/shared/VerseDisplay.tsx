@@ -33,8 +33,8 @@ export default function VerseDisplay({ projected, backgroundUrl, animation, over
       const maxW = cw * 0.92
       const maxH = ch * padPct
 
-      // Start big and scale down if needed
-      let size = Math.max(24, Math.round(ch * 0.22))
+      // Start big and scale down if needed — max 40% height or fill width
+      let size = Math.max(24, Math.round(Math.min(cw * 0.12, ch * 0.35)))
       textEl.style.fontSize = `${size}px`
       textEl.style.maxWidth = `${maxW}px`
       if (refEl) refEl.style.fontSize = `${Math.round(size * 0.45)}px`
@@ -43,7 +43,22 @@ export default function VerseDisplay({ projected, backgroundUrl, animation, over
         if (cancelled) return
         const oh = textEl.scrollHeight
         const ow = textEl.scrollWidth
-        if (oh <= maxH && ow <= maxW) return
+        if (oh <= maxH && ow <= maxW) {
+          // Try to make it even bigger
+          while (size < 500) {
+            size += 4
+            textEl.style.fontSize = `${size}px`
+            textEl.style.maxWidth = `${maxW}px`
+            if (refEl) refEl.style.fontSize = `${Math.round(size * 0.45)}px`
+            if (textEl.scrollHeight > maxH || textEl.scrollWidth > maxW) {
+              size -= 4
+              textEl.style.fontSize = `${size}px`
+              if (refEl) refEl.style.fontSize = `${Math.round(size * 0.45)}px`
+              break
+            }
+          }
+          return
+        }
         const scale = Math.min(maxH / oh, maxW / ow) * 0.92
         size = Math.max(12, Math.round(size * scale))
         textEl.style.fontSize = `${size}px`
